@@ -15,13 +15,14 @@ class App extends React.Component{
 
     constructor (props) {
         super(props)
-        this.state = { deposits: [], myCryptoMons: []}
+        this.state = { deposits: [], myCryptoMons: [], myPlasmaTokens: []}
     }
 
     componentDidMount = () => {
         this.loadContracts(() => {
             this.getCryptoMonsFrom(web3.eth.accounts[0]);
             this.getDepositsFrom(web3.eth.accounts[0]);
+            this.getPlasmaTokensFrom(web3.eth.accounts[0]);
         });
     }
 
@@ -66,6 +67,8 @@ class App extends React.Component{
             console.log(res)
             this.getCryptoMonsFrom(web3.eth.accounts[0]);
             this.getDepositsFrom(web3.eth.accounts[0]);
+            this.getPlasmaTokensFrom(web3.eth.accounts[0]);
+
         })
     }
 
@@ -104,6 +107,16 @@ class App extends React.Component{
        })
     }
 
+
+    getPlasmaTokensFrom = address => {
+      fetch('http://localhost:8082/api/tokens/owned-by/' + address).then(response => {
+        console.log(response)
+        response.json().then(res => {
+          this.setState({ myPlasmaTokens: res })
+        })
+      })
+    }
+
     approveCryptoMons = () => {
         const { cryptoMons, rootChain, vmc } = this.state;
 
@@ -122,7 +135,7 @@ class App extends React.Component{
     }
 
     render() {
-        const { rootChain, cryptoMons, vmc, deposits, myCryptoMons } = this.state;
+        const { rootChain, cryptoMons, vmc, deposits, myCryptoMons, myPlasmaTokens } = this.state;
         return(
             <React.Fragment>
                 <Title text="Hello World!"/>
@@ -145,6 +158,14 @@ class App extends React.Component{
                         <button onClick={this.depositToPlasma(token)}>Deposit to Plasma</button>
                     </div>
                 ))}
+              <p>My Plasma Tokens:</p>
+              {myPlasmaTokens.map(token => (
+                <div key={token}>
+                  <p style={{ display: "inline" }}>{token}</p>
+                  <button onClick={this.depositToPlasma(token)}>Deposit to Plasma</button>
+                </div>
+              ))}
+
             </React.Fragment>
         )
     }
