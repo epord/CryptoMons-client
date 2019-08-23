@@ -1,4 +1,5 @@
 import web3Utils from 'web3-utils';
+import { BN } from 'ethereumjs-util';
 
 export const depositToPlasma = (token, cryptoMons, rootChain) => {
 	const cryptoMonsAddress = cryptoMons.address;
@@ -59,6 +60,28 @@ export const buyCryptoMon = cryptoMons => {
 		web3.eth.contract(cryptoMonsAbi).at(cryptoMonsAddress).buyCryptoMon({
 			from: web3.eth.accounts[0],
 			value: web3Utils.toWei('0.01', 'ether')
+		}, (err, res) => {
+			if (err) return reject(err)
+			resolve(res);
+		})
+	})
+}
+
+export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, blocks}) => {
+	const rootChainAddress = rootChain.address;
+	const slotBN = web3.toBigNumber(slot);
+	const _blocks = [
+			web3.toBigNumber(blocks[0]),
+			blocks[1] ? web3.toBigNumber(blocks[1]) : web3.toBigNumber(0)
+		]
+
+		console.log({slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks})
+
+	return new Promise((resolve, reject) => {
+		web3.eth.contract(rootChain.abi).at(rootChainAddress)
+		.startExit(slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks, {
+			from: web3.eth.accounts[0],
+			value: web3Utils.toWei('0.1', 'ether')
 		}, (err, res) => {
 			if (err) return reject(err)
 			resolve(res);

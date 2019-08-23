@@ -7,7 +7,7 @@ import Title from './Title.jsx';
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, approveCryptoMons, buyCryptoMon } from '../services/ethService';
+import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, approveCryptoMons, buyCryptoMon, exitToken } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
 import async from 'async';
@@ -97,6 +97,34 @@ class App extends React.Component {
 		approveCryptoMons(cryptoMons, vmc);
 	}
 
+	exitToken = token => {
+		console.log("exiting token")
+		fetch(`http://localhost:8082/api/exit/data/${token}`).then(response => {
+			response.json().then(exitData => {
+				console.log("calling root chain exit")
+				const { rootChain } = this.state;
+
+				const cb = (data) => {
+					exitToken(rootChain, data).then(response => {
+						console.log("Exit successful: ", response);
+					}).catch(console.error);
+				}
+
+				if (!exitData.signature) {
+					console.log("signing")
+					sign(exitData.lastTransactionHash).then(signature => {
+						console.log("signed")
+						exitData.signature = signature;
+						cb(exitData);
+					})
+				} else {
+					cb(exitData);
+				}
+
+			});
+		})
+	}
+
 	transferInPlasma = token => {
 		const fieldKey = `transferAddress${token}`;
 		const receiverAddress = this.state[fieldKey];
@@ -172,6 +200,7 @@ class App extends React.Component {
 							value={this.state[`transferAddress${token}`] || ''}
 							placeholder="Address" />
 						<button onClick={() => this.transferInPlasma(token)}>Transfer</button>
+						<button onClick={() => this.exitToken(token)}>Exit</button>
 					</div>
 				))}
 
