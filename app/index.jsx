@@ -8,7 +8,7 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, approveCryptoMons, buyCryptoMon } from '../services/ethService';
-import { generateTransactionHash } from '../utils/cryptoUtils';
+import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
 import async from 'async';
 
@@ -105,19 +105,17 @@ class App extends React.Component {
 		fetch(`http://localhost:8082/api/tokens/${token}/last-transaction`).then(response => {
 			response.json().then(lastTransaction => {
 
-				const hash = generateTransactionHash(token, lastTransaction.mined_block, receiverAddress)
+				const hash = generateTransactionHash(token, lastTransaction.minedBlock, receiverAddress)
 
-				web3.eth.sign(web3.eth.defaultAccount, hash, (err, signature) => {
-					if (err) return console.error(err)
-
+				sign(hash).then(signature => {
 					const body = {
 						"slot": token,
 						"owner": web3.eth.defaultAccount,
 						"recipient": receiverAddress,
 						"hash": hash,
-						"blockSpent": lastTransaction.mined_block,
+						"blockSpent": lastTransaction.minedBlock,
 						"signature": signature
-					}
+					};
 
 					fetch('http://localhost:8082/api/transactions/create', {
 						method: 'POST',
@@ -125,13 +123,15 @@ class App extends React.Component {
 						headers: {
 							'Content-Type': 'application/json'
 						}
-					}).then(res => res.json())
-						.catch(error => console.error('Error:', error))
-						.then(response => console.log('Success:', response));
+					})
+					.then(response => console.log('Success:', response))
+					.catch(error => console.error('Error:', error));
+
 				})
-			})
-		})
-	}
+				.catch(error => console.error('Error:', error))
+			});
+		});
+	};
 
 	onTransferAddressChanged = token => event => {
 		const fieldKey = `transferAddress${token}`;

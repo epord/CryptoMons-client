@@ -28,3 +28,12 @@ const getTransactionBytes = (slot, blockSpent, denomination, recipient) => {
 
 	return EthUtils.bufferToHex(RLP.encode(params));
 }
+
+export const sign = (message) => {
+	return new Promise((resolve, reject) => {
+		web3.eth.sign(web3.eth.defaultAccount, message, (err, signature) => {
+			if(err) return reject(err)
+			resolve(signature)
+		});
+	});
+}
