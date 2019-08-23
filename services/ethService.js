@@ -1,4 +1,6 @@
 import web3Utils from 'web3-utils';
+import async from 'async'
+import { zip, unique } from '../utils/utils'
 import { BN } from 'ethereumjs-util';
 
 export const depositToPlasma = (token, cryptoMons, rootChain) => {
@@ -27,16 +29,82 @@ export const getDepositsFrom = (address, rootChain)  => {
 	})
 }
 
-export const getCryptoMonsFrom = (address, cryptoMons) => {
-	const cryptoMonsAddress = cryptoMons.address;
+export const getExitingFrom = (address, rootChain)  => {
+	const rootChainAddress = rootChain.address;
+	const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
+	const ownerFilter = { owner: address }
+	const blockFilter = { fromBlock: 0, toBlock: 'latest' };
+
+	const slotsToDic = (arr) => {
+		return arr.reduce((o, e) => {
+			o[e.slot] = true;
+			return o;
+		}, {})
+	};
 
 	return new Promise((resolve, reject) => {
-		web3.eth.contract(cryptoMons.abi).at(cryptoMonsAddress).Transfer({ to: address }, { fromBlock: 0, toBlock: 'latest' })
-		.get((err, res) => {
-			if (err) return reject(err);
-			resolve(res);
-		})
+		async.parallel({
+			startedExits: cb => rcContract.StartedExit(ownerFilter, blockFilter).get(cb),
+			coinResets: cb => rcContract.CoinReset(ownerFilter, blockFilter).get(cb),
+			finalizedExits: cb => rcContract.FinalizedExit(ownerFilter, blockFilter).get(cb)
+			}, (err, result) => {
+
+		  console.log(result)
+			if(err) return reject(err);
+			const coinResetsObject = slotsToDic(result.coinResets);
+			const finalizedExitsObject = slotsToDic(result.finalizedExits);
+			const filteredExits = result.startedExits.filter(e => !coinResetsObject[e.slot] && !finalizedExitsObject[e.slot]);
+			resolve(filteredExits.map(e=> e.args.slot.toFixed()))
+		});
 	});
+};
+
+export const getExitedFrom = (address, rootChain)  => {
+  const rootChainAddress = rootChain.address;
+  const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
+  const ownerFilter = { owner: address }
+  const blockFilter = { fromBlock: 0, toBlock: 'latest' };
+
+  const slotsToDic = (arr) => {
+    return arr.reduce((o, e) => {
+      o[e.slot] = true;
+      return o;
+    }, {})
+  };
+
+  return new Promise((resolve, reject) => {
+    async.parallel({
+      finalizedExits: cb => rcContract.FinalizedExit(ownerFilter, blockFilter).get(cb),
+      withdrewExits: cb => rcContract.Withdrew(ownerFilter, blockFilter).get(cb)
+    }, (err, result) => {
+
+      console.log(result)
+      if(err) return reject(err);
+      const withdrewExitsObject = slotsToDic(result.withdrewExits);
+      const filteredExits = result.finalizedExits.filter(e => !withdrewExitsObject[e.slot]);
+      resolve(filteredExits.map(e=> e.args.slot.toFixed()))
+    });
+  });
+};
+
+
+export const getCryptoMonsFrom = (address, cryptoMons) => {
+  const cryptoMonsAddress = cryptoMons.address;
+
+  return new Promise((resolve, reject) => {
+    web3.eth.contract(cryptoMons.abi).at(cryptoMonsAddress).Transfer({ to: address }, { fromBlock: 0, toBlock: 'latest' })
+      .get((err, res) => {
+        if(err) return reject(err)
+
+        const tokens = unique(res.map(transfer => transfer.args.tokenId.toFixed()))
+        async.parallel(
+          tokens.map(tokenId => cb => web3.eth.contract(cryptoMons.abi).at(cryptoMonsAddress).ownerOf(tokenId, cb)),
+          (err, res) => {
+            if (err) return reject(err);
+            resolve(zip(tokens, res).filter((e) => e[1] == address).map(e => e[0]))
+          });
+      });
+  });
 }
 
 export const finalizeExit = (rootChain, slot) => {

@@ -7,7 +7,7 @@ import Title from './Title.jsx';
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, approveCryptoMons, buyCryptoMon,
+import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, getExitingFrom, getExitedFrom, approveCryptoMons, buyCryptoMon,
 	exitToken, finalizeExit, withdraw } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
@@ -17,7 +17,7 @@ class App extends React.Component {
 
 	constructor(props) {
 		super(props)
-		this.state = { deposits: [], myCryptoMons: [], myPlasmaTokens: [] }
+		this.state = { deposits: [], myCryptoMons: [], myPlasmaTokens: [], myExitingTokens: [], myExitedTokens: [] }
 	}
 
 	componentDidMount = () => {
@@ -25,10 +25,11 @@ class App extends React.Component {
 			this.getCryptoMonsFrom(web3.eth.defaultAccount);
 			this.getDepositsFrom(web3.eth.defaultAccount);
 			this.getPlasmaTokensFrom(web3.eth.defaultAccount);
+			this.getExitingFrom(web3.eth.defaultAccount);
+			this.getExitedFrom(web3.eth.defaultAccount);
 		});
 	}
 
-	zip = (arr1, arr2) => arr1.map((e, i) => [e, arr2[i]])
 
 	loadContracts = cb => {
 		fetch('http://localhost:8082/api/contracts').then(response => {
@@ -72,17 +73,9 @@ class App extends React.Component {
 		const { cryptoMons } = this.state;
 
 		getCryptoMonsFrom(address, cryptoMons).then(res => {
-			const tokens = res.map(transfer => transfer.args.tokenId.toFixed())
-			const cryptoMonsAddress = cryptoMons.address;
-			async.parallel(
-				tokens.map(tokenId => cb => web3.eth.contract(cryptoMons.abi).at(cryptoMonsAddress).ownerOf(tokenId, cb)),
-				(err, res) => {
-					if (err) return console.error(err);
-					this.setState({ myCryptoMons: this.zip(tokens, res).filter((e) => e[1] == address).map(e => e[0]) })
-				})
+			this.setState({ myCryptoMons: res })
 		}).catch(console.error);
-	}
-
+	};
 
 	getPlasmaTokensFrom = address => {
 		fetch('http://localhost:8082/api/tokens/owned-by/' + address).then(response => {
@@ -91,6 +84,22 @@ class App extends React.Component {
 			})
 		})
 	}
+
+  getExitingFrom = address => {
+		const { rootChain } = this.state;
+		getExitingFrom(address, rootChain).then(res => {
+		  console.log(res)
+      this.setState({ myExitingTokens: res })
+    })
+	}
+
+  getExitedFrom = address => {
+    const { rootChain } = this.state;
+    getExitedFrom(address, rootChain).then(res => {
+      console.log(res)
+      this.setState({ myExitedTokens: res })
+    })
+  }
 
 	approveCryptoMons = () => {
 		const { cryptoMons, vmc } = this.state;
@@ -182,7 +191,7 @@ class App extends React.Component {
 	}
 
 	render() {
-		const { rootChain, cryptoMons, vmc, deposits, myCryptoMons, myPlasmaTokens } = this.state;
+		const { rootChain, cryptoMons, vmc, deposits, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens } = this.state;
 		return (
 			<React.Fragment>
 				<Title text="Hello World!" />
@@ -218,14 +227,21 @@ class App extends React.Component {
 						<button onClick={() => this.exitToken(token)}>Exit</button>
 					</div>
 				))}
-				<p>Exiting Tokens:</p>
-				{myPlasmaTokens.map(token => (
-					<div key={token}>
-						<p style={{ display: "inline" }}>{token}</p>
-						<button onClick={() => this.finalizeExit(token)}>Finalize Exit</button>
-						<button onClick={() => this.withdraw(token)}>Withdraw</button>
-					</div>
-				))}
+        <p>My Exiting Tokens:</p>
+        {myExitingTokens.map(token => (
+          <div key={token}>
+            <p style={{ display: "inline" }}>{token}</p>
+            <button onClick={() => this.finalizeExit(token)}>Finalize Exit</button>
+          </div>
+        ))}
+
+        <p>My Exited Tokens:</p>
+        {myExitedTokens.map(token => (
+          <div key={token}>
+            <p style={{ display: "inline" }}>{token}</p>
+            <button onClick={() => this.withdraw(token)}>Withdraw</button>
+          </div>
+        ))}
 
 			</React.Fragment>
 		)
