@@ -7,7 +7,8 @@ import Title from './Title.jsx';
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, approveCryptoMons, buyCryptoMon, exitToken } from '../services/ethService';
+import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, approveCryptoMons, buyCryptoMon,
+	exitToken, finalizeExit, withdraw } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
 import async from 'async';
@@ -95,6 +96,20 @@ class App extends React.Component {
 		const { cryptoMons, vmc } = this.state;
 
 		approveCryptoMons(cryptoMons, vmc);
+	}
+
+	finalizeExit = token => {
+		const { rootChain } = this.state;
+		finalizeExit(rootChain, token).then(response => {
+			console.log("Finalized exit: " + response);
+		}).catch(console.error);
+	}
+
+	withdraw = token => {
+		const { rootChain } = this.state;
+		withdraw(rootChain, token).then(response => {
+			console.log("Withdraw exit: " + response);
+		}).catch(console.error);
 	}
 
 	exitToken = token => {
@@ -201,6 +216,14 @@ class App extends React.Component {
 							placeholder="Address" />
 						<button onClick={() => this.transferInPlasma(token)}>Transfer</button>
 						<button onClick={() => this.exitToken(token)}>Exit</button>
+					</div>
+				))}
+				<p>Exiting Tokens:</p>
+				{myPlasmaTokens.map(token => (
+					<div key={token}>
+						<p style={{ display: "inline" }}>{token}</p>
+						<button onClick={() => this.finalizeExit(token)}>Finalize Exit</button>
+						<button onClick={() => this.withdraw(token)}>Withdraw</button>
 					</div>
 				))}
 

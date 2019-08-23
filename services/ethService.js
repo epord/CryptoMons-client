@@ -39,6 +39,30 @@ export const getCryptoMonsFrom = (address, cryptoMons) => {
 	});
 }
 
+export const finalizeExit = (rootChain, slot) => {
+	const rootChainAddress = rootChain.address;
+	const slotBN = web3.toBigNumber(slot);
+
+	return new Promise((resolve, reject) => {
+		web3.eth.contract(rootChain.abi).at(rootChainAddress).finalizeExit(slotBN, (err, res) => {
+			if (err) return reject(err);
+			resolve(res);
+		})
+	});
+}
+
+export const withdraw = (rootChain, slot) => {
+	const rootChainAddress = rootChain.address;
+	const slotBN = web3.toBigNumber(slot);
+
+	return new Promise((resolve, reject) => {
+		web3.eth.contract(rootChain.abi).at(rootChainAddress).withdraw(slotBN, (err, res) => {
+			if (err) return reject(err);
+			resolve(res);
+		})
+	});
+}
+
 export const approveCryptoMons = (cryptoMons, vmc) => {
 
 	const cryptoMonsAddress = cryptoMons.address;
