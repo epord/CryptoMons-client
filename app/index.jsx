@@ -7,7 +7,7 @@ import Title from './Title.jsx';
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-import { depositToPlasma, getDepositsFrom, getCryptoMonsFrom, getExitingFrom, getExitedFrom, approveCryptoMons, buyCryptoMon,
+import { depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, approveCryptoMons, buyCryptoMon,
 	exitToken, finalizeExit, withdraw } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
@@ -17,13 +17,12 @@ class App extends React.Component {
 
 	constructor(props) {
 		super(props)
-		this.state = { deposits: [], myCryptoMons: [], myPlasmaTokens: [], myExitingTokens: [], myExitedTokens: [] }
+		this.state = { myCryptoMons: [], myPlasmaTokens: [], myExitingTokens: [], myExitedTokens: [] }
 	}
 
 	componentDidMount = () => {
 		this.loadContracts(() => {
 			this.getCryptoMonsFrom(web3.eth.defaultAccount);
-			this.getDepositsFrom(web3.eth.defaultAccount);
 			this.getPlasmaTokensFrom(web3.eth.defaultAccount);
 			this.getExitingFrom(web3.eth.defaultAccount);
 			this.getExitedFrom(web3.eth.defaultAccount);
@@ -56,16 +55,7 @@ class App extends React.Component {
 
 		depositToPlasma(token, cryptoMons, rootChain).then(() => {
 			this.getCryptoMonsFrom(web3.eth.defaultAccount);
-			this.getDepositsFrom(web3.eth.defaultAccount);
 			this.getPlasmaTokensFrom(web3.eth.defaultAccount);
-		}).catch(console.error);
-	}
-
-	getDepositsFrom = address => {
-		const { rootChain } = this.state;
-
-		getDepositsFrom(address, rootChain).then(res => {
-			this.setState({ deposits: res.map(deposit => deposit.args.slot.toFixed()) })
 		}).catch(console.error);
 	}
 
@@ -203,10 +193,7 @@ class App extends React.Component {
 				<button onClick={this.buyCryptoMon}>Buy CryptoMon</button>
 				<button onClick={this.approveCryptoMons}>Approve</button>
 
-				<button onClick={() => this.getDepositsFrom(web3.eth.defaultAccount)}>Get my deposits</button>
 				<button onClick={() => this.getCryptoMonsFrom(web3.eth.defaultAccount)}>Get my CryptoMons</button>
-				<p>Deposits:</p>
-				{deposits.map(deposit => <p key={deposit}>{deposit}</p>)}
 				<p>My CryptoMons:</p>
 				{myCryptoMons.map(token => (
 					<div key={token}>

@@ -17,18 +17,6 @@ export const depositToPlasma = (token, cryptoMons, rootChain) => {
 	})
 }
 
-export const getDepositsFrom = (address, rootChain)  => {
-	const rootChainAddress = rootChain.address;
-
-	return new Promise((resolve, reject) => {
-		web3.eth.contract(rootChain.abi).at(rootChainAddress).Deposit({ from: address }, { fromBlock: 0, toBlock: 'latest' })
-			.get((err, res) => {
-				if (err) return reject(err)
-				resolve(res);
-			})
-	})
-}
-
 export const getExitingFrom = (address, rootChain)  => {
 	const rootChainAddress = rootChain.address;
 	const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
