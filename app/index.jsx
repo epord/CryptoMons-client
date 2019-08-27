@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 import Title from './Title.jsx';
+import Hack from './Hack.jsx';
 
 import "core-js/stable";
 import "regenerator-runtime/runtime";
@@ -260,7 +261,9 @@ class App extends React.Component {
             <p style={{ display: "inline" }}>{token}</p>
             <button onClick={() => this.withdraw(token)}>Withdraw</button>
           </div>
-        ))}
+				))}
+
+				<Hack />
 
 			</React.Fragment>
 		)

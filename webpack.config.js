@@ -2,9 +2,8 @@ var path = require('path');
 var HtmlWebpackPlugin =  require('html-webpack-plugin');
 const webpack = require("webpack");
 
-require('dotenv').config()
 console.log('Loading process.env')
-console.log(process.env)
+require('dotenv').config()
 
 const env = Object.keys(process.env).reduce((memo, key) => {
   memo[key] = JSON.stringify(process.env[key]);
