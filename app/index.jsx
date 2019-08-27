@@ -112,7 +112,6 @@ class App extends React.Component {
   getExitingFrom = address => {
 		const { rootChain } = this.state;
 		getExitingFrom(address, rootChain).then(res => {
-		  console.log(res)
       this.setState({ myExitingTokens: res })
     })
 	}
@@ -120,7 +119,6 @@ class App extends React.Component {
   getExitedFrom = address => {
     const { rootChain } = this.state;
     getExitedFrom(address, rootChain).then(res => {
-      console.log(res)
       this.setState({ myExitedTokens: res })
     })
 	}

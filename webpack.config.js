@@ -32,10 +32,14 @@ module.exports = {
             }
         ]
     },
+    node: { fs: 'empty' },
     mode:'development',
     plugins : [
       new HtmlWebpackPlugin ({
           template : 'app/index.html'
+      }),
+      new webpack.DefinePlugin({
+        "process.env": env
       })
     ]
 

@@ -77,12 +77,16 @@ export const subscribeToWithdrew = (rootChain, address, cb) => {
 	subscribeToEvent("Withdrew", {owner: address}, rootChain, cb)
 }
 
-export const getChallengeable = async (address, rootChain) => {
-	const response = await fetch(`${process.env.API_URL}/api/tokens/owned-by/${address}?exiting=true`);
-	const res = await response.json();
-	const slotFilter = { slot: res };
-	return getExitingTokens(slotFilter, rootChain).then(filteredExits => {
-		return filteredExits.filter(e => e.args.owner.toLowerCase() !== address.toLowerCase()).map(e=> e.args.slot.toFixed());
+export const getChallengeable = (address, rootChain) => {
+  return new Promise((resolve, reject) => {
+		fetch(`${process.env.API_URL}/api/tokens/owned-by/${address}?exiting=true`).then(response => {
+			response.json().then(res => {
+				const slotFilter = { slot: res };
+				getExitingTokens(slotFilter, rootChain).then(filteredExits => {
+					resolve(filteredExits.filter(e => e.args.owner.toLowerCase() !== address.toLowerCase()).map(e=> e.args.slot.toFixed()));
+				});
+			});
+		}).catch(reject);
 	});
 }
 
