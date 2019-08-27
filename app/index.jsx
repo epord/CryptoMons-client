@@ -13,8 +13,6 @@ import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit
 	exitToken, finalizeExit, withdraw } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
-import async from 'async';
-
 class App extends React.Component {
 
 	constructor(props) {
@@ -34,7 +32,7 @@ class App extends React.Component {
 
 
 	loadContracts = cb => {
-		fetch('http://localhost:8082/api/contracts').then(response => {
+		fetch(`${process.env.API_URL}/api/contracts`).then(response => {
 			response.json().then(res => {
 				this.setState({
 					rootChain: { ...res.RootChain, address: res.RootChain.networks['5777'].address },
@@ -102,7 +100,7 @@ class App extends React.Component {
 	};
 
 	getPlasmaTokensFrom = address => {
-		fetch('http://localhost:8082/api/tokens/owned-by/' + address).then(response => {
+		fetch(`${process.env.API_URL}/api/tokens/owned-by/${address}`).then(response => {
 			response.json().then(res => {
 				this.setState({ myPlasmaTokens: res })
 			})
@@ -147,7 +145,7 @@ class App extends React.Component {
 
 	exitToken = token => {
 		console.log("exiting token")
-		fetch(`http://localhost:8082/api/exit/data/${token}`).then(response => {
+		fetch(`${process.env.API_URL}/api/exit/data/${token}`).then(response => {
 			response.json().then(exitData => {
 				console.log("calling root chain exit")
 				const { rootChain } = this.state;
@@ -178,7 +176,7 @@ class App extends React.Component {
 		const receiverAddress = this.state[fieldKey];
 		console.log(`transfering ${token} to ${receiverAddress}`)
 
-		fetch(`http://localhost:8082/api/tokens/${token}/last-transaction`).then(response => {
+		fetch(`${process.env.API_URL}/api/tokens/${token}/last-transaction`).then(response => {
 			response.json().then(lastTransaction => {
 
 				const hash = generateTransactionHash(token, lastTransaction.minedBlock, receiverAddress)
@@ -193,7 +191,7 @@ class App extends React.Component {
 						"signature": signature
 					};
 
-					fetch('http://localhost:8082/api/transactions/create', {
+					fetch(`${process.env.API_URL}/api/transactions/create`, {
 						method: 'POST',
 						body: JSON.stringify(body),
 						headers: {

@@ -1,5 +1,15 @@
 var path = require('path');
 var HtmlWebpackPlugin =  require('html-webpack-plugin');
+const webpack = require("webpack");
+
+require('dotenv').config()
+console.log('Loading process.env')
+console.log(process.env)
+
+const env = Object.keys(process.env).reduce((memo, key) => {
+  memo[key] = JSON.stringify(process.env[key]);
+  return memo;
+}, {});
 
 module.exports = {
     entry : './app/index.jsx',
@@ -23,11 +33,15 @@ module.exports = {
             }
         ]
     },
+    node: { fs: 'empty' },
     mode:'development',
     plugins : [
-        new HtmlWebpackPlugin ({
-            template : 'app/index.html'
-        })
+      new HtmlWebpackPlugin ({
+          template : 'app/index.html'
+      }),
+      new webpack.DefinePlugin({
+        "process.env": env
+      })
     ]
 
 }
