@@ -158,7 +158,8 @@ class App extends React.Component {
 				}
 
 				if (!exitData.signature) {
-					console.log("signing")
+				  //TODO popup explicando que se esta firmando
+					console.log("signing");
 					sign(exitData.lastTransactionHash).then(signature => {
 						console.log("signed")
 						exitData.signature = signature;
@@ -263,7 +264,7 @@ class App extends React.Component {
           </div>
 				))}
 
-				<Hack />
+				<Hack rootChain={rootChain}/>
 
 			</React.Fragment>
 		)

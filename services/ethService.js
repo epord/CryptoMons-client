@@ -200,3 +200,21 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 		})
 	})
 }
+
+export const challengeAfter = (rootChain, {slot, challengingBlockNumber, challengingTransaction, proof, signature}) => {
+	const rootChainAddress = rootChain.address;
+	const slotBN = web3.toBigNumber(slot);
+	const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
+
+	console.log({slot, challengingBlockNumber, challengingTransaction, proof, signature})
+
+	return new Promise((resolve, reject) => {
+		web3.eth.contract(rootChain.abi).at(rootChainAddress)
+			.challengeAfter(slotBN, challengingBlockNumberBN, challengingTransaction, proof, signature, {
+				from: web3.eth.accounts[0]
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+			})
+	})
+}
