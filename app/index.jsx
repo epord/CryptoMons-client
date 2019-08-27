@@ -11,7 +11,7 @@ import "regenerator-runtime/runtime";
 import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToFinalizedExit, subscribeToWithdrew,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, buyCryptoMon,
-	exitToken, finalizeExit, withdraw, getChallengeable } from '../services/ethService';
+	exitToken, finalizeExit, withdraw, getChallengeable, getExit } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
 class App extends React.Component {
@@ -210,7 +210,9 @@ class App extends React.Component {
 	};
 
 	challenge = token => {
+		const { rootChain } = this.state;
 		console.log(`Challenging ${token}`)
+		getExit(token, rootChain)
 	}
 
 	onTransferAddressChanged = token => event => {

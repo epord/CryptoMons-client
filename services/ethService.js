@@ -11,7 +11,7 @@ import { zip, unique } from '../utils/utils'
 
 		const slotsToDic = (arr) => {
 			return arr.reduce((o, e) => {
-				o[e.slot] = true;
+				o[e.args.slot] = true;
 				return o;
 			}, {})
 		};
@@ -25,7 +25,7 @@ import { zip, unique } from '../utils/utils'
 				if(err) return reject(err);
 				const coinResetsObject = slotsToDic(result.coinResets);
 				const finalizedExitsObject = slotsToDic(result.finalizedExits);
-				const filteredExits = result.startedExits.filter(e => !coinResetsObject[e.slot] && !finalizedExitsObject[e.slot]);
+				const filteredExits = result.startedExits.filter(e => !coinResetsObject[e.args.slot] && !finalizedExitsObject[e.args.slot]);
 				resolve(filteredExits)
 			});
 		});
@@ -109,8 +109,6 @@ export const getExitedFrom = (address, rootChain)  => {
       finalizedExits: cb => rcContract.FinalizedExit(ownerFilter, blockFilter).get(cb),
       withdrewExits: cb => rcContract.Withdrew(ownerFilter, blockFilter).get(cb)
     }, (err, result) => {
-
-      console.log(result)
       if(err) return reject(err);
       const withdrewExitsObject = slotsToDic(result.withdrewExits);
       const filteredExits = result.finalizedExits.filter(e => !withdrewExitsObject[e.slot]);
@@ -119,6 +117,22 @@ export const getExitedFrom = (address, rootChain)  => {
   });
 };
 
+export const getExit = (slot, rootChain) => {
+  const rootChainAddress = rootChain.address;
+	const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
+
+
+  return new Promise((resolve, reject) => {
+		rcContract.getExit(slot, async (err, res) => {
+			if (err) return reject(err);
+			const exitBlock = res[2];
+			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${exitBlock}`);
+			const JSONres = await response.json();
+			const challenge = await challengeAfter(rootChain, JSONres);
+			resolve(challenge);
+		})
+	})
+}
 
 export const getCryptoMonsFrom = (address, cryptoMons) => {
   const cryptoMonsAddress = cryptoMons.address;
@@ -199,8 +213,6 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 			blocks[1] ? web3.toBigNumber(blocks[1]) : web3.toBigNumber(0)
 		]
 
-		console.log({slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks})
-
 	return new Promise((resolve, reject) => {
 		web3.eth.contract(rootChain.abi).at(rootChainAddress)
 		.startExit(slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks, {
@@ -217,8 +229,6 @@ export const challengeAfter = (rootChain, {slot, challengingBlockNumber, challen
 	const rootChainAddress = rootChain.address;
 	const slotBN = web3.toBigNumber(slot);
 	const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
-
-	console.log({slot, challengingBlockNumber, challengingTransaction, proof, signature})
 
 	return new Promise((resolve, reject) => {
 		web3.eth.contract(rootChain.abi).at(rootChainAddress)
