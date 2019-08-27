@@ -2,6 +2,35 @@ import web3Utils from 'web3-utils';
 import async from 'async'
 import { zip, unique } from '../utils/utils'
 
+
+	/// TODO: it does takes into account (and shouldn't) tokens that have emmited events in the following order: StartedExit(), CoinReset()
+	const getExitingTokens = (filter, rootChain) => {
+		const rootChainAddress = rootChain.address;
+		const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
+		const blockFilter = { fromBlock: 0, toBlock: 'latest' };
+
+		const slotsToDic = (arr) => {
+			return arr.reduce((o, e) => {
+				o[e.slot] = true;
+				return o;
+			}, {})
+		};
+
+		return new Promise((resolve, reject) => {
+			async.parallel({
+				startedExits: cb => rcContract.StartedExit(filter, blockFilter).get(cb),
+				coinResets: cb => rcContract.CoinReset(filter, blockFilter).get(cb),
+				finalizedExits: cb => rcContract.FinalizedExit(filter, blockFilter).get(cb)
+			}, (err, result) => {
+				if(err) return reject(err);
+				const coinResetsObject = slotsToDic(result.coinResets);
+				const finalizedExitsObject = slotsToDic(result.finalizedExits);
+				const filteredExits = result.startedExits.filter(e => !coinResetsObject[e.slot] && !finalizedExitsObject[e.slot]);
+				resolve(filteredExits)
+			});
+		});
+	}
+
 export const depositToPlasma = (token, cryptoMons, rootChain) => {
 	const cryptoMonsAddress = cryptoMons.address;
 	const rootChainAddress = rootChain.address;
@@ -48,35 +77,18 @@ export const subscribeToWithdrew = (rootChain, address, cb) => {
 	subscribeToEvent("Withdrew", {owner: address}, rootChain, cb)
 }
 
+export const getChallengeable = async (address, rootChain) => {
+	const response = await fetch(`${process.env.API_URL}/api/tokens/owned-by/${address}?exiting=true`);
+	const res = await response.json();
+	const slotFilter = { slot: res };
+	return getExitingTokens(slotFilter, rootChain).then(filteredExits => {
+		return filteredExits.filter(e => e.args.owner.toLowerCase() !== address.toLowerCase()).map(e=> e.args.slot.toFixed());
+	});
+}
 
 export const getExitingFrom = (address, rootChain)  => {
-	const rootChainAddress = rootChain.address;
-	const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
 	const ownerFilter = { owner: address }
-	const blockFilter = { fromBlock: 0, toBlock: 'latest' };
-
-	const slotsToDic = (arr) => {
-		return arr.reduce((o, e) => {
-			o[e.slot] = true;
-			return o;
-		}, {})
-	};
-
-	return new Promise((resolve, reject) => {
-		async.parallel({
-			startedExits: cb => rcContract.StartedExit(ownerFilter, blockFilter).get(cb),
-			coinResets: cb => rcContract.CoinReset(ownerFilter, blockFilter).get(cb),
-			finalizedExits: cb => rcContract.FinalizedExit(ownerFilter, blockFilter).get(cb)
-			}, (err, result) => {
-
-		  console.log(result)
-			if(err) return reject(err);
-			const coinResetsObject = slotsToDic(result.coinResets);
-			const finalizedExitsObject = slotsToDic(result.finalizedExits);
-			const filteredExits = result.startedExits.filter(e => !coinResetsObject[e.slot] && !finalizedExitsObject[e.slot]);
-			resolve(filteredExits.map(e=> e.args.slot.toFixed()))
-		});
-	});
+	return getExitingTokens(ownerFilter, rootChain).then(filteredExits => filteredExits.map(e=> e.args.slot.toFixed()));
 };
 
 export const getExitedFrom = (address, rootChain)  => {

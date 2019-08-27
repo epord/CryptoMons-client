@@ -10,15 +10,15 @@ import "regenerator-runtime/runtime";
 
 import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToFinalizedExit, subscribeToWithdrew,
-	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, approveCryptoMons, buyCryptoMon,
-	exitToken, finalizeExit, withdraw } from '../services/ethService';
+	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, buyCryptoMon,
+	exitToken, finalizeExit, withdraw, getChallengeable } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
 class App extends React.Component {
 
 	constructor(props) {
 		super(props)
-		this.state = { myCryptoMons: [], myPlasmaTokens: [], myExitingTokens: [], myExitedTokens: [] }
+		this.state = { myCryptoMons: [], myPlasmaTokens: [], myExitingTokens: [], myExitedTokens: [], challengeableTokens: [] }
 	}
 
 	componentDidMount = () => {
@@ -28,6 +28,7 @@ class App extends React.Component {
 			this.getPlasmaTokensFrom(web3.eth.defaultAccount);
 			this.getExitingFrom(web3.eth.defaultAccount);
 			this.getExitedFrom(web3.eth.defaultAccount);
+			this.getChallengeable(web3.eth.defaultAccount)
 		});
 	}
 
@@ -122,12 +123,11 @@ class App extends React.Component {
       console.log(res)
       this.setState({ myExitedTokens: res })
     })
-  }
+	}
 
-	approveCryptoMons = () => {
-		const { cryptoMons, vmc } = this.state;
-
-		approveCryptoMons(cryptoMons, vmc);
+	getChallengeable = address => {
+		const { rootChain } = this.state;
+		getChallengeable(address, rootChain).then(res => this.setState({ challengeableTokens: res }));
 	}
 
 	finalizeExit = token => {
@@ -209,13 +209,17 @@ class App extends React.Component {
 		});
 	};
 
+	challenge = token => {
+		console.log(`Challenging ${token}`)
+	}
+
 	onTransferAddressChanged = token => event => {
 		const fieldKey = `transferAddress${token}`;
 		this.setState({ [fieldKey]: event.target.value });
 	}
 
 	render() {
-		const { rootChain, cryptoMons, vmc, deposits, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens } = this.state;
+		const { rootChain, cryptoMons, vmc, deposits, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens, challengeableTokens } = this.state;
 		return (
 			<React.Fragment>
 				<Title text="Hello World!" />
@@ -225,7 +229,6 @@ class App extends React.Component {
 				<p>CryptoMon address: {cryptoMons && cryptoMons.address}</p>
 				<p>VMC address: {vmc && vmc.address}</p>
 				<button onClick={this.buyCryptoMon}>Buy CryptoMon</button>
-				<button onClick={this.approveCryptoMons}>Approve</button>
 
 				<button onClick={() => this.getCryptoMonsFrom(web3.eth.defaultAccount)}>Get my CryptoMons</button>
 				<p>My CryptoMons:</p>
@@ -263,6 +266,16 @@ class App extends React.Component {
             <button onClick={() => this.withdraw(token)}>Withdraw</button>
           </div>
 				))}
+
+        <p>Challengeable tokens:</p>
+        {challengeableTokens.map(token => (
+          <div key={token}>
+            <p style={{ display: "inline" }}>{token}</p>
+            <button onClick={() => this.challenge(token)}>Challenge</button>
+          </div>
+				))}
+
+
 
 				<Hack rootChain={rootChain}/>
 
