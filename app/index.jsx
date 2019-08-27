@@ -64,7 +64,7 @@ class App extends React.Component {
 			console.log("Started Exit - Slot: " + r.args.slot.toFixed())
 		}));
 
-		subscribeToSubmittedBlocks(rootChain, address,(r => {
+		subscribeToSubmittedBlocks(rootChain,(r => {
 			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
 		}));
 
