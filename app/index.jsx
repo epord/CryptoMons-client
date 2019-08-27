@@ -7,7 +7,9 @@ import Title from './Title.jsx';
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-import { depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, approveCryptoMons, buyCryptoMon,
+import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
+	subscribeToFinalizedExit, subscribeToWithdrew,
+	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, approveCryptoMons, buyCryptoMon,
 	exitToken, finalizeExit, withdraw } from '../services/ethService';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
@@ -22,6 +24,7 @@ class App extends React.Component {
 
 	componentDidMount = () => {
 		this.loadContracts(() => {
+			this.subscribeToEvents(web3.eth.defaultAccount);
 			this.getCryptoMonsFrom(web3.eth.defaultAccount);
 			this.getPlasmaTokensFrom(web3.eth.defaultAccount);
 			this.getExitingFrom(web3.eth.defaultAccount);
@@ -40,6 +43,37 @@ class App extends React.Component {
 				}, cb)
 			})
 		})
+	}
+
+	subscribeToEvents = address => {
+		const { rootChain } = this.state;
+
+		subscribeToDeposits(rootChain, address,(r => {
+			console.log("DEPOSIT - Slot: " + r.args.slot.toFixed())
+		}));
+
+		subscribeToCoinReset(rootChain, address,(r => {
+			console.log("Coin Reset - Slot: " + r.args.slot.toFixed())
+		}));
+
+		subscribeToFinalizedExit(rootChain, address,(r => {
+			console.log("Finalized Exit - Slot: " + r.args.slot.toFixed())
+		}));
+
+		subscribeToStartedExit(rootChain, address,(r => {
+			console.log("Started Exit - Slot: " + r.args.slot.toFixed())
+		}));
+
+		subscribeToSubmittedBlocks(rootChain, address,(r => {
+			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
+		}));
+
+		subscribeToWithdrew(rootChain, address,(r => {
+			console.log("Withdrawal - Slot: " + r.args.slot.toFixed())
+		}));
+
+
+
 	}
 
 	buyCryptoMon = () => {

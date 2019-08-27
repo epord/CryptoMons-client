@@ -1,7 +1,6 @@
 import web3Utils from 'web3-utils';
 import async from 'async'
 import { zip, unique } from '../utils/utils'
-import { BN } from 'ethereumjs-util';
 
 export const depositToPlasma = (token, cryptoMons, rootChain) => {
 	const cryptoMonsAddress = cryptoMons.address;
@@ -16,6 +15,39 @@ export const depositToPlasma = (token, cryptoMons, rootChain) => {
 		})
 	})
 }
+
+const subscribeToEvent = (event, filter, rootChain, cb) => {
+	const rcContract = web3.eth.contract(rootChain.abi).at(rootChain.address)
+	rcContract[event](filter).watch((err, res) => {
+		if(err) return console.error(err)
+		cb(res)
+	})
+}
+
+export const subscribeToDeposits = (rootChain, address, cb) => {
+	subscribeToEvent("Deposit", {from: address}, rootChain, cb)
+}
+
+export const subscribeToSubmittedBlocks = (rootChain, cb) => {
+	subscribeToEvent("SubmittedBlock", {}, rootChain, cb)
+}
+
+export const subscribeToStartedExit = (rootChain, address, cb) => {
+	subscribeToEvent("StartedExit", {owner: address}, rootChain, cb)
+}
+
+export const subscribeToCoinReset = (rootChain, address, cb) => {
+	subscribeToEvent("CoinReset", {owner: address}, rootChain, cb)
+}
+
+export const subscribeToFinalizedExit = (rootChain, address, cb) => {
+	subscribeToEvent("FinalizedExit", {owner: address}, rootChain, cb)
+}
+
+export const subscribeToWithdrew = (rootChain, address, cb) => {
+	subscribeToEvent("Withdrew", {owner: address}, rootChain, cb)
+}
+
 
 export const getExitingFrom = (address, rootChain)  => {
 	const rootChainAddress = rootChain.address;
