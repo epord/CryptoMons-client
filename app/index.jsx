@@ -11,7 +11,8 @@ import "regenerator-runtime/runtime";
 import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToFinalizedExit, subscribeToWithdrew,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, buyCryptoMon,
-	exitToken, finalizeExit, withdraw, getChallengeable, getExit } from '../services/ethService';
+	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
+	challengeBetween } from '../services/ethService';
 import { transferInPlasma } from '../services/plasmaServices';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
@@ -176,15 +177,27 @@ class App extends React.Component {
 		const fieldKey = `transferAddress${token}`;
 		const receiverAddress = this.state[fieldKey];
 		console.log(`transfering ${token} to ${receiverAddress}`)
-    transferInPlasma(token).then(() => console.log("Successful Submission, wait for mining"))
+    transferInPlasma(token, receiverAddress).then(() => console.log("Successful Submission, wait for mining"))
     .catch(console.error)
 
 	};
 
-	challenge = token => {
+	challengeBefore = token => {
 		const { rootChain } = this.state;
-		console.log(`Challenging ${token}`)
-		getExit(token, rootChain)
+		console.log(`Challenging Before: ${token}`)
+		challengeBefore(token, rootChain);
+	}
+
+	challengeBetween = token => {
+		const { rootChain } = this.state;
+		console.log(`Challenging Between: ${token}`)
+		challengeBetween(token, rootChain);
+	}
+
+	challengeAfter = token => {
+		const { rootChain } = this.state;
+		console.log(`Challenging After: ${token}`)
+		challengeAfter(rootChain, exitData);
 	}
 
 	onTransferAddressChanged = token => event => {
@@ -245,7 +258,9 @@ class App extends React.Component {
         {challengeableTokens.map(token => (
           <div key={token}>
             <p style={{ display: "inline" }}>{token}</p>
-            <button onClick={() => this.challenge(token)}>Challenge</button>
+            <button onClick={() => this.challengeBefore(token)}>Challenge Before</button>
+            <button onClick={() => this.challengeBetween(token)}>Challenge Between</button>
+            <button onClick={() => this.challengeAfter(token)}>Challenge After</button>
           </div>
 				))}
 

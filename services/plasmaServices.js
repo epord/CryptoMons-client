@@ -1,6 +1,6 @@
 import {generateTransactionHash, sign} from "../utils/cryptoUtils";
 
-export const transferInPlasma = (token) => {
+export const transferInPlasma = (token, receiverAddress) => {
 
   return new Promise((resolve, reject) => {
     fetch(`${process.env.API_URL}/api/tokens/${token}/last-transaction`).then(response => {

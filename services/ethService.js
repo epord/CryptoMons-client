@@ -1,6 +1,7 @@
 import web3Utils from 'web3-utils';
 import async from 'async'
 import { zip, unique } from '../utils/utils'
+import { sign } from '../utils/cryptoUtils'
 
 
 	/// TODO: it does takes into account (and shouldn't) tokens that have emmited events in the following order: StartedExit(), CoinReset()
@@ -121,10 +122,9 @@ export const getExitedFrom = (address, rootChain)  => {
   });
 };
 
-export const getExit = (slot, rootChain) => {
+export const challengeAfter = (slot, rootChain) => {
   const rootChainAddress = rootChain.address;
 	const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
-
 
   return new Promise((resolve, reject) => {
 		rcContract.getExit(slot, async (err, res) => {
@@ -132,9 +132,79 @@ export const getExit = (slot, rootChain) => {
 			if (err) return reject(err);
 			const exitBlock = res[2];
 			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${exitBlock}`);
-			const JSONres = await response.json();
-			const challenge = await challengeAfter(rootChain, JSONres);
-			resolve(challenge);
+			const exitData = await response.json();
+
+			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
+			const slotBN = web3.toBigNumber(slot);
+			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
+
+			web3.eth.contract(rootChain.abi).at(rootChainAddress)
+				.challengeAfter(slotBN, challengingBlockNumberBN, challengingTransaction, proof, signature, {
+					from: web3.eth.accounts[0]
+				}, (err, res) => {
+					if (err) return reject(err)
+					resolve(res);
+				})
+		})
+	})
+}
+
+export const challengeBetween = (slot, rootChain) => {
+  const rootChainAddress = rootChain.address;
+	const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
+
+  return new Promise((resolve, reject) => {
+		rcContract.getExit(slot, async (err, res) => {
+			//TODO this fetch should not be done here
+			if (err) return reject(err);
+			const parentBlock = res[1];
+			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${parentBlock}`);
+			const exitData = await response.json();
+
+			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
+			const slotBN = web3.toBigNumber(slot);
+			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
+
+			web3.eth.contract(rootChain.abi).at(rootChainAddress)
+				.challengeAfter(slotBN, challengingBlockNumberBN, challengingTransaction, proof, signature, {
+					from: web3.eth.accounts[0]
+				}, (err, res) => {
+					if (err) return reject(err)
+					resolve(res);
+				})
+		})
+	})
+}
+
+export const challengeBefore = (slot, rootChain) => {
+  const rootChainAddress = rootChain.address;
+	const rcContract = web3.eth.contract(rootChain.abi).at(rootChainAddress)
+
+  return new Promise((resolve, reject) => {
+		rcContract.getExit(slot, async (err, res) => {
+			//TODO this fetch should not be done here
+			if (err) return reject(err);
+			const parentBlock = res[1];
+			const response = await fetch(`${process.env.API_URL}/api/challenges/before?slot=${slot}&parentBlock=${parentBlock}`);
+			const exitData = await response.json();
+
+			const { challengingBlockNumber, challengingTransaction, proof} = exitData;
+			const slotBN = web3.toBigNumber(slot);
+			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
+
+			if (!exitData.signature) {
+				//TODO popup explicando que se esta firmando
+				exitData.signature = await sign(exitData.hash)
+			}
+
+			web3.eth.contract(rootChain.abi).at(rootChainAddress)
+				.challengeBefore(slotBN, challengingTransaction, proof, exitData.signature, challengingBlockNumberBN, {
+					from: web3.eth.accounts[0],
+					value: web3Utils.toWei('0.1', 'ether')
+				}, (err, res) => {
+					if (err) return reject(err)
+					resolve(res);
+				})
 		})
 	})
 }
@@ -227,21 +297,5 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 			if (err) return reject(err)
 			resolve(res);
 		})
-	})
-}
-
-export const challengeAfter = (rootChain, {slot, challengingBlockNumber, challengingTransaction, proof, signature}) => {
-	const rootChainAddress = rootChain.address;
-	const slotBN = web3.toBigNumber(slot);
-	const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
-
-	return new Promise((resolve, reject) => {
-		web3.eth.contract(rootChain.abi).at(rootChainAddress)
-			.challengeAfter(slotBN, challengingBlockNumberBN, challengingTransaction, proof, signature, {
-				from: web3.eth.accounts[0]
-			}, (err, res) => {
-				if (err) return reject(err)
-				resolve(res);
-			})
 	})
 }
