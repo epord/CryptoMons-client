@@ -12,6 +12,7 @@ import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit
 	subscribeToFinalizedExit, subscribeToWithdrew,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, getExit } from '../services/ethService';
+import { transferInPlasma } from '../services/plasmaServices';
 import { generateTransactionHash, sign } from '../utils/cryptoUtils';
 
 class App extends React.Component {
@@ -175,36 +176,9 @@ class App extends React.Component {
 		const fieldKey = `transferAddress${token}`;
 		const receiverAddress = this.state[fieldKey];
 		console.log(`transfering ${token} to ${receiverAddress}`)
+    transferInPlasma(token).then(() => console.log("Successful Submission, wait for mining"))
+    .catch(console.error)
 
-		fetch(`${process.env.API_URL}/api/tokens/${token}/last-transaction`).then(response => {
-			response.json().then(lastTransaction => {
-
-				const hash = generateTransactionHash(token, lastTransaction.minedBlock, receiverAddress)
-
-				sign(hash).then(signature => {
-					const body = {
-						"slot": token,
-						"owner": web3.eth.defaultAccount,
-						"recipient": receiverAddress,
-						"hash": hash,
-						"blockSpent": lastTransaction.minedBlock,
-						"signature": signature
-					};
-
-					fetch(`${process.env.API_URL}/api/transactions/create`, {
-						method: 'POST',
-						body: JSON.stringify(body),
-						headers: {
-							'Content-Type': 'application/json'
-						}
-					})
-					.then(response => console.log('Success:', response))
-					.catch(error => console.error('Error:', error));
-
-				})
-				.catch(error => console.error('Error:', error))
-			});
-		});
 	};
 
 	challenge = token => {

@@ -128,6 +128,7 @@ export const getExit = (slot, rootChain) => {
 
   return new Promise((resolve, reject) => {
 		rcContract.getExit(slot, async (err, res) => {
+			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const exitBlock = res[2];
 			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${exitBlock}`);

