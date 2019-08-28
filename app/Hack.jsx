@@ -126,9 +126,9 @@ class Hack extends React.Component {
     const lastTransaction = await ltResponse.json();
 
     console.log("generating overriding fake transaction");
-
+    console.log(lastTransaction)
     const hash = generateTransactionHash(token, lastTransaction.minedBlock, hacker);
-    const sign = await sign(hash1);
+    const signature = await sign(hash);
 
     const body = {
       "slot": token,
@@ -136,16 +136,10 @@ class Hack extends React.Component {
       "recipient": hacker,
       "hash": hash,
       "blockSpent": lastTransaction.minedBlock,
-      "signature": sign
+      "signature": signature
     };
 
-    const data1Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/${transactionHash}/exitData`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const data1Res = await fetch(`${process.env.API_URL}/api/exit/singleData/${transactionHash}`);
     const data1 = await data1Res.json();
 
     const data2Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/create`, {
