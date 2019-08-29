@@ -11,7 +11,6 @@ class Hack extends React.Component {
 
   onSlotChanged = event => {
     let hackSlot = event.target.value;
-    console.log(hackSlot)
     this.setState({ hackSlot: hackSlot });
 
     fetch(`${process.env.API_URL}/api/tokens/${hackSlot}/history`).then(response => {
@@ -31,9 +30,7 @@ class Hack extends React.Component {
 
     if (!exitData.signature) {
       //TODO popup explicando que se esta firmando
-      console.log("signing");
       sign(exitData.lastTransactionHash).then(signature => {
-        console.log("signed")
         exitData.signature = signature;
         cb(exitData);
       })
@@ -71,11 +68,9 @@ class Hack extends React.Component {
     });
 
     const data1 = await data1Res.json();
-    console.log(data1);
 
     const hash2 = generateTransactionHash(token, data1.block.blockNumber, hacker);
     const sign2 = await sign(hash2);
-
     const body2 = {
       "slot": token,
       "owner": hacker,
@@ -109,8 +104,6 @@ class Hack extends React.Component {
       ]
     };
 
-    console.log(exitData);
-
     exitToken(this.props.rootChain, exitData).then(response => {
       console.log("Exit successful: ", response);
     }).catch(console.error);
@@ -125,8 +118,9 @@ class Hack extends React.Component {
     const ltResponse = await fetch(`${process.env.API_URL}/api/transactions/${transactionHash}`);
     const lastTransaction = await ltResponse.json();
 
-    console.log("generating overriding fake transaction");
-    console.log(lastTransaction)
+    const data1Res = await fetch(`${process.env.API_URL}/api/exit/singleData/${transactionHash}`);
+    const data1 = await data1Res.json();
+
     const hash = generateTransactionHash(token, lastTransaction.minedBlock, hacker);
     const signature = await sign(hash);
 
@@ -138,9 +132,6 @@ class Hack extends React.Component {
       "blockSpent": lastTransaction.minedBlock,
       "signature": signature
     };
-
-    const data1Res = await fetch(`${process.env.API_URL}/api/exit/singleData/${transactionHash}`);
-    const data1 = await data1Res.json();
 
     const data2Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/create`, {
       method: 'POST',
@@ -154,19 +145,15 @@ class Hack extends React.Component {
     const exitData = {
       slot: web3.toBigNumber(token),
       prevTxBytes: data1.bytes,
-      prevTxInclusionProof: data1.proof,
       exitingTxBytes: data2.exitData.bytes,
+      prevTxInclusionProof: data1.proof,
       exitingTxInclusionProof: data2.exitData.proof,
       signature: data2.exitData.signature,
-      prevTransactionHash: data1.hash,
-      lastTransactionHash: data2.exitData.hash,
       blocks: [
         web3.toBigNumber(data1.block),
         web3.toBigNumber(data2.exitData.block)
       ]
     };
-
-    console.log(exitData);
 
     exitToken(this.props.rootChain, exitData).then(response => {
       console.log("Exit successful: ", response);
@@ -199,11 +186,10 @@ class Hack extends React.Component {
                     from: {event.transaction.owner} -
                     to: {event.transaction.recipient}</p>
                   {event.transaction.recipient.toLowerCase() == web3.eth.defaultAccount.toLowerCase() &&
+                    <div>
                   <button onClick={this.maliciousExit(event.exitData)}>Force Old Exit</button>
-                  }
-
-                  {event.transaction.owner.toLowerCase() == web3.eth.defaultAccount.toLowerCase() &&
                   <button onClick={this.doubleSpend(this.state.hackSlot, event.transaction.hash)}>Create Double Spend Exit</button>
+                    </div>
                   }
                 </div>
               )
