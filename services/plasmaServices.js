@@ -31,3 +31,24 @@ export const transferInPlasma = (token, receiverAddress) => {
     });
   })
 };
+
+const basicGet = async (url) => {
+  return new  Promise(async (resolve, reject) => {
+    const response = await fetch(url);
+    const json = await response.json();
+    resolve(json);
+  });
+};
+
+export const loadContracts = () => {
+  return basicGet(`${process.env.API_URL}/api/contracts`)
+};
+
+
+export const getOwnedTokens = address => {
+  return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}`);
+};
+
+export const getExitData = token => {
+  return basicGet(`${process.env.API_URL}/api/exit/data/${token}`)
+};

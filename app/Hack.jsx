@@ -118,15 +118,15 @@ class Hack extends React.Component {
 	challengeBefore = (token, exitData) => () => {
 		const { rootChain } = this.props;
     console.log(`Challenging Before: ${token}`)
+
     const newExitData = {
       slot: exitData.slot,
-      challengingTransaction: exitData.lastTransactionHash,
+      challengingTransaction: exitData.exitingTxBytes,
       proof: exitData.exitingTxInclusionProof,
       challengingBlockNumber: exitData.blocks[1],
       signature: exitData.signature
     };
-    console.log(exitData)
-    console.log(newExitData)
+
 		challengeBeforeWithExitData(newExitData, rootChain);
   }
 
@@ -194,7 +194,6 @@ class Hack extends React.Component {
         (<div>
             <h4>Fraudulent Non-Existant Transactions</h4>
             <button onClick={this.maliciousTransaction(hackSlot)}>HACK!</button>
-
 
             <h4>History Hack</h4>
             <p>History:</p>

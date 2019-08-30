@@ -13,8 +13,8 @@ import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
 	challengeBetween } from '../services/ethService';
-import { transferInPlasma } from '../services/plasmaServices';
-import { generateTransactionHash, sign } from '../utils/cryptoUtils';
+import { loadContracts, transferInPlasma, getOwnedTokens, getExitData } from '../services/plasmaServices';
+import { sign } from '../utils/cryptoUtils';
 
 class App extends React.Component {
 
@@ -24,28 +24,26 @@ class App extends React.Component {
 	}
 
 	componentDidMount = () => {
-		this.loadContracts(() => {
-			this.subscribeToEvents(web3.eth.defaultAccount);
-			this.getCryptoMonsFrom(web3.eth.defaultAccount);
-			this.getPlasmaTokensFrom(web3.eth.defaultAccount);
-			this.getExitingFrom(web3.eth.defaultAccount);
-			this.getExitedFrom(web3.eth.defaultAccount);
-			this.getChallengeable(web3.eth.defaultAccount)
+		this.ethAccount = web3.eth.defaultAccount;
+		this.loadContracts().then(() => {
+			this.subscribeToEvents(this.ethAccount);
+			this.getCryptoMonsFrom(this.ethAccount);
+			this.getPlasmaTokensFrom(this.ethAccount);
+			this.getExitingFrom(this.ethAccount);
+			this.getExitedFrom(this.ethAccount);
+			this.getChallengeable(this.ethAccount);
 		});
-	}
+	};
 
 
-	loadContracts = cb => {
-		fetch(`${process.env.API_URL}/api/contracts`).then(response => {
-			response.json().then(res => {
-				this.setState({
-					rootChain: { ...res.RootChain, address: res.RootChain.networks['5777'].address },
-					cryptoMons: { ...res.CryptoMons, address: res.CryptoMons.networks['5777'].address },
-					vmc: { ...res.ValidatorManagerContract, address: res.ValidatorManagerContract.networks['5777'].address }
-				}, cb)
-			})
-		})
-	}
+	loadContracts = async () => {
+		const res = await loadContracts();
+		return this.setState({
+			rootChain: { ...res.RootChain, address: res.RootChain.networks['5777'].address },
+			cryptoMons: { ...res.CryptoMons, address: res.CryptoMons.networks['5777'].address },
+			vmc: { ...res.ValidatorManagerContract, address: res.ValidatorManagerContract.networks['5777'].address }
+		});
+	};
 
 	subscribeToEvents = address => {
 		const { rootChain } = this.state;
@@ -73,151 +71,125 @@ class App extends React.Component {
 		subscribeToWithdrew(rootChain, address,(r => {
 			console.log("Withdrawal - Slot: " + r.args.slot.toFixed())
 		}));
-
-
-
-	}
-
-	buyCryptoMon = () => {
-		const { cryptoMons } = this.state;
-
-		buyCryptoMon(cryptoMons).then(res => {
-			this.getCryptoMonsFrom(web3.eth.defaultAccount);
-		}).catch(console.error);
-	}
-
-	depositToPlasma = token => {
-		const { cryptoMons, rootChain } = this.state;
-
-		depositToPlasma(token, cryptoMons, rootChain).then(() => {
-			this.getCryptoMonsFrom(web3.eth.defaultAccount);
-			this.getPlasmaTokensFrom(web3.eth.defaultAccount);
-		}).catch(console.error);
-	}
-
-	getCryptoMonsFrom = address => {
-		const { cryptoMons } = this.state;
-
-		getCryptoMonsFrom(address, cryptoMons).then(res => {
-			this.setState({ myCryptoMons: res })
-		}).catch(console.error);
 	};
 
-	getPlasmaTokensFrom = address => {
-		fetch(`${process.env.API_URL}/api/tokens/owned-by/${address}`).then(response => {
-			response.json().then(res => {
-				this.setState({ myPlasmaTokens: res })
-			})
-		})
-	}
+	buyCryptoMon = async () => {
+		const { cryptoMons } = this.state;
 
-  getExitingFrom = address => {
+		await buyCryptoMon(cryptoMons);
+
+		this.getCryptoMonsFrom(this.ethAccount);
+	};
+
+	depositToPlasma = async token => {
+		const { cryptoMons, rootChain } = this.state;
+
+		await depositToPlasma(token, cryptoMons, rootChain)
+
+		this.getCryptoMonsFrom(this.ethAccount);
+		this.getPlasmaTokensFrom(this.ethAccount);
+	};
+
+	getCryptoMonsFrom = async address => {
+		const { cryptoMons } = this.state;
+
+		const myCryptoMons = await getCryptoMonsFrom(address, cryptoMons);
+		this.setState({ myCryptoMons: myCryptoMons })
+	};
+
+	getPlasmaTokensFrom = async address => {
+		const tokens = await getOwnedTokens(address);
+		this.setState({ myPlasmaTokens: tokens });
+	};
+
+  getExitingFrom = async address => {
 		const { rootChain } = this.state;
-		getExitingFrom(address, rootChain).then(res => {
-      this.setState({ myExitingTokens: res })
-    })
-	}
+		const tokens = await getExitingFrom(address, rootChain);
+		this.setState({ myExitingTokens: tokens })
+	};
 
-  getExitedFrom = address => {
+  getExitedFrom = async address => {
     const { rootChain } = this.state;
-    getExitedFrom(address, rootChain).then(res => {
-      this.setState({ myExitedTokens: res })
-    })
-	}
+    const tokens = await getExitedFrom(address, rootChain);
+		this.setState({ myExitedTokens: tokens });
+	};
 
-	getChallengeable = address => {
+	getChallengeable = async address => {
 		const { rootChain } = this.state;
-		getChallengeable(address, rootChain).then(res => this.setState({ challengeableTokens: res }));
-	}
+		const tokens = await getChallengeable(address, rootChain);
+		this.setState({ challengeableTokens: tokens });
+	};
 
-	finalizeExit = token => {
+	finalizeExit = async token => {
 		const { rootChain } = this.state;
-		finalizeExit(rootChain, token).then(response => {
-			console.log("Finalized exit: " + response);
-		}).catch(console.error);
-	}
+		await finalizeExit(rootChain, token);
+		console.log("Finalized Exit successful");
+	};
 
-	withdraw = token => {
+	withdraw = async token => {
 		const { rootChain } = this.state;
-		withdraw(rootChain, token).then(response => {
-			console.log("Withdraw exit: " + response);
-		}).catch(console.error);
-	}
+		await withdraw(rootChain, token);
+		console.log("Withdrawn successful");
+	};
 
-	exitToken = token => {
-		console.log("exiting token")
-		fetch(`${process.env.API_URL}/api/exit/data/${token}`).then(response => {
-			response.json().then(exitData => {
-				console.log("calling root chain exit")
-				const { rootChain } = this.state;
+	exitToken = async token => {
+		const { rootChain } = this.state;
+		const exitData = await getExitData(token);
 
-				const cb = (data) => {
-					exitToken(rootChain, data).then(response => {
-						console.log("Exit successful: ", response);
-					}).catch(console.error);
-				}
+		if (!exitData.signature) {
+			//TODO popup explicando que se esta firmando
+			exitData.signature = await sign(exitData.lastTransactionHash);
+		}
 
-				if (!exitData.signature) {
-				  //TODO popup explicando que se esta firmando
-					console.log("signing");
-					sign(exitData.lastTransactionHash).then(signature => {
-						console.log("signed")
-						exitData.signature = signature;
-						cb(exitData);
-					})
-				} else {
-					cb(exitData);
-				}
+		await exitToken(rootChain, exitData)
+		console.log("Exit successful");
+	};
 
-			});
-		})
-	}
-
-	transferInPlasma = token => {
+	transferInPlasma = async token => {
 		const fieldKey = `transferAddress${token}`;
 		const receiverAddress = this.state[fieldKey];
-		console.log(`transfering ${token} to ${receiverAddress}`)
-    transferInPlasma(token, receiverAddress).then(() => console.log("Successful Submission, wait for mining"))
-    .catch(console.error)
+		console.log(`transfering ${token} to ${receiverAddress}`);
 
+    await transferInPlasma(token, receiverAddress);
+		console.log("Successful Submission, wait for mining");
 	};
 
 	challengeBefore = token => {
 		const { rootChain } = this.state;
-		console.log(`Challenging Before: ${token}`)
+		console.log(`Challenging Before: ${token}`);
 		challengeBefore(token, rootChain);
-	}
+	};
 
 	challengeBetween = token => {
 		const { rootChain } = this.state;
-		console.log(`Challenging Between: ${token}`)
+		console.log(`Challenging Between: ${token}`);
 		challengeBetween(token, rootChain);
-	}
+	};
 
 	challengeAfter = token => {
 		const { rootChain } = this.state;
-		console.log(`Challenging After: ${token}`)
+		console.log(`Challenging After: ${token}`);
 		challengeAfter(rootChain, exitData);
-	}
+	};
 
 	onTransferAddressChanged = token => event => {
 		const fieldKey = `transferAddress${token}`;
 		this.setState({ [fieldKey]: event.target.value });
-	}
+	};
 
 	render() {
 		const { rootChain, cryptoMons, vmc, deposits, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens, challengeableTokens } = this.state;
 		return (
 			<React.Fragment>
 				<Title text="Hello World!" />
-				<p>Calling with address: {web3.eth.defaultAccount}</p>
+				<p>Calling with address: {this.ethAccount}</p>
 				<button onClick={this.loadContracts}>Load contracts</button>
 				<p>RootChain address: {rootChain && rootChain.address}</p>
 				<p>CryptoMon address: {cryptoMons && cryptoMons.address}</p>
 				<p>VMC address: {vmc && vmc.address}</p>
 				<button onClick={this.buyCryptoMon}>Buy CryptoMon</button>
 
-				<button onClick={() => this.getCryptoMonsFrom(web3.eth.defaultAccount)}>Get my CryptoMons</button>
+				<button onClick={() => this.getCryptoMonsFrom(this.ethAccount)}>Get my CryptoMons</button>
 				<p>My CryptoMons:</p>
 				{myCryptoMons.map(token => (
 					<div key={token}>
