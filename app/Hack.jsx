@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { exitToken } from '../services/ethService';
+import { exitToken, challengeBeforeWithExitData, isExiting } from '../services/ethService';
 import {generateTransactionHash, sign} from "../utils/cryptoUtils";
 
 class Hack extends React.Component {
@@ -17,6 +17,10 @@ class Hack extends React.Component {
       response.json().then(res => {
         this.setState({ history: res.history })
       })
+    });
+
+    isExiting(hackSlot, this.props.rootChain).then(response => {
+      this.setState({ isHackSlotExiting: response });
     })
   };
 
@@ -111,6 +115,21 @@ class Hack extends React.Component {
 
   }
 
+	challengeBefore = (token, exitData) => () => {
+		const { rootChain } = this.props;
+    console.log(`Challenging Before: ${token}`)
+    const newExitData = {
+      slot: exitData.slot,
+      challengingTransaction: exitData.lastTransactionHash,
+      proof: exitData.exitingTxInclusionProof,
+      challengingBlockNumber: exitData.blocks[1],
+      signature: exitData.signature
+    };
+    console.log(exitData)
+    console.log(newExitData)
+		challengeBeforeWithExitData(newExitData, rootChain);
+  }
+
 
   doubleSpend = (token, transactionHash) => async() => {
 
@@ -162,35 +181,37 @@ class Hack extends React.Component {
   };
 
   render = () => {
+    const { hackSlot, history , isHackSlotExiting} = this.state;
     return(
       <div>
         <h2>HACKS!</h2>
         <input
           style={{ marginLeft: '1em', minWidth: '25em' }}
           onChange={this.onSlotChanged}
-          value={this.state.hackSlot || ''}
+          value={hackSlot || ''}
           placeholder="Slot To Hack" />
-        {this.state.hackSlot &&
+        {hackSlot &&
         (<div>
             <h4>Fraudulent Non-Existant Transactions</h4>
-            <button onClick={this.maliciousTransaction(this.state.hackSlot)}>HACK!</button>
+            <button onClick={this.maliciousTransaction(hackSlot)}>HACK!</button>
 
 
             <h4>History Hack</h4>
             <p>History:</p>
-            {this.state.history.map(event => (
+            {history.map(event => (
                 <div key={event.transaction.minedBlock}>
-
-                  <p >
+                  <p>
                     Block: {event.transaction.minedBlock } -
                     from: {event.transaction.owner} -
-                    to: {event.transaction.recipient}</p>
+                    to: {event.transaction.recipient}
+                  </p>
                   {event.transaction.recipient.toLowerCase() == web3.eth.defaultAccount.toLowerCase() &&
-                    <div>
-                  <button onClick={this.maliciousExit(event.exitData)}>Force Old Exit</button>
-                  <button onClick={this.doubleSpend(this.state.hackSlot, event.transaction.hash)}>Create Double Spend Exit</button>
-                    </div>
+                    <React.Fragment>
+                      <button onClick={this.maliciousExit(event.exitData)}>Force Old Exit</button>
+                      <button onClick={this.doubleSpend(hackSlot, event.transaction.hash)}>Create Double Spend Exit</button>
+                    </React.Fragment>
                   }
+                  {isHackSlotExiting && <button onClick={this.challengeBefore(hackSlot, event.exitData)}>Challenge Before</button>}
                 </div>
               )
             )}
