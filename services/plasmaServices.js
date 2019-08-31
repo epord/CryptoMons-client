@@ -32,7 +32,7 @@ export const transferInPlasma = (token, receiverAddress) => {
   })
 };
 
-const basicGet = async (url) => {
+const basicGet = (url) => {
   return new  Promise(async (resolve, reject) => {
     const response = await fetch(url);
     const json = await response.json();
@@ -45,8 +45,8 @@ export const loadContracts = () => {
 };
 
 
-export const getOwnedTokens = address => {
-  return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}`);
+export const getOwnedTokens = (address, exiting) => {
+  return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}?exiting=${exiting}`);
 };
 
 export const getExitData = token => {

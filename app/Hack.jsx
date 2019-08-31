@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { exitToken, challengeBeforeWithExitData, isExiting } from '../services/ethService';
+import { exitToken, challengeBeforeWithExitData, getCoinState } from '../services/ethService';
 import {generateTransactionHash, sign} from "../utils/cryptoUtils";
 
 class Hack extends React.Component {
@@ -19,8 +19,8 @@ class Hack extends React.Component {
       })
     });
 
-    isExiting(hackSlot, this.props.rootChain).then(response => {
-      this.setState({ isHackSlotExiting: response });
+    getCoinState(hackSlot, this.props.rootChain).then(response => {
+      this.setState({ isHackSlotExiting: response == "EXITING" });
     })
   };
 

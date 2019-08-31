@@ -10,7 +10,7 @@ import "regenerator-runtime/runtime";
 
 import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToFinalizedExit, subscribeToWithdrew,
-	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, buyCryptoMon,
+	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
 	challengeBetween } from '../services/ethService';
 import { loadContracts, transferInPlasma, getOwnedTokens, getExitData } from '../services/plasmaServices';
@@ -20,10 +20,18 @@ class App extends React.Component {
 
 	constructor(props) {
 		super(props)
-		this.state = { myCryptoMons: [], myPlasmaTokens: [], myExitingTokens: [], myExitedTokens: [], challengeableTokens: [] }
+		this.state = {
+			myCryptoMons: [],
+			myPlasmaTokens: [],
+			myExitingTokens: [],
+			myExitedTokens: [],
+			myChallengedTokens: [],
+			challengeableTokens: []
+		}
 	}
 
 	componentDidMount = () => {
+		//TODO sometimes this is undefined
 		this.ethAccount = web3.eth.defaultAccount;
 		this.loadContracts().then(() => {
 			this.subscribeToEvents(this.ethAccount);
@@ -32,6 +40,7 @@ class App extends React.Component {
 			this.getExitingFrom(this.ethAccount);
 			this.getExitedFrom(this.ethAccount);
 			this.getChallengeable(this.ethAccount);
+			this.getChallengedFrom(this.ethAccount);
 		});
 	};
 
@@ -49,22 +58,31 @@ class App extends React.Component {
 		const { rootChain } = this.state;
 
 		subscribeToDeposits(rootChain, address,(r => {
+			this.getCryptoMonsFrom(this.ethAccount);
+			this.getPlasmaTokensFrom(this.ethAccount);
 			console.log("DEPOSIT - Slot: " + r.args.slot.toFixed())
 		}));
 
 		subscribeToCoinReset(rootChain, address,(r => {
+			this.getPlasmaTokensFrom(this.ethAccount);
+			this.getExitingFrom(this.ethAccount);
 			console.log("Coin Reset - Slot: " + r.args.slot.toFixed())
 		}));
 
 		subscribeToFinalizedExit(rootChain, address,(r => {
+			this.getExitingFrom(this.ethAccount);
+			this.getExitedFrom(this.ethAccount);
 			console.log("Finalized Exit - Slot: " + r.args.slot.toFixed())
 		}));
 
 		subscribeToStartedExit(rootChain, address,(r => {
+			this.getPlasmaTokensFrom(this.ethAccount);
+			this.getExitingFrom(this.ethAccount);
 			console.log("Started Exit - Slot: " + r.args.slot.toFixed())
 		}));
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
+			this.getPlasmaTokensFrom(this.ethAccount);
 			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
 		}));
 
@@ -75,30 +93,23 @@ class App extends React.Component {
 
 	buyCryptoMon = async () => {
 		const { cryptoMons } = this.state;
-
 		await buyCryptoMon(cryptoMons);
-
 		this.getCryptoMonsFrom(this.ethAccount);
 	};
 
 	depositToPlasma = async token => {
 		const { cryptoMons, rootChain } = this.state;
-
 		await depositToPlasma(token, cryptoMons, rootChain)
-
-		this.getCryptoMonsFrom(this.ethAccount);
-		this.getPlasmaTokensFrom(this.ethAccount);
 	};
 
 	getCryptoMonsFrom = async address => {
 		const { cryptoMons } = this.state;
-
 		const myCryptoMons = await getCryptoMonsFrom(address, cryptoMons);
 		this.setState({ myCryptoMons: myCryptoMons })
 	};
 
 	getPlasmaTokensFrom = async address => {
-		const tokens = await getOwnedTokens(address);
+		const tokens = await getOwnedTokens(address, false);
 		this.setState({ myPlasmaTokens: tokens });
 	};
 
@@ -112,6 +123,12 @@ class App extends React.Component {
     const { rootChain } = this.state;
     const tokens = await getExitedFrom(address, rootChain);
 		this.setState({ myExitedTokens: tokens });
+	};
+
+	getChallengedFrom = async address => {
+		const { rootChain } = this.state;
+		const tokens = await getChallengedFrom(address, rootChain);
+		this.setState({ myChallengedTokens: tokens });
 	};
 
 	getChallengeable = async address => {
@@ -178,7 +195,8 @@ class App extends React.Component {
 	};
 
 	render() {
-		const { rootChain, cryptoMons, vmc, deposits, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens, challengeableTokens } = this.state;
+		const { rootChain, cryptoMons, vmc, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens,
+			myChallengedTokens, challengeableTokens } = this.state;
 		return (
 			<React.Fragment>
 				<Title text="Hello World!" />
@@ -217,6 +235,14 @@ class App extends React.Component {
             <button onClick={() => this.finalizeExit(token)}>Finalize Exit</button>
           </div>
         ))}
+
+				<p>My Challenged Tokens:</p>
+				{myChallengedTokens.map(token => (
+					<div key={token}>
+						<p style={{ display: "inline" }}>{token}</p>
+						{/*<button onClick={() => this.withdraw(token)}>Withdraw</button>*/}
+					</div>
+				))}
 
         <p>My Exited Tokens:</p>
         {myExitedTokens.map(token => (
