@@ -12,7 +12,7 @@ import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit
 	subscribeToFinalizedExit, subscribeToWithdrew,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
-	challengeBetween } from '../services/ethService';
+challengeBetween, getChallenge, respondChallenge } from '../services/ethService';
 import { loadContracts, transferInPlasma, getOwnedTokens, getExitData } from '../services/plasmaServices';
 import { sign } from '../utils/cryptoUtils';
 
@@ -127,8 +127,8 @@ class App extends React.Component {
 
 	getChallengedFrom = async address => {
 		const { rootChain } = this.state;
-		const tokens = await getChallengedFrom(address, rootChain);
-		this.setState({ myChallengedTokens: tokens });
+		const challenges = await getChallengedFrom(address, rootChain);
+		this.setState({ myChallengedTokens: challenges });
 	};
 
 	getChallengeable = async address => {
@@ -189,6 +189,13 @@ class App extends React.Component {
 		challengeAfter(rootChain, exitData);
 	};
 
+	respondChallenge = async (token, hash) => {
+		const { rootChain } = this.state;
+		const challenge = await getChallenge(token, hash, rootChain);
+		const challengingBlock = challenge[3];
+		respondChallenge(token, challengingBlock, hash, rootChain);
+	};
+
 	onTransferAddressChanged = token => event => {
 		const fieldKey = `transferAddress${token}`;
 		this.setState({ [fieldKey]: event.target.value });
@@ -237,10 +244,12 @@ class App extends React.Component {
         ))}
 
 				<p>My Challenged Tokens:</p>
-				{myChallengedTokens.map(token => (
-					<div key={token}>
-						<p style={{ display: "inline" }}>{token}</p>
-						{/*<button onClick={() => this.withdraw(token)}>Withdraw</button>*/}
+				{myChallengedTokens.map(challenge => (
+					<div key={challenge.slot}>
+						<p style={{ display: "inline" }}>{challenge.slot}</p>
+						{challenge.txHash.map(hash =>
+							<button key={hash} onClick={() => this.respondChallenge(challenge.slot, hash)}>Respond</button>
+						)}
 					</div>
 				))}
 

@@ -102,15 +102,24 @@ export const getChallenges = (slot, rootChain) => {
 	});
 };
 
+export const getChallenge = (slot, txHash, rootChain) => {
+	return new Promise((resolve, reject) => {
+		ethContract(rootChain).getChallenge(slot, txHash, (err, result) => {
+			if(err) return reject(err);
+			resolve(result);
+		});
+	});
+};
+
 export const getChallengedFrom = (address, rootChain) => {
 	return new Promise(async (resolve, reject) => {
 		const exiting = await getOwnedTokens(address, true);
 		const slotFilter = { slot: exiting };
-		const filteredTokens = (await getExitingTokens(slotFilter, rootChain)).map(t => t.args.slot);
+		const filteredTokens = unique((await getExitingTokens(slotFilter, rootChain)).map(t => t.args.slot));
 		const challenges = await Promise.all(filteredTokens.map(s => getChallenges(s, rootChain)));
-		resolve(unique(
-			zip(filteredTokens, challenges).filter(e=> e[1].length > 0).map(e => e[0].toFixed())
-		));
+		resolve(
+			zip(filteredTokens, challenges).filter(e=> e[1].length > 0).map(e => ({ slot: e[0].toFixed(), txHash: e[1] }))
+		);
 	});
 };
 
@@ -177,6 +186,26 @@ export const challengeBetween = (slot, rootChain) => {
 					resolve(res);
 				})
 		})
+	})
+}
+
+export const respondChallenge = (slot, challengingBlock, challengingTxHash,  rootChain) => {
+
+  return new Promise(async (resolve, reject) => {
+		const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${challengingBlock}`);
+		const challengeData = await response.json();
+
+		const { challengingBlockNumber: respondingBlockNumber, challengingTransaction: respondingTransaction, proof, signature} = challengeData;
+		const slotBN = web3.toBigNumber(slot);
+		const respondingBlockNumberBN = web3.toBigNumber(respondingBlockNumber);
+
+		ethContract(rootChain)
+			.respondChallengeBefore(slotBN, challengingTxHash, respondingBlockNumberBN, respondingTransaction, proof, signature, {
+				from: web3.eth.accounts[0]
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+			})
 	})
 }
 
