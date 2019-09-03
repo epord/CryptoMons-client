@@ -9,10 +9,10 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
-	subscribeToFinalizedExit, subscribeToWithdrew,
+	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
-challengeBetween, getChallenge, respondChallenge } from '../services/ethService';
+challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds } from '../services/ethService';
 import { loadContracts, transferInPlasma, getOwnedTokens, getExitData } from '../services/plasmaServices';
 import { sign } from '../utils/cryptoUtils';
 
@@ -26,7 +26,8 @@ class App extends React.Component {
 			myExitingTokens: [],
 			myExitedTokens: [],
 			myChallengedTokens: [],
-			challengeableTokens: []
+			challengeableTokens: [],
+			withdrawableAmount: '0'
 		}
 	}
 
@@ -41,6 +42,7 @@ class App extends React.Component {
 			this.getExitedFrom(this.ethAccount);
 			this.getChallengeable(this.ethAccount);
 			this.getChallengedFrom(this.ethAccount);
+			this.getBalance();
 		});
 	};
 
@@ -89,7 +91,30 @@ class App extends React.Component {
 		subscribeToWithdrew(rootChain, address,(r => {
 			console.log("Withdrawal - Slot: " + r.args.slot.toFixed())
 		}));
+
+		subscribeToFreeBond(rootChain, address, (r => {
+			this.getBalance();
+		}))
 	};
+
+	getBalance = () => {
+		const { rootChain } = this.state;
+		getBalance(rootChain).then(withdrawable => {
+			if (withdrawable > 0) {
+				/// TODO: uncomment when events aren't called 11+ times
+				// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawable} wei.`))
+				this.setState({ withdrawableAmount: withdrawable.toFixed() });
+			}
+		})
+	}
+
+	withdrawBonds = () => {
+		const { rootChain, withdrawableAmount } = this.state;
+		withdrawBonds(rootChain).then(() => {
+			console.log(`You have withdrew ${withdrawableAmount} wei.`);
+			this.setState({ withdrawableAmount: 0 });
+		})
+	}
 
 	buyCryptoMon = async () => {
 		const { cryptoMons } = this.state;
@@ -203,12 +228,14 @@ class App extends React.Component {
 
 	render() {
 		const { rootChain, cryptoMons, vmc, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens,
-			myChallengedTokens, challengeableTokens } = this.state;
+			myChallengedTokens, challengeableTokens, withdrawableAmount } = this.state;
+
 		return (
 			<React.Fragment>
 				<Title text="Hello World!" />
 				<p>Calling with address: {this.ethAccount}</p>
 				<button onClick={this.loadContracts}>Load contracts</button>
+				{withdrawableAmount != '0' && <button onClick={this.withdrawBonds}>Withdraw all bonds (total: {withdrawableAmount}) </button>}
 				<p>RootChain address: {rootChain && rootChain.address}</p>
 				<p>CryptoMon address: {cryptoMons && cryptoMons.address}</p>
 				<p>VMC address: {vmc && vmc.address}</p>

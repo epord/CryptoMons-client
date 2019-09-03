@@ -81,6 +81,10 @@ export const subscribeToWithdrew = (rootChain, address, cb) => {
 	subscribeToEvent("Withdrew", {owner: address}, rootChain, cb)
 };
 
+export const subscribeToFreeBond = (rootChain, address, cb) => {
+	subscribeToEvent("FreedBond", {from: address}, rootChain, cb);
+}
+
 export const getChallengeable = (address, rootChain) => {
   return new Promise(async (resolve, reject) => {
 		const exiting = await getOwnedTokens(address, true);
@@ -225,6 +229,31 @@ export const challengeBefore = (slot, rootChain) => {
 				.catch(reject);
 		})
 	})
+}
+
+
+export const getBalance = (rootChain) => {
+	const rcContract = ethContract(rootChain);
+
+  return new Promise((resolve, reject) => {
+		rcContract.getBalance(async (err, res) => {
+			if (err) return reject(err);
+			console.log(res)
+			const withdrawable = res[1];
+			resolve(withdrawable);
+		});
+	});
+}
+
+export const withdrawBonds = (rootChain) => {
+	const rcContract = ethContract(rootChain);
+
+  return new Promise((resolve, reject) => {
+		rcContract.withdrawBonds(async (err, res) => {
+			if (err) return reject(err);
+			resolve(res);
+		});
+	});
 }
 
 export const challengeBeforeWithExitData = (exitData, rootChain) => {
