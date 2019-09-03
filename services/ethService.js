@@ -85,6 +85,10 @@ export const subscribeToFreeBond = (rootChain, address, cb) => {
 	subscribeToEvent("FreedBond", {from: address}, rootChain, cb);
 }
 
+export const subscribeToSlashedBond = (rootChain, address, cb) => {
+	subscribeToEvent("SlashedBond", {from: address}, rootChain, cb);
+}
+
 export const getChallengeable = (address, rootChain) => {
   return new Promise(async (resolve, reject) => {
 		const exiting = await getOwnedTokens(address, true);

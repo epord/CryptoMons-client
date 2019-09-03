@@ -9,7 +9,7 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
-	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
+	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,subscribeToSlashedBond,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
 challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds } from '../services/ethService';
@@ -93,18 +93,31 @@ class App extends React.Component {
 		}));
 
 		subscribeToFreeBond(rootChain, address, (r => {
-			this.getBalance();
+			console.log('Free Bond event');
+			this.getBalance().then(withdrawableAmount => {
+				if (withdrawable > 0) {
+					/// TODO: uncomment when events aren't called 11+ times
+					// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawableAmount} wei.`))
+				}
+			});
+		}))
+
+		subscribeToSlashedBond(rootChain, address, (r => {
+			console.log('Slashed Bond event');
+			this.getBalance().then(withdrawableAmount => {
+				if (withdrawable > 0) {
+					/// TODO: uncomment when events aren't called 11+ times
+					// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawableAmount} wei.`))
+				}
+			});
 		}))
 	};
 
 	getBalance = () => {
 		const { rootChain } = this.state;
-		getBalance(rootChain).then(withdrawable => {
-			if (withdrawable > 0) {
-				/// TODO: uncomment when events aren't called 11+ times
-				// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawable} wei.`))
-				this.setState({ withdrawableAmount: withdrawable.toFixed() });
-			}
+		return getBalance(rootChain).then(async withdrawable => {
+			await this.setState({ withdrawableAmount: withdrawable.toFixed() });
+			return withdrawable;
 		})
 	}
 
