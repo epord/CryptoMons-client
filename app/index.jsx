@@ -224,7 +224,7 @@ class App extends React.Component {
 	challengeAfter = token => {
 		const { rootChain } = this.state;
 		console.log(`Challenging After: ${token}`);
-		challengeAfter(rootChain, exitData);
+		challengeAfter(token, rootChain);
 	};
 
 	respondChallenge = async (token, hash) => {
