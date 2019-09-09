@@ -14,7 +14,7 @@ export const getCoinState = (slot, rootChain) => {
 	return new Promise((resolve, reject) => {
 		ethContract(rootChain).getPlasmaCoin(slotBN, (err, res) => {
 			if (err) return reject(err);
-			resolve(states[res[4]]);
+			resolve(states[res[3]]);
 		});
 	});
 };
@@ -164,7 +164,7 @@ export const challengeAfter = (slot, rootChain) => {
 			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
 
 			ethContract(rootChain)
-				.challengeAfter(slotBN, challengingBlockNumberBN, challengingTransaction, proof, signature, (err, res) => {
+				.challengeAfter(slotBN, challengingTransaction, proof, signature, challengingBlockNumberBN, (err, res) => {
 					if (err) return reject(err)
 					resolve(res);
 				})
@@ -188,7 +188,7 @@ export const challengeBetween = (slot, rootChain) => {
 			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
 
 			ethContract(rootChain)
-				.challengeBetween(slotBN, challengingBlockNumberBN, challengingTransaction, proof, signature, {
+				.challengeBetween(slotBN, challengingTransaction, proof, signature, challengingBlockNumberBN, {
 					from: web3.eth.accounts[0]
 				}, (err, res) => {
 					if (err) return reject(err)
@@ -243,7 +243,6 @@ export const getBalance = (rootChain) => {
   return new Promise((resolve, reject) => {
 		rcContract.getBalance(async (err, res) => {
 			if (err) return reject(err);
-			console.log(res)
 			const withdrawable = res[1];
 			resolve(withdrawable);
 		});
@@ -269,12 +268,8 @@ export const challengeBeforeWithExitData = (exitData, rootChain) => {
 
 
   return new Promise(async (resolve, reject) => {
-		if (!exitData.signature) {
-			//TODO popup explicando que se esta firmando
-			exitData.signature = await sign(exitData.challengingTransaction)
-		}
 		ethContract(rootChain)
-			.challengeBefore(slotBN, challengingTransaction, proof, exitData.signature, challengingBlockNumberBN, {
+			.challengeBefore(slotBN, challengingTransaction, proof, challengingBlockNumberBN, {
 				from: web3.eth.accounts[0],
 				value: web3Utils.toWei('0.1', 'ether')
 			}, (err, res) => {
@@ -335,11 +330,26 @@ export const buyCryptoMon = cryptoMons => {
 	})
 };
 
-export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, blocks}) => {
+export const exitDepositToken = (rootChain, slot) => {
+	const slotBN = web3.toBigNumber(slot);
+
+	return new Promise((resolve, reject) => {
+		ethContract(rootChain)
+			.startDepositExit(slotBN, {
+				from: web3.eth.accounts[0],
+				value: web3Utils.toWei('0.1', 'ether')
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+			})
+	})
+};
+export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature,
+	prevBlock, exitingBlock}) => {
 	const slotBN = web3.toBigNumber(slot);
 	const _blocks = [
-			web3.toBigNumber(blocks[0]),
-			blocks[1] ? web3.toBigNumber(blocks[1]) : web3.toBigNumber(0)
+			web3.toBigNumber(prevBlock),
+			web3.toBigNumber(exitingBlock),
 		];
 
 	return new Promise((resolve, reject) => {

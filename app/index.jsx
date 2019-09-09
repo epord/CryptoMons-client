@@ -8,11 +8,13 @@ import Hack from './Hack.jsx';
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-import { subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
-	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,subscribeToSlashedBond,
+import {
+	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
+	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
-challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds } from '../services/ethService';
+	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds, exitDepositToken
+} from '../services/ethService';
 import { loadContracts, transferInPlasma, getOwnedTokens, getExitData } from '../services/plasmaServices';
 import { sign } from '../utils/cryptoUtils';
 
@@ -32,7 +34,6 @@ class App extends React.Component {
 	}
 
 	componentDidMount = () => {
-		//TODO sometimes this is undefined
 		this.ethAccount = web3.eth.defaultAccount;
 		this.loadContracts().then(() => {
 			this.subscribeToEvents(this.ethAccount);
@@ -192,11 +193,11 @@ class App extends React.Component {
 		const exitData = await getExitData(token);
 
 		if (!exitData.signature) {
-			//TODO popup explicando que se esta firmando
-			exitData.signature = await sign(exitData.lastTransactionHash);
+			await exitDepositToken(rootChain, token);
+		} else {
+			await exitToken(rootChain, exitData)
 		}
 
-		await exitToken(rootChain, exitData)
 		console.log("Exit successful");
 	};
 

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { exitToken, challengeBeforeWithExitData, getCoinState } from '../services/ethService';
+import {exitToken, challengeBeforeWithExitData, getCoinState, exitDepositToken} from '../services/ethService';
 import {generateTransactionHash, sign} from "../utils/cryptoUtils";
 
 class Hack extends React.Component {
@@ -24,23 +24,15 @@ class Hack extends React.Component {
     })
   };
 
-  maliciousExit = exitData => () => {
+  maliciousExit = exitData => async () => {
     const { rootChain } = this.props;
-    const cb = (data) => {
-      exitToken(rootChain, data).then(response => {
-        console.log("Exit successful: ", response);
-      }).catch(console.error);
-    }
-
+    let res;
     if (!exitData.signature) {
-      //TODO popup explicando que se esta firmando
-      sign(exitData.lastTransactionHash).then(signature => {
-        exitData.signature = signature;
-        cb(exitData);
-      })
+      res = await exitDepositToken(rootChain, exitData.slot);
     } else {
-      cb(exitData);
+      res = await exitToken(rootChain, data)
     }
+    console.log("Exit successful: ", res);
   };
 
   maliciousTransaction = token => async () => {
@@ -102,10 +94,8 @@ class Hack extends React.Component {
       signature: data2.exitData.signature,
       prevTransactionHash: data1.exitData.hash,
       lastTransactionHash: data2.exitData.hash,
-      blocks: [
-        web3.toBigNumber(data1.exitData.block),
-        web3.toBigNumber(data2.exitData.block)
-      ]
+      prevBlock: data1.exitData.block,
+      exitingBlock: data2.exitData.block
     };
 
     exitToken(this.props.rootChain, exitData).then(response => {
@@ -123,7 +113,7 @@ class Hack extends React.Component {
       slot: exitData.slot,
       challengingTransaction: exitData.exitingTxBytes,
       proof: exitData.exitingTxInclusionProof,
-      challengingBlockNumber: exitData.blocks[1],
+      challengingBlockNumber: exitData.exitingBlock,
       signature: exitData.signature
     };
 
@@ -168,10 +158,8 @@ class Hack extends React.Component {
       prevTxInclusionProof: data1.proof,
       exitingTxInclusionProof: data2.exitData.proof,
       signature: data2.exitData.signature,
-      blocks: [
-        web3.toBigNumber(data1.block),
-        web3.toBigNumber(data2.exitData.block)
-      ]
+      prevBlock: data1.block,
+      exitingBlock: data2.exitData.block
     };
 
     exitToken(this.props.rootChain, exitData).then(response => {
