@@ -50,5 +50,9 @@ export const getOwnedTokens = (address, exiting) => {
 };
 
 export const getExitData = token => {
-  return basicGet(`${process.env.API_URL}/api/exit/data/${token}`)
+  return basicGet(`${process.env.API_URL}/api/exit/data/${token}`);
 };
+
+export const getProofHistory = (token) => {
+  return basicGet(`${process.env.API_URL}/api/tokens/${token}/history-proof`);
+}

@@ -24,6 +24,14 @@ const getTransactionBytes = (slot, blockSpent, recipient) => {
 	return EthUtils.bufferToHex(RLP.encode(params));
 }
 
+export const decodeTransactionBytes = bytes => {
+	const decoded = RLP.decode(bytes);
+	const slot = web3.toBigNumber(EthUtils.bufferToHex(decoded[0])).toFixed();
+	const blockSpent = web3.toBigNumber(EthUtils.bufferToHex(decoded[1])).toFixed();
+	const recipient = EthUtils.bufferToHex(decoded[2]);
+	return { slot, blockSpent, recipient }
+}
+
 export const sign = (message) => {
 	return new Promise((resolve, reject) => {
 		web3.eth.sign(web3.eth.defaultAccount, message, (err, signature) => {
@@ -32,3 +40,22 @@ export const sign = (message) => {
 		});
 	});
 }
+
+export const recover = (hash, signature) => {
+  const SignatureMode = [
+    'EIP712',
+    'GETH',
+    'TREZOR'
+  ];
+  //TODO revise this
+  const signatureMode = 'EIP712';
+  let _hash = hash;
+  if (signatureMode === 'GETH') {
+    _hash = EthUtils.bufferToHex(EthUtils.keccak256("\x19Ethereum Signed Message:\n32", hash));
+  } else if (signatureMode === 'TREZOR') {
+    _hash = EthUtils.bufferToHex(EthUtils.keccak256("\x19Ethereum Signed Message:\n\x20", hash));
+  }
+
+  let res = EthUtils.fromRpcSig(signature)
+  return EthUtils.bufferToHex(EthUtils.pubToAddress(EthUtils.ecrecover(EthUtils.toBuffer(_hash), res.v, res.r, res.s)));
+};

@@ -2,6 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
+import async from 'async';
+
+import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
+
 import Title from './Title.jsx';
 import Hack from './Hack.jsx';
 
@@ -13,10 +17,10 @@ import {
 	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
-	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds, exitDepositToken
-} from '../services/ethService';
-import { loadContracts, transferInPlasma, getOwnedTokens, getExitData } from '../services/plasmaServices';
-import { sign } from '../utils/cryptoUtils';
+	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds, exitDepositToken,
+	checkEmptyBlock, checkInclusion } from '../services/ethService';
+
+import { loadContracts, transferInPlasma, getOwnedTokens, getExitData, getProofHistory } from '../services/plasmaServices';
 
 class App extends React.Component {
 
@@ -235,14 +239,84 @@ class App extends React.Component {
 		respondChallenge(token, challengingBlock, hash, rootChain);
 	};
 
+	verifyToken = async () => {
+		const { tokenToVerify: token, rootChain } = this.state;
+		const { history } = await getProofHistory(token);
+		console.log(history)
+
+		/// TODO: check inclusion in parallel and signatures in waterfall
+		async.waterfall([
+			async cb => {
+				// Deposit
+				const depositBlock = Object.keys(history)[0];
+				const { transactionBytes, proof } = history[depositBlock];
+				const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
+				const hash = generateTransactionHash(slot, blockSpent, recipient);
+
+				if (await checkInclusion(hash, depositBlock, token, proof, rootChain)) {
+					return cb(null, recipient);
+				} else {
+					return cb({error: "Validation failed", blockNumber: blockSpent, lastOwner: owner})
+				}
+
+			},
+			// Other blocks
+			...Object.keys(history).slice(1).map(blockNumber => async (owner, cb) => {
+				const { transactionBytes, signature, proof } = history[blockNumber];
+
+				if (transactionBytes) {
+					const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
+					const hash = generateTransactionHash(slot, blockSpent, recipient);
+
+					if(recover(hash, signature) != owner.toLowerCase()) {
+						return cb({error: "Not signed correctly", blockNumber: blockSpent, lastOwner: owner})
+					}
+
+					if (await checkInclusion(hash, blockNumber, token, proof, rootChain)) {
+						return cb(null, recipient);
+					} else {
+						return cb({error: "Validation failed", blockNumber: blockSpent, lastOwner: owner})
+					}
+				} else {
+					if(proof == "0x0000000000000000") {
+						if(await checkEmptyBlock(blockNumber, rootChain)) {
+							return cb(null, owner);
+						} else {
+							return cb({error: "Block is not empty", blockNumber, lastOwner: owner})
+						}
+					} else {
+						if(await  checkInclusion(undefined, blockNumber, token, proof, rootChain)) {
+							return cb(null, owner);
+						} else {
+							return cb({error: "Validation failed", blockNumber, lastOwner: owner})
+						}
+					}
+				}
+			})
+		], (err, lastOwner) => {
+				if (err) {
+					console.log(`Error in history! Last true owner: ${err.lastOwner} in block ${err.blockNumber}`);
+					this.setState({ historyValid: false, lastValidOwner: err.lastOwner, lastValidBlock: err.blockNumber });
+					return;
+				}
+				console.log(`Correct history! Last true owner: ${lastOwner}`);
+				this.setState({ historyValid: true, lastOwner });
+
+			});
+	}
+
 	onTransferAddressChanged = token => event => {
 		const fieldKey = `transferAddress${token}`;
 		this.setState({ [fieldKey]: event.target.value });
 	};
 
+	handleChange = fieldName => event => {
+		this.setState({ [fieldName]: event.target.value });
+	}
+
 	render() {
 		const { rootChain, cryptoMons, vmc, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens,
-			myChallengedTokens, challengeableTokens, withdrawableAmount } = this.state;
+			myChallengedTokens, challengeableTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
 
 		return (
 			<React.Fragment>
@@ -253,9 +327,22 @@ class App extends React.Component {
 				<p>RootChain address: {rootChain && rootChain.address}</p>
 				<p>CryptoMon address: {cryptoMons && cryptoMons.address}</p>
 				<p>VMC address: {vmc && vmc.address}</p>
-				<button onClick={this.buyCryptoMon}>Buy CryptoMon</button>
 
-				<button onClick={() => this.getCryptoMonsFrom(this.ethAccount)}>Get my CryptoMons</button>
+				<div>
+					<p style={{ display: "inline-block" }}>Verify token history:</p>
+					<input
+						value={tokenToVerify || ''}
+						onChange={event => {
+							this.handleChange("tokenToVerify")(event);
+							this.setState({ historyValid: undefined });
+						}}
+						placeholder="Token" />
+						<button onClick={this.verifyToken}>Verify</button>
+						{tokenToVerify && historyValid === true && <p style={{ display: 'inline', color: 'green' }}>Valid history! Last owner: {lastValidOwner}</p>}
+						{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
+				</div>
+
+				<button onClick={this.buyCryptoMon}>Buy CryptoMon</button>
 				<p>My CryptoMons:</p>
 				{myCryptoMons.map(token => (
 					<div key={token}>

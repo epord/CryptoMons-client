@@ -1,9 +1,8 @@
 import web3Utils from 'web3-utils';
-import async from 'async'
-import { zip, unique } from '../utils/utils'
-import { sign } from '../utils/cryptoUtils'
+import async from 'async';
+import { zip, unique } from '../utils/utils';
 
-import { getOwnedTokens } from "./plasmaServices"
+import { getOwnedTokens } from "./plasmaServices";
 
 const ethContract = (data) => web3.eth.contract(data.abi).at(data.address);
 
@@ -236,7 +235,6 @@ export const challengeBefore = (slot, rootChain) => {
 	})
 }
 
-
 export const getBalance = (rootChain) => {
 	const rcContract = ethContract(rootChain);
 
@@ -245,6 +243,47 @@ export const getBalance = (rootChain) => {
 			if (err) return reject(err);
 			const withdrawable = res[1];
 			resolve(withdrawable);
+		});
+	});
+}
+
+export const getBlockRoot = (blockNumber, rootChain) => {
+	const rcContract = ethContract(rootChain);
+
+  return new Promise((resolve, reject) => {
+		rcContract.getBlockRoot(blockNumber, async (err, res) => {
+			if (err) return reject(err);
+			const rootHash = res;
+			resolve(rootHash);
+		});
+	});
+}
+
+export const checkEmptyBlock = (blockNumber, rootChain) => {
+	const rcContract = ethContract(rootChain);
+
+	return new Promise((resolve, reject) => {
+		rcContract.getBlockRoot(
+			blockNumber,
+			(err, res) => {
+			if (err) return reject(err);
+			resolve(res == "0x6f35419d1da1260bc0f33d52e8f6d73fc5d672c0dca13bb960b4ae1adec17937");
+		});
+	});
+}
+
+export const checkInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
+	const rcContract = ethContract(rootChain);
+
+  return new Promise((resolve, reject) => {
+		rcContract.checkInclusion(
+			txHash || web3Utils.soliditySha3(0),
+			blockNumber,
+			slot,
+			proof,
+			(err, res) => {
+			if (err) return reject(err);
+			resolve(res); // true or false
 		});
 	});
 }
