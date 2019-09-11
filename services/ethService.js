@@ -23,6 +23,7 @@ const getStateTokens = (filter, rootChain, state) => {
 		const rcContract = ethContract(rootChain);
 		const blockFilter = { fromBlock: 0, toBlock: 'latest' };
 
+		//TODO: if the coin is exiting, another call to getExit to check the owner coincides should be made
 		rcContract.StartedExit(filter, blockFilter).get(async (err, result) => {
 			if(err) return reject(err);
 			const callBacks = result.map((s) => getCoinState(s.args.slot, rootChain));
@@ -88,6 +89,11 @@ export const subscribeToSlashedBond = (rootChain, address, cb) => {
 	subscribeToEvent("SlashedBond", {from: address}, rootChain, cb);
 }
 
+export const subscribeToChallengeRespond = (rootChain, address, cb) => {
+	//TODO add filter?
+	subscribeToEvent("RespondedExitChallenge", {}, rootChain, cb);
+}
+
 export const getChallengeable = (address, rootChain) => {
   return new Promise(async (resolve, reject) => {
 		const exiting = await getOwnedTokens(address, true);
@@ -125,9 +131,9 @@ export const getChallengedFrom = (address, rootChain) => {
 		const slotFilter = { slot: exiting };
 		const filteredTokens = unique((await getExitingTokens(slotFilter, rootChain)).map(t => t.args.slot));
 		const challenges = await Promise.all(filteredTokens.map(s => getChallenges(s, rootChain)));
-		resolve(
-			zip(filteredTokens, challenges).filter(e=> e[1].length > 0).map(e => ({ slot: e[0].toFixed(), txHash: e[1] }))
-		);
+		const result = zip(filteredTokens, challenges).filter(e=> e[1].length > 0).map(e => ({ slot: e[0].toFixed(), txHash: e[1] }));
+		const filtered = unique(result, (s1) => (s2) => s1.slot == s2.slot);
+		resolve(filtered)
 	});
 };
 
@@ -156,8 +162,9 @@ export const challengeAfter = (slot, rootChain) => {
 			if (err) return reject(err);
 			const exitBlock = res[2];
 			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${exitBlock}`);
-			const exitData = await response.json();
+			if(response.status >=400) return reject("Challenge After could not be completed");
 
+			const exitData = await response.json();
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
 			const slotBN = web3.toBigNumber(slot);
 			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
@@ -180,6 +187,7 @@ export const challengeBetween = (slot, rootChain) => {
 			if (err) return reject(err);
 			const parentBlock = res[1];
 			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${parentBlock}`);
+			if(response.status >=400) return reject("Challenge Between could not be completed");
 			const exitData = await response.json();
 
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;

@@ -21,6 +21,7 @@ import {
 	checkEmptyBlock, checkInclusion } from '../services/ethService';
 
 import { loadContracts, transferInPlasma, getOwnedTokens, getExitData, getProofHistory } from '../services/plasmaServices';
+import { delay } from '../utils/utils';
 
 class App extends React.Component {
 
@@ -38,17 +39,21 @@ class App extends React.Component {
 	}
 
 	componentDidMount = () => {
-		this.ethAccount = web3.eth.defaultAccount;
-		this.loadContracts().then(() => {
-			this.subscribeToEvents(this.ethAccount);
-			this.getCryptoMonsFrom(this.ethAccount);
-			this.getPlasmaTokensFrom(this.ethAccount);
-			this.getExitingFrom(this.ethAccount);
-			this.getExitedFrom(this.ethAccount);
-			this.getChallengeable(this.ethAccount);
-			this.getChallengedFrom(this.ethAccount);
-			this.getBalance();
-		});
+		if(!web3.eth.defaultAccount) {
+			delay(500).then(this.componentDidMount);
+		} else {
+			this.ethAccount = web3.eth.defaultAccount;
+			this.loadContracts().then(() => {
+				this.subscribeToEvents(this.ethAccount);
+				this.getCryptoMonsFrom(this.ethAccount);
+				this.getPlasmaTokensFrom(this.ethAccount);
+				this.getExitingFrom(this.ethAccount);
+				this.getExitedFrom(this.ethAccount);
+				this.getChallengeable(this.ethAccount);
+				this.getChallengedFrom(this.ethAccount);
+				this.getBalance();
+			});
+		}
 	};
 
 
@@ -73,6 +78,8 @@ class App extends React.Component {
 		subscribeToCoinReset(rootChain, address,(r => {
 			this.getPlasmaTokensFrom(this.ethAccount);
 			this.getExitingFrom(this.ethAccount);
+			this.getChallengedFrom(this.ethAccount);
+			this.getChallengeable(this.ethAccount);
 			console.log("Coin Reset - Slot: " + r.args.slot.toFixed())
 		}));
 
@@ -94,13 +101,15 @@ class App extends React.Component {
 		}));
 
 		subscribeToWithdrew(rootChain, address,(r => {
+			this.getExitedFrom(this.ethAccount);
+			this.getCryptoMonsFrom(this.ethAccount);
 			console.log("Withdrawal - Slot: " + r.args.slot.toFixed())
 		}));
 
 		subscribeToFreeBond(rootChain, address, (r => {
 			console.log('Free Bond event');
 			this.getBalance().then(withdrawableAmount => {
-				if (withdrawable > 0) {
+				if (withdrawableAmount > 0) {
 					/// TODO: uncomment when events aren't called 11+ times
 					// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawableAmount} wei.`))
 				}
@@ -110,11 +119,16 @@ class App extends React.Component {
 		subscribeToSlashedBond(rootChain, address, (r => {
 			console.log('Slashed Bond event');
 			this.getBalance().then(withdrawableAmount => {
-				if (withdrawable > 0) {
+				if (withdrawableAmount > 0) {
 					/// TODO: uncomment when events aren't called 11+ times
 					// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawableAmount} wei.`))
 				}
 			});
+		}))
+
+		subscribeToChallengeRespond(rootChain, address, (r => {
+			this.getChallengeable(this.ethAccount);
+			console.log('RespondedExitChallenge event');
 		}))
 	};
 
@@ -376,7 +390,10 @@ class App extends React.Component {
 					<div key={challenge.slot}>
 						<p style={{ display: "inline" }}>{challenge.slot}</p>
 						{challenge.txHash.map(hash =>
-							<button key={hash} onClick={() => this.respondChallenge(challenge.slot, hash)}>Respond</button>
+							<div>
+								<button key={hash} onClick={() => this.respondChallenge(challenge.slot, hash)}>Respond</button>
+								<button key={hash + "exit"} onClick={() => this.finalizeExit(challenge.slot)}>Finalize Exit</button>
+							</div>
 						)}
 					</div>
 				))}

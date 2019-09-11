@@ -30,7 +30,7 @@ class Hack extends React.Component {
     if (!exitData.signature) {
       res = await exitDepositToken(rootChain, exitData.slot);
     } else {
-      res = await exitToken(rootChain, data)
+      res = await exitToken(rootChain, exitData)
     }
     console.log("Exit successful: ", res);
   };
