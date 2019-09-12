@@ -198,7 +198,8 @@ class Hack extends React.Component {
                       <button onClick={this.doubleSpend(hackSlot, event.transaction.hash)}>Create Double Spend Exit</button>
                     </React.Fragment>
                   }
-                  {isHackSlotExiting && <button onClick={this.challengeBefore(hackSlot, event.exitData)}>Challenge Before</button>}
+                  {isHackSlotExiting && event.transaction.minedBlock != history[0].transaction.minedBlock
+                    && <button onClick={this.challengeBefore(hackSlot, event.exitData)}>Challenge Before</button>}
                 </div>
               )
             )}

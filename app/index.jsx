@@ -13,7 +13,7 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import {
-	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
+	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChallengeRespond,
 	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
 	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
@@ -128,6 +128,8 @@ class App extends React.Component {
 
 		subscribeToChallengeRespond(rootChain, address, (r => {
 			this.getChallengeable(this.ethAccount);
+			this.getChallengedFrom(this.ethAccount);
+			this.getBalance();
 			console.log('RespondedExitChallenge event');
 		}))
 	};
@@ -256,9 +258,30 @@ class App extends React.Component {
 	verifyToken = async () => {
 		const { tokenToVerify: token, rootChain } = this.state;
 		const { history } = await getProofHistory(token);
-		console.log(history)
 
-		/// TODO: check inclusion in parallel and signatures in waterfall
+		console.log(`validating ${Object.keys(history).length} blocks`)
+
+		let included = await Promise.all(
+		  Object.keys(history).map(blockNumber => {
+        const { transactionBytes, hash, proof } = history[blockNumber];
+        if (!transactionBytes && proof == "0x0000000000000000") {
+          return checkEmptyBlock(blockNumber, rootChain);
+        } else {
+          return checkInclusion(hash, blockNumber, token, proof, rootChain)
+        }
+      })
+		);
+
+		let fail = included.indexOf(false);
+		//TODO API returns block before they are propagated
+    if(fail != -1 && fail != included.length - 1) {
+      let blockNumber = Object.keys(history)[fail];
+      console.log(`Error in history! Fail validation in block ${blockNumber}`);
+      return this.setState({ historyValid: false, lastValidOwner: "unknown", lastValidBlock: blockNumber });
+    }
+
+    let transactions = Object.keys(history).filter(blockNumber => history[blockNumber].transactionBytes);
+
 		async.waterfall([
 			async cb => {
 				// Deposit
@@ -275,46 +298,32 @@ class App extends React.Component {
 
 			},
 			// Other blocks
-			...Object.keys(history).slice(1).map(blockNumber => async (owner, cb) => {
-				const { transactionBytes, signature, proof } = history[blockNumber];
+			...transactions.slice(1).map(blockNumber => async (owner, cb) => {
+				const { transactionBytes, signature, hash } = history[blockNumber];
 
 				if (transactionBytes) {
 					const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
-					const hash = generateTransactionHash(slot, blockSpent, recipient);
+					const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
+
+					if(generatedHash.toLowerCase() != hash.toLowerCase()) {
+            return cb({error: "Hash does not match", blockNumber: blockSpent, lastOwner: owner})
+          }
 
 					if(recover(hash, signature) != owner.toLowerCase()) {
 						return cb({error: "Not signed correctly", blockNumber: blockSpent, lastOwner: owner})
 					}
 
-					if (await checkInclusion(hash, blockNumber, token, proof, rootChain)) {
-						return cb(null, recipient);
-					} else {
-						return cb({error: "Validation failed", blockNumber: blockSpent, lastOwner: owner})
-					}
-				} else {
-					if(proof == "0x0000000000000000") {
-						if(await checkEmptyBlock(blockNumber, rootChain)) {
-							return cb(null, owner);
-						} else {
-							return cb({error: "Block is not empty", blockNumber, lastOwner: owner})
-						}
-					} else {
-						if(await  checkInclusion(undefined, blockNumber, token, proof, rootChain)) {
-							return cb(null, owner);
-						} else {
-							return cb({error: "Validation failed", blockNumber, lastOwner: owner})
-						}
-					}
+          return cb(null, recipient);
 				}
 			})
 		], (err, lastOwner) => {
 				if (err) {
 					console.log(`Error in history! Last true owner: ${err.lastOwner} in block ${err.blockNumber}`);
-					this.setState({ historyValid: false, lastValidOwner: err.lastOwner, lastValidBlock: err.blockNumber });
-					return;
-				}
-				console.log(`Correct history! Last true owner: ${lastOwner}`);
-				this.setState({ historyValid: true, lastOwner });
+					this.setState({ historyValid: false, lastValidOwner: err.lastOwner, lastValidBlock: err.blockNumber })
+				} else {
+          console.log(`Correct history! Last true owner: ${lastOwner}`);
+          this.setState({historyValid: true, lastValidOwner: lastOwner});
+        }
 
 			});
 	}
