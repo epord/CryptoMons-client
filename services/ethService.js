@@ -49,11 +49,16 @@ export const depositToPlasma = (token, cryptoMons, rootChain) => {
 	})
 };
 
+let alreadyLogged = {};
 const subscribeToEvent = (event, filter, rootChain, cb) => {
 	const rcContract = ethContract(rootChain);
 	rcContract[event](filter).watch((err, res) => {
 		if(err) return console.error(err);
-		cb(res)
+		let key = res.transactionHash + res.logIndex;
+		if(!alreadyLogged[key]) {
+		  alreadyLogged[key] = true;
+      cb(res)
+    }
 	})
 };
 
