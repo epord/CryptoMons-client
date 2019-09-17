@@ -1,6 +1,7 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import './index.css';
+
+import { Link } from "react-router-dom";
 
 import async from 'async';
 
@@ -8,14 +9,13 @@ import { recover, decodeTransactionBytes, generateTransactionHash } from '../uti
 
 import Title from './Title.jsx';
 import Hack from './Hack.jsx';
-
-import "core-js/stable";
-import "regenerator-runtime/runtime";
+import CryptoMons from './components/CryptoMons.jsx';
+import PlasmaTokens from './components/PlasmaTokens.jsx';
 
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChallengeRespond,
 	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
-	depositToPlasma, getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom, buyCryptoMon,
+	getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
 	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds, exitDepositToken,
 	checkEmptyBlock, checkInclusion } from '../services/ethService';
@@ -28,6 +28,7 @@ class App extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
+			loading: true,
 			myCryptoMons: [],
 			myPlasmaTokens: [],
 			myExitingTokens: [],
@@ -52,6 +53,7 @@ class App extends React.Component {
 				this.getChallengeable(this.ethAccount);
 				this.getChallengedFrom(this.ethAccount);
 				this.getBalance();
+				this.setState({ loading: false })
 			});
 		}
 	};
@@ -150,17 +152,6 @@ class App extends React.Component {
 		})
 	}
 
-	buyCryptoMon = async () => {
-		const { cryptoMons } = this.state;
-		await buyCryptoMon(cryptoMons);
-		this.getCryptoMonsFrom(this.ethAccount);
-	};
-
-	depositToPlasma = async token => {
-		const { cryptoMons, rootChain } = this.state;
-		await depositToPlasma(token, cryptoMons, rootChain)
-	};
-
 	getCryptoMonsFrom = async address => {
 		const { cryptoMons } = this.state;
 		const myCryptoMons = await getCryptoMonsFrom(address, cryptoMons);
@@ -206,28 +197,6 @@ class App extends React.Component {
 		const { rootChain } = this.state;
 		await withdraw(rootChain, token);
 		console.log("Withdrawn successful");
-	};
-
-	exitToken = async token => {
-		const { rootChain } = this.state;
-		const exitData = await getExitData(token);
-
-		if (!exitData.signature) {
-			await exitDepositToken(rootChain, token);
-		} else {
-			await exitToken(rootChain, exitData)
-		}
-
-		console.log("Exit successful");
-	};
-
-	transferInPlasma = async token => {
-		const fieldKey = `transferAddress${token}`;
-		const receiverAddress = this.state[fieldKey];
-		console.log(`transfering ${token} to ${receiverAddress}`);
-
-    await transferInPlasma(token, receiverAddress);
-		console.log("Successful Submission, wait for mining");
 	};
 
 	challengeBefore = token => {
@@ -328,18 +297,15 @@ class App extends React.Component {
 			});
 	}
 
-	onTransferAddressChanged = token => event => {
-		const fieldKey = `transferAddress${token}`;
-		this.setState({ [fieldKey]: event.target.value });
-	};
-
 	handleChange = fieldName => event => {
 		this.setState({ [fieldName]: event.target.value });
 	}
 
 	render() {
-		const { rootChain, cryptoMons, vmc, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens,
+		const { loading, rootChain, cryptoMons, vmc, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens,
 			myChallengedTokens, challengeableTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
+
+		if (loading) return (<div>Loading...</div>)
 
 		return (
 			<React.Fragment>
@@ -365,27 +331,10 @@ class App extends React.Component {
 						{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
 				</div>
 
-				<button onClick={this.buyCryptoMon}>Buy CryptoMon</button>
-				<p>My CryptoMons:</p>
-				{myCryptoMons.map(token => (
-					<div key={token}>
-						<p style={{ display: "inline" }}>{token}</p>
-						<button onClick={() => this.depositToPlasma(token)}>Deposit to Plasma</button>
-					</div>
-				))}
-				<p>My Plasma Tokens:</p>
-				{myPlasmaTokens.map(token => (
-					<div key={token}>
-						<p style={{ display: "inline" }}>{token}</p>
-						<input
-							style={{ marginLeft: '1em', minWidth: '25em' }}
-							onChange={this.onTransferAddressChanged(token)}
-							value={this.state[`transferAddress${token}`] || ''}
-							placeholder="Address" />
-						<button onClick={() => this.transferInPlasma(token)}>Transfer</button>
-						<button onClick={() => this.exitToken(token)}>Exit</button>
-					</div>
-				))}
+				<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
+
+				<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
+
         <p>My Exiting Tokens:</p>
         {myExitingTokens.map(token => (
           <div key={token}>
@@ -425,13 +374,11 @@ class App extends React.Component {
           </div>
 				))}
 
-
-
-				<Hack rootChain={rootChain}/>
+				<Link to="/hacks/" component={Hack}>Hacks!</Link>
 
 			</React.Fragment>
 		)
 	}
 }
 
-ReactDOM.render(<App />, document.getElementById('app'))
+export default App;

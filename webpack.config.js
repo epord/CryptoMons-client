@@ -11,7 +11,7 @@ const env = Object.keys(process.env).reduce((memo, key) => {
 }, {});
 
 module.exports = {
-    entry : './app/index.jsx',
+    entry : './app/App.jsx',
     output : {
         path : path.resolve(__dirname , 'dist'),
         filename: 'index_bundle.js'
