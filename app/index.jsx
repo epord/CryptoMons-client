@@ -1,16 +1,12 @@
 import React from 'react';
-import './index.css';
+import { connect } from "react-redux";
 
 import { Link } from "react-router-dom";
 
-import async from 'async';
-
-import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
-
-import Title from './Title.jsx';
-import Hack from './Hack.jsx';
 import CryptoMons from './components/CryptoMons.jsx';
 import PlasmaTokens from './components/PlasmaTokens.jsx';
+
+import async from 'async';
 
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChallengeRespond,
@@ -21,7 +17,10 @@ import {
 	checkEmptyBlock, checkInclusion } from '../services/ethService';
 
 import { loadContracts, transferInPlasma, getOwnedTokens, getExitData, getProofHistory } from '../services/plasmaServices';
+import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
 import { delay } from '../utils/utils';
+
+import { gotEthAccount, gotCryptoMons } from './redux/actions'
 
 class App extends React.Component {
 
@@ -40,23 +39,30 @@ class App extends React.Component {
 	}
 
 	componentDidMount = () => {
-		if(!web3.eth.defaultAccount) {
-			delay(500).then(this.componentDidMount);
-		} else {
-			this.ethAccount = web3.eth.defaultAccount;
-			this.loadContracts().then(() => {
-				this.subscribeToEvents(this.ethAccount);
-				this.getCryptoMonsFrom(this.ethAccount);
-				this.getPlasmaTokensFrom(this.ethAccount);
-				this.getExitingFrom(this.ethAccount);
-				this.getExitedFrom(this.ethAccount);
-				this.getChallengeable(this.ethAccount);
-				this.getChallengedFrom(this.ethAccount);
-				this.getBalance();
-				this.setState({ loading: false })
-			});
-		}
+		const interval = setInterval(() => {
+			if (web3.eth.defaultAccount) {
+				this.ethAccount = web3.eth.defaultAccount;
+				this.props.gotEthAccount(this.ethAccount);
+				this.init();
+				clearInterval(interval);
+			}
+		}, 100);
 	};
+
+	init = () => {
+		this.loadContracts().then(() => {
+			this.subscribeToEvents(this.ethAccount);
+			this.getCryptoMonsFrom(this.ethAccount);
+			this.getPlasmaTokensFrom(this.ethAccount);
+			this.getExitingFrom(this.ethAccount);
+			this.getExitedFrom(this.ethAccount);
+			this.getChallengeable(this.ethAccount);
+			this.getChallengedFrom(this.ethAccount);
+			this.getBalance();
+			this.setState({ loading: false })
+		});
+
+	}
 
 
 	loadContracts = async () => {
@@ -154,7 +160,9 @@ class App extends React.Component {
 
 	getCryptoMonsFrom = async address => {
 		const { cryptoMons } = this.state;
+		const { gotCryptoMons } = this.props;
 		const myCryptoMons = await getCryptoMonsFrom(address, cryptoMons);
+		gotCryptoMons(myCryptoMons);
 		this.setState({ myCryptoMons: myCryptoMons })
 	};
 
@@ -227,6 +235,7 @@ class App extends React.Component {
 	verifyToken = async () => {
 		const { tokenToVerify: token, rootChain } = this.state;
 		const { history } = await getProofHistory(token);
+		console.log(history)
 
 		console.log(`validating ${Object.keys(history).length} blocks`)
 
@@ -240,7 +249,7 @@ class App extends React.Component {
         }
       })
 		);
-
+		console.log(included)
 		let fail = included.indexOf(false);
 		//TODO API returns block before they are propagated
     if(fail != -1 && fail != included.length - 1) {
@@ -309,7 +318,6 @@ class App extends React.Component {
 
 		return (
 			<React.Fragment>
-				<Title text="Hello World!" />
 				<p>Calling with address: {this.ethAccount}</p>
 				<button onClick={this.loadContracts}>Load contracts</button>
 				{withdrawableAmount != '0' && <button onClick={this.withdrawBonds}>Withdraw all bonds (total: {withdrawableAmount}) </button>}
@@ -326,9 +334,9 @@ class App extends React.Component {
 							this.setState({ historyValid: undefined });
 						}}
 						placeholder="Token" />
-						<button onClick={this.verifyToken}>Verify</button>
-						{tokenToVerify && historyValid === true && <p style={{ display: 'inline', color: 'green' }}>Valid history! Last owner: {lastValidOwner}</p>}
-						{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
+					<button onClick={this.verifyToken}>Verify</button>
+					{tokenToVerify && historyValid === true && <p style={{ display: 'inline', color: 'green' }}>Valid history! Last owner: {lastValidOwner}</p>}
+					{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
 				</div>
 
 				<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
@@ -374,11 +382,19 @@ class App extends React.Component {
           </div>
 				))}
 
-				<Link to="/hacks/" component={Hack}>Hacks!</Link>
+				<Link to="/hacks/">Hacks!</Link>
 
 			</React.Fragment>
 		)
 	}
 }
 
-export default App;
+
+const mapStateToProps = state => ({ });
+
+const mapDispatchToProps = dispatch => ({
+	gotEthAccount: account => dispatch(gotEthAccount(account)),
+	gotCryptoMons: cryptoMons => dispatch(gotCryptoMons(cryptoMons))
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);

@@ -1,31 +1,19 @@
 import React from 'react';
+import { connect } from "react-redux";
+
 import Button from '@material-ui/core/Button';
 
 import { depositToPlasma, buyCryptoMon, getCryptoMonsFrom } from '../../services/ethService';
 
+import { gotEthAccount, gotCryptoMons } from '../redux/actions'
+
 class CryptoMons extends React.Component {
 
-	state = { cryptoMons: [] }
-
-	componentDidMount = () => {
-		if(!web3.eth.defaultAccount) {
-			delay(500).then(this.componentDidMount);
-		} else {
-			this.ethAccount = web3.eth.defaultAccount;
-			this.getCryptoMonsFrom();
-		}
-	}
-
-	getCryptoMonsFrom = async () => {
-		const { cryptoMonsContract } = this.props;
-		const cryptoMons = await getCryptoMonsFrom(this.ethAccount, cryptoMonsContract);
-		this.setState({ cryptoMons: cryptoMons })
-	};
-
 	buyCryptoMon = async () => {
-		const { cryptoMonsContract } = this.props;
-		await buyCryptoMon(cryptoMonsContract);
-		this.getCryptoMonsFrom()
+		const { cryptoMonsContract, ethAccount, gotCryptoMons } = this.props;
+		buyCryptoMon(cryptoMonsContract)
+			.then(() => getCryptoMonsFrom(ethAccount, cryptoMonsContract))
+			.then(cryptoMons => gotCryptoMons(cryptoMons));
 	};
 
 	depositToPlasma = async token => {
@@ -34,13 +22,13 @@ class CryptoMons extends React.Component {
 	};
 
 	render = () => {
-		const { cryptoMons } = this.state;
+		const { myCryptoMons } = this.props;
 
 		return (
 			<React.Fragment>
 				<Button onClick={this.buyCryptoMon} variant="outlined" size="small">Buy CryptoMon</Button>
 				<p>My CryptoMons:</p>
-				{cryptoMons.map(token => (
+				{myCryptoMons.map(token => (
 					<div key={token}>
 						<p style={{ display: "inline" }}>{token}</p>
 						<Button onClick={() => this.depositToPlasma(token)} variant="outlined" size="small">Deposit to Plasma</Button>
@@ -49,7 +37,19 @@ class CryptoMons extends React.Component {
 			</React.Fragment>
 		);
 	}
-
 }
 
-export default CryptoMons;
+const mapStateToProps = state => {
+	return {
+		ethAccount: state.ethAccount,
+		myCryptoMons: state.myCryptoMons
+	};
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+		gotCryptoMons: cryptoMons => dispatch(gotCryptoMons(cryptoMons))
+	};
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(CryptoMons);

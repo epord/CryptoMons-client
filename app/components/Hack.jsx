@@ -1,7 +1,7 @@
 import React from 'react';
 
-import {exitToken, challengeBeforeWithExitData, getCoinState, exitDepositToken} from '../services/ethService';
-import {generateTransactionHash, sign} from "../utils/cryptoUtils";
+import {exitToken, challengeBeforeWithExitData, getCoinState, exitDepositToken} from '../../services/ethService';
+import {generateTransactionHash, sign} from "../../utils/cryptoUtils";
 
 class Hack extends React.Component {
   constructor(props) {
