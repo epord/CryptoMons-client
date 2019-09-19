@@ -1,19 +1,25 @@
 import * as C from "./constants";
 
 const initialState = {
-	myCryptoMons: []
+	myCryptoMons: [],
+	plasmaTokens: [],
 };
 
 const reducerMapper = {
+	[C.GOT_ETH_ACCOUNT]: (state, action) => {
+		state.ethAccount = action.payload;
+		return state;
+	},
 	[C.GOT_CRYPTOMONS]: (state, action) => {
 		return Object.assign({}, state, {
       myCryptoMons: action.payload
     });
 	},
-	[C.GOT_ETH_ACCOUNT]: (state, action) => {
-		state.ethAccount = action.payload;
-		return state;
-	}
+	[C.GOT_OWNED_TOKENS]: (state, action) => {
+		return Object.assign({}, state, {
+      plasmaTokens: action.payload
+    });
+	},
 }
 
 function reducer(state = initialState, action) {

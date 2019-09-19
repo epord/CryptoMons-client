@@ -12,17 +12,16 @@ import Grid from '@material-ui/core/Grid';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import { depositToPlasma, buyCryptoMon, getCryptoMonsFrom } from '../../services/ethService';
-import { gotCryptoMons } from '../redux/actions'
+import { depositToPlasma, buyCryptoMon } from '../../services/ethService';
+import { getCryptoMonsFrom } from '../redux/actions'
 
 
 class CryptoMons extends React.Component {
 
 	buyCryptoMon = async () => {
-		const { cryptoMonsContract, ethAccount, gotCryptoMons } = this.props;
+		const { cryptoMonsContract, ethAccount, getCryptoMonsFrom } = this.props;
 		buyCryptoMon(cryptoMonsContract)
-			.then(() => getCryptoMonsFrom(ethAccount, cryptoMonsContract))
-			.then(cryptoMons => gotCryptoMons(cryptoMons));
+			.then(() => getCryptoMonsFrom(ethAccount, cryptoMonsContract));
 	};
 
 	depositToPlasma = async token => {
@@ -39,7 +38,7 @@ class CryptoMons extends React.Component {
 				<p>My CryptoMons:</p>
 				<Grid container spacing={3}>
 					{myCryptoMons.map(token => (
-						<Grid item xs={3} key={token}>
+						<Grid item xs={2} key={token}>
 							<Card>
 								<CardActionArea>
 									<img
@@ -53,7 +52,7 @@ class CryptoMons extends React.Component {
 									<Button
 										fullWidth
 										size="small"
-										color="primary"
+										variant="outlined"
 										onClick={() => this.depositToPlasma(token)}>
 										Deposit to Plasma
 									</Button>
@@ -76,7 +75,7 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-		gotCryptoMons: cryptoMons => dispatch(gotCryptoMons(cryptoMons))
+		getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract))
 	};
 }
 

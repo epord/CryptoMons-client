@@ -23,6 +23,7 @@
     "react-redux": "^7.1.1",
     "react-router-dom": "^5.0.1",
     "redux": "^4.0.4",
+    "redux-thunk": "^2.3.0",
     "regenerator-runtime": "^0.13.3",
     "rlp": "^2.2.3",
     "web3-utils": "^1.2.1"

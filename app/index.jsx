@@ -11,16 +11,16 @@ import async from 'async';
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChallengeRespond,
 	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
-	getCryptoMonsFrom, getExitingFrom, getExitedFrom, getChallengedFrom,
+	getExitingFrom, getExitedFrom, getChallengedFrom,
 	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
 	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds, exitDepositToken,
 	checkEmptyBlock, checkInclusion } from '../services/ethService';
 
-import { loadContracts, transferInPlasma, getOwnedTokens, getExitData, getProofHistory } from '../services/plasmaServices';
+import { loadContracts, transferInPlasma, getExitData, getProofHistory } from '../services/plasmaServices';
 import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
 import { delay } from '../utils/utils';
 
-import { gotEthAccount, gotCryptoMons } from './redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens } from './redux/actions'
 
 class App extends React.Component {
 
@@ -28,8 +28,6 @@ class App extends React.Component {
 		super(props)
 		this.state = {
 			loading: true,
-			myCryptoMons: [],
-			myPlasmaTokens: [],
 			myExitingTokens: [],
 			myExitedTokens: [],
 			myChallengedTokens: [],
@@ -42,7 +40,6 @@ class App extends React.Component {
 		const interval = setInterval(() => {
 			if (web3.eth.defaultAccount) {
 				this.ethAccount = web3.eth.defaultAccount;
-				this.props.gotEthAccount(this.ethAccount);
 				this.init();
 				clearInterval(interval);
 			}
@@ -160,15 +157,12 @@ class App extends React.Component {
 
 	getCryptoMonsFrom = async address => {
 		const { cryptoMons } = this.state;
-		const { gotCryptoMons } = this.props;
-		const myCryptoMons = await getCryptoMonsFrom(address, cryptoMons);
-		gotCryptoMons(myCryptoMons);
-		this.setState({ myCryptoMons: myCryptoMons })
+		const { getCryptoMonsFrom } = this.props;
+		getCryptoMonsFrom(address, cryptoMons);
 	};
 
 	getPlasmaTokensFrom = async address => {
-		const tokens = await getOwnedTokens(address, false);
-		this.setState({ myPlasmaTokens: tokens });
+		this.props.getOwnedTokens(address, false);
 	};
 
   getExitingFrom = async address => {
@@ -311,7 +305,7 @@ class App extends React.Component {
 	}
 
 	render() {
-		const { loading, rootChain, cryptoMons, vmc, myCryptoMons, myPlasmaTokens, myExitingTokens, myExitedTokens,
+		const { loading, rootChain, cryptoMons, vmc, myExitingTokens, myExitedTokens,
 			myChallengedTokens, challengeableTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
 
 		if (loading) return (<div>Loading...</div>)
@@ -393,8 +387,8 @@ class App extends React.Component {
 const mapStateToProps = state => ({ });
 
 const mapDispatchToProps = dispatch => ({
-	gotEthAccount: account => dispatch(gotEthAccount(account)),
-	gotCryptoMons: cryptoMons => dispatch(gotCryptoMons(cryptoMons))
+	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
+	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting))
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

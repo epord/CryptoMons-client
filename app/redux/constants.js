@@ -1,2 +1,3 @@
 export const GOT_ETH_ACCOUNT = "GOT_ETH_ACCOUNT";
 export const GOT_CRYPTOMONS = "GOT_CRYPTOMONS";
+export const GOT_OWNED_TOKENS = "GOT_OWNED_TOKENS";
