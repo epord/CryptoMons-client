@@ -11,16 +11,15 @@ import async from 'async';
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChallengeRespond,
 	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
-	getExitingFrom, getExitedFrom, getChallengedFrom,
-	exitToken, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
-	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds, exitDepositToken,
+	getExitedFrom, getChallengedFrom,
+	finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
+	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds,
 	checkEmptyBlock, checkInclusion } from '../services/ethService';
 
-import { loadContracts, transferInPlasma, getExitData, getProofHistory } from '../services/plasmaServices';
+import { loadContracts, getProofHistory } from '../services/plasmaServices';
 import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
-import { delay } from '../utils/utils';
 
-import { getCryptoMonsFrom, getOwnedTokens } from './redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens, getExitingFrom } from './redux/actions'
 
 class App extends React.Component {
 
@@ -28,7 +27,6 @@ class App extends React.Component {
 		super(props)
 		this.state = {
 			loading: true,
-			myExitingTokens: [],
 			myExitedTokens: [],
 			myChallengedTokens: [],
 			challengeableTokens: [],
@@ -167,8 +165,7 @@ class App extends React.Component {
 
   getExitingFrom = async address => {
 		const { rootChain } = this.state;
-		const tokens = await getExitingFrom(address, rootChain);
-		this.setState({ myExitingTokens: tokens })
+		this.props.getExitingFrom(address, rootChain);
 	};
 
   getExitedFrom = async address => {
@@ -305,7 +302,7 @@ class App extends React.Component {
 	}
 
 	render() {
-		const { loading, rootChain, cryptoMons, vmc, myExitingTokens, myExitedTokens,
+		const { loading, rootChain, cryptoMons, vmc, myExitedTokens,
 			myChallengedTokens, challengeableTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
 
 		if (loading) return (<div>Loading...</div>)
@@ -338,12 +335,12 @@ class App extends React.Component {
 				<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
 
         <p>My Exiting Tokens:</p>
-        {myExitingTokens.map(token => (
+        {/* {myExitingTokens.map(token => (
           <div key={token}>
             <p style={{ display: "inline" }}>{token}</p>
             <button onClick={() => this.finalizeExit(token)}>Finalize Exit</button>
           </div>
-        ))}
+        ))} */}
 
 				<p>My Challenged Tokens:</p>
 				{myChallengedTokens.map(challenge => (
@@ -387,8 +384,9 @@ class App extends React.Component {
 const mapStateToProps = state => ({ });
 
 const mapDispatchToProps = dispatch => ({
+	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
-	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting))
+	getExitingFrom: (address, rootChainContract) => dispatch(getExitingFrom(address, rootChainContract)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

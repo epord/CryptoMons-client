@@ -3,6 +3,7 @@ import * as C from "./constants";
 const initialState = {
 	myCryptoMons: [],
 	plasmaTokens: [],
+	exitingTokens: [],
 };
 
 const reducerMapper = {
@@ -18,6 +19,11 @@ const reducerMapper = {
 	[C.GOT_OWNED_TOKENS]: (state, action) => {
 		return Object.assign({}, state, {
       plasmaTokens: action.payload
+    });
+	},
+	[C.GOT_OWNED_TOKENS]: (state, action) => {
+		return Object.assign({}, state, {
+      exitingTokens: action.payload
     });
 	},
 }

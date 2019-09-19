@@ -13,7 +13,7 @@ import Grid from '@material-ui/core/Grid';
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
 import { depositToPlasma, buyCryptoMon } from '../../services/ethService';
-import { getCryptoMonsFrom } from '../redux/actions'
+import { getCryptoMonsFrom } from '../redux/actions';
 
 
 class CryptoMons extends React.Component {

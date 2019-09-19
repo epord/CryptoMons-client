@@ -13,9 +13,10 @@ import Grid from '@material-ui/core/Grid';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Dialog from '@material-ui/core/Dialog';
 
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+
 import { exitDepositToken, exitToken } from '../../services/ethService';
 import { transferInPlasma, getExitData } from '../../services/plasmaServices';
-import { getOwnedTokens } from '../redux/actions'
 
 const styles = theme => ({
 	dialogPaper: {
@@ -28,19 +29,6 @@ class PlasmaTokens extends React.Component {
 	state = {
 		modalOpen: false
 	}
-
-	componentDidMount = () => {
-		if(!web3.eth.defaultAccount) {
-			delay(500).then(this.componentDidMount);
-		} else {
-			this.ethAccount = web3.eth.defaultAccount;
-			this.getPlasmaTokensFrom()
-		}
-	}
-
-	getPlasmaTokensFrom = async () => {
-		getOwnedTokens(this.ethAccount, false);
-	};
 
 	transferInPlasma = async token => {
 		const { transferAddress } = this.state;
@@ -98,7 +86,8 @@ class PlasmaTokens extends React.Component {
 	}
 
 	render = () => {
-		const { plasmaTokens } = this.props;
+		const { plasmaTokens, exitingTokens } = this.props;
+		console.log(exitingTokens)
 		return (
 			<React.Fragment>
 				{this.renderTransferDialog()}
@@ -114,6 +103,40 @@ class PlasmaTokens extends React.Component {
 											style={{ width: '100%' }} />
 										<CardContent>
 											<Typography variant="subtitle1">ID: {token}</Typography>
+											<Typography variant="subtitle1" style={{ color: red }}>
+												<ExitToAppIcon />
+												<b>ID: {token}</b>
+											</Typography>
+										</CardContent>
+									</CardActionArea>
+									<CardActions>
+										<Button fullWidth onClick={() => this.openTransferModal(token)} variant="outlined" size="small">Transfer</Button>
+										<Button fullWidth onClick={() => this.exitToken(token)} variant="outlined" size="small">Exit</Button>
+									</CardActions>
+								</Card>
+							</Grid>
+						</React.Fragment>
+					))}
+					{exitingTokens.map(token => (
+						<React.Fragment key={token}>
+							<Grid item xs={2} key={token}>
+								<Card>
+									<CardActionArea>
+										<img
+											src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
+											style={{ width: '100%' }} />
+										<CardContent>
+											<Grid conainer>
+												<Grid item xs={12}>
+													<Typography variant="subtitle1">ID: {token}</Typography>
+												</Grid>
+												<Grid item xs={12}>
+													<ExitToAppIcon ftonSize="small" style={{ color: 'rgb(245, 155, 66)' }} />
+													<Typography variant="subtitle1" style={{ color: 'rgb(245, 155, 66)', display: 'inline' }}>
+														Exiting
+													</Typography>
+												</Grid>
+											</Grid>
 										</CardContent>
 									</CardActionArea>
 									<CardActions>
@@ -134,13 +157,12 @@ class PlasmaTokens extends React.Component {
 const mapStateToProps = state => {
 	return {
 		plasmaTokens: state.plasmaTokens,
+		exitingTokens: state.exitingTokens,
 	};
 }
 
 const mapDispatchToProps = dispatch => {
-  return {
-		getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract))
-	};
+  return { };
 }
 
 const connectedPlasmaTokens = connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens);
