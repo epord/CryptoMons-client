@@ -103,10 +103,6 @@ class PlasmaTokens extends React.Component {
 											style={{ width: '100%' }} />
 										<CardContent>
 											<Typography variant="subtitle1">ID: {token}</Typography>
-											<Typography variant="subtitle1" style={{ color: red }}>
-												<ExitToAppIcon />
-												<b>ID: {token}</b>
-											</Typography>
 										</CardContent>
 									</CardActionArea>
 									<CardActions>

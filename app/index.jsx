@@ -334,14 +334,6 @@ class App extends React.Component {
 
 				<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
 
-        <p>My Exiting Tokens:</p>
-        {/* {myExitingTokens.map(token => (
-          <div key={token}>
-            <p style={{ display: "inline" }}>{token}</p>
-            <button onClick={() => this.finalizeExit(token)}>Finalize Exit</button>
-          </div>
-        ))} */}
-
 				<p>My Challenged Tokens:</p>
 				{myChallengedTokens.map(challenge => (
 					<div key={challenge.slot}>

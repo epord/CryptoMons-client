@@ -21,7 +21,9 @@ const reducerMapper = {
       plasmaTokens: action.payload
     });
 	},
-	[C.GOT_OWNED_TOKENS]: (state, action) => {
+	[C.GOT_EXITING_FROM]: (state, action) => {
+		console.log(action)
+		console.log(`get exiting tokens ${action.payload}`)
 		return Object.assign({}, state, {
       exitingTokens: action.payload
     });

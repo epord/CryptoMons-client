@@ -127,7 +127,7 @@ class Hack extends React.Component {
     const ltResponse = await fetch(`${process.env.API_URL}/api/transactions/${transactionHash}`);
     const lastTransaction = await ltResponse.json();
 
-    const data1Res = await fetch(`${process.env.API_URL}/api/exit/singleData/${transactionHash}`);
+    const data1Res = await fetch(`${process.env.API_URL}/api/exits/singleData/${transactionHash}`);
     const data1 = await data1Res.json();
 
     const hash = generateTransactionHash(token, lastTransaction.minedBlock, hacker);
