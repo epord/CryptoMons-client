@@ -11,15 +11,14 @@ import async from 'async';
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChallengeRespond,
 	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
-	getExitedFrom, getChallengedFrom,
-	finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
+	getChallengedFrom, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
 	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds,
 	checkEmptyBlock, checkInclusion } from '../services/ethService';
 
 import { loadContracts, getProofHistory } from '../services/plasmaServices';
 import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingFrom } from './redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens, getExitingFrom, getExitedTokens } from './redux/actions'
 
 class App extends React.Component {
 
@@ -27,7 +26,6 @@ class App extends React.Component {
 		super(props)
 		this.state = {
 			loading: true,
-			myExitedTokens: [],
 			myChallengedTokens: [],
 			withdrawableAmount: '0'
 		}
@@ -49,7 +47,6 @@ class App extends React.Component {
 			this.getCryptoMonsFrom(this.ethAccount);
 			this.getPlasmaTokensFrom(this.ethAccount);
 			this.getExitingFrom(this.ethAccount);
-			this.getExitedFrom(this.ethAccount);
 			this.getChallengedFrom(this.ethAccount);
 			this.getBalance();
 			this.setState({ loading: false })
@@ -86,7 +83,7 @@ class App extends React.Component {
 
 		subscribeToFinalizedExit(rootChain, address,(r => {
 			this.getExitingFrom(this.ethAccount);
-			this.getExitedFrom(this.ethAccount);
+			this.props.getExitedTokens(address, rootChain);
 			console.log("Finalized Exit - Slot: " + r.args.slot.toFixed())
 		}));
 
@@ -102,7 +99,7 @@ class App extends React.Component {
 		}));
 
 		subscribeToWithdrew(rootChain, address,(r => {
-			this.getExitedFrom(this.ethAccount);
+			this.props.getExitedTokens(address, rootChain);
 			this.getCryptoMonsFrom(this.ethAccount);
 			console.log("Withdrawal - Slot: " + r.args.slot.toFixed())
 		}));
@@ -166,12 +163,6 @@ class App extends React.Component {
 		this.props.getExitingFrom(address, rootChain);
 	};
 
-  getExitedFrom = async address => {
-    const { rootChain } = this.state;
-    const tokens = await getExitedFrom(address, rootChain);
-		this.setState({ myExitedTokens: tokens });
-	};
-
 	getChallengedFrom = async address => {
 		const { rootChain } = this.state;
 		const challenges = await getChallengedFrom(address, rootChain);
@@ -182,30 +173,6 @@ class App extends React.Component {
 		const { rootChain } = this.state;
 		await finalizeExit(rootChain, token);
 		console.log("Finalized Exit successful");
-	};
-
-	withdraw = async token => {
-		const { rootChain } = this.state;
-		await withdraw(rootChain, token);
-		console.log("Withdrawn successful");
-	};
-
-	challengeBefore = token => {
-		const { rootChain } = this.state;
-		console.log(`Challenging Before: ${token}`);
-		challengeBefore(token, rootChain);
-	};
-
-	challengeBetween = token => {
-		const { rootChain } = this.state;
-		console.log(`Challenging Between: ${token}`);
-		challengeBetween(token, rootChain);
-	};
-
-	challengeAfter = token => {
-		const { rootChain } = this.state;
-		console.log(`Challenging After: ${token}`);
-		challengeAfter(token, rootChain);
 	};
 
 	respondChallenge = async (token, hash) => {
@@ -294,7 +261,7 @@ class App extends React.Component {
 	}
 
 	render() {
-		const { loading, rootChain, cryptoMons, vmc, myExitedTokens,
+		const { loading, rootChain, cryptoMons, vmc,
 			myChallengedTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
 
 		if (loading) return (<div>Loading...</div>)
@@ -339,14 +306,6 @@ class App extends React.Component {
 					</div>
 				))}
 
-        <p>My Exited Tokens:</p>
-        {myExitedTokens.map(token => (
-          <div key={token}>
-            <p style={{ display: "inline" }}>{token}</p>
-            <button onClick={() => this.withdraw(token)}>Withdraw</button>
-          </div>
-				))}
-
 				<Link to="/hacks/">Hacks!</Link>
 
 			</React.Fragment>
@@ -361,6 +320,7 @@ const mapDispatchToProps = dispatch => ({
 	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
 	getExitingFrom: (address, rootChainContract) => dispatch(getExitingFrom(address, rootChainContract)),
+	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

@@ -15,10 +15,11 @@ import Dialog from '@material-ui/core/Dialog';
 
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import WarningIcon from '@material-ui/icons/Warning';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
-import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter } from '../../services/ethService';
+import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw } from '../../services/ethService';
 import { transferInPlasma, getExitData } from '../../services/plasmaServices';
-import { getChallengeableTokens } from '../redux/actions';
+import { getChallengeableTokens, getExitedTokens } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -33,8 +34,9 @@ class PlasmaTokens extends React.Component {
 	}
 
 	componentDidMount() {
-		const { ethAccount, getChallengeableTokens, rootChainContract } = this.props;
+		const { ethAccount, getChallengeableTokens, rootChainContract, getExitedTokens } = this.props;
 		getChallengeableTokens(ethAccount, rootChainContract);
+		getExitedTokens(ethAccount, rootChainContract);
 	}
 
 	transferInPlasma = async token => {
@@ -84,6 +86,12 @@ class PlasmaTokens extends React.Component {
 		challengeAfter(token, rootChainContract);
 	};
 
+	withdraw = async token => {
+		const { rootChainContract } = this.props;
+		await withdraw(rootChainContract, token);
+		console.log("Withdrawn successful");
+	};
+
 
 	openTransferModal = token => this.setState({ modalOpen: true, tokenToTransact: token });
 
@@ -118,7 +126,7 @@ class PlasmaTokens extends React.Component {
 	}
 
 	render = () => {
-		const { plasmaTokens, exitingTokens, challengeableTokens } = this.props;
+		const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens } = this.props;
 		return (
 			<React.Fragment>
 				{this.renderTransferDialog()}
@@ -194,6 +202,31 @@ class PlasmaTokens extends React.Component {
 							</Card>
 						</Grid>
 					))}
+					{exitedTokens.map(token => (
+						<Grid item xs={2} key={token}>
+							<Card>
+								<CardActionArea>
+									<img
+										src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
+										style={{ width: '100%' }} />
+									<CardContent>
+										<Grid container>
+											<Grid item xs={12}>
+												<Typography variant="subtitle1">ID: {token}</Typography>
+											</Grid>
+											<Grid item xs={12}>
+												<CheckCircleIcon fontSize="small" style={{ color: 'green' }} />
+												<Typography variant="subtitle1" style={{ color: 'green', display: 'inline' }}>
+													Exit Successful
+												</Typography>
+											</Grid>
+										</Grid>
+									</CardContent>
+								</CardActionArea>
+								<Button fullWidth onClick={() => this.withdraw(token)} variant="outlined" size="small">withdraw</Button>
+							</Card>
+						</Grid>
+					))}
 				</Grid>
 			</React.Fragment>
 		);
@@ -205,10 +238,12 @@ const mapStateToProps = state => ({
 	plasmaTokens: state.plasmaTokens,
 	exitingTokens: state.exitingTokens,
 	challengeableTokens: state.challengeableTokens,
+	exitedTokens: state.exitedTokens,
 });
 
 const mapDispatchToProps = dispatch => ({
-	getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract))
+	getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract)),
+	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract))
 });
 
 const connectedPlasmaTokens = connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens);

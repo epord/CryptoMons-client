@@ -4,6 +4,7 @@ const initialState = {
 	myCryptoMons: [],
 	plasmaTokens: [],
 	exitingTokens: [],
+	exitedTokens: [],
 	challengeableTokens: [],
 };
 
@@ -30,6 +31,11 @@ const reducerMapper = {
 	[C.GOT_EXITING_FROM]: (state, action) => {
 		return Object.assign({}, state, {
       exitingTokens: action.payload
+    });
+	},
+	[C.GOT_EXITED]: (state, action) => {
+		return Object.assign({}, state, {
+      exitedTokens: action.payload
     });
 	},
 	[C.GOT_CONTRACTS]: (state, action) => {

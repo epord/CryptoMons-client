@@ -21,6 +21,9 @@ const gotContracts = contracts => {
 const gotChallengeables = tokens => {
   return { type: C.GOT_CHALLENGEABLES, payload: tokens };
 }
+const gotExited = tokens => {
+  return { type: C.GOT_EXITED, payload: tokens };
+}
 
 
 
@@ -55,4 +58,10 @@ export const getChallengeableTokens = (address, rootChainContract) => (dispatch,
   return EthService
     .getChallengeable(address, rootChainContract)
     .then(tokens => dispatch(gotChallengeables(tokens)));
+}
+
+export const getExitedTokens = (address, rootChainContract) => (dispatch, getState) => {
+  return EthService
+    .getExitedFrom(address, rootChainContract)
+    .then(tokens => dispatch(gotExited(tokens)));
 }
