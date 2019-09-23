@@ -14,9 +14,11 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import Dialog from '@material-ui/core/Dialog';
 
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+import WarningIcon from '@material-ui/icons/Warning';
 
-import { exitDepositToken, exitToken } from '../../services/ethService';
+import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter } from '../../services/ethService';
 import { transferInPlasma, getExitData } from '../../services/plasmaServices';
+import { getChallengeableTokens } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -28,6 +30,11 @@ class PlasmaTokens extends React.Component {
 
 	state = {
 		modalOpen: false
+	}
+
+	componentDidMount() {
+		const { ethAccount, getChallengeableTokens, rootChainContract } = this.props;
+		getChallengeableTokens(ethAccount, rootChainContract);
 	}
 
 	transferInPlasma = async token => {
@@ -52,6 +59,31 @@ class PlasmaTokens extends React.Component {
 
 		console.log("Exit successful");
 	};
+
+	finalizeExit = async token => {
+		const { rootChainContract } = this.props;
+		await finalizeExit(rootChainContract, token);
+		console.log("Finalized Exit successful");
+	};
+
+	challengeBefore = token => {
+		const { rootChainContract } = this.props;
+		console.log(`Challenging Before: ${token}`);
+		challengeBefore(token, rootChainContract);
+	};
+
+	challengeBetween = token => {
+		const { rootChainContract } = this.props;
+		console.log(`Challenging Between: ${token}`);
+		challengeBetween(token, rootChainContract);
+	};
+
+	challengeAfter = token => {
+		const { rootChainContract } = this.props;
+		console.log(`Challenging After: ${token}`);
+		challengeAfter(token, rootChainContract);
+	};
+
 
 	openTransferModal = token => this.setState({ modalOpen: true, tokenToTransact: token });
 
@@ -86,8 +118,7 @@ class PlasmaTokens extends React.Component {
 	}
 
 	render = () => {
-		const { plasmaTokens, exitingTokens } = this.props;
-		console.log(exitingTokens)
+		const { plasmaTokens, exitingTokens, challengeableTokens } = this.props;
 		return (
 			<React.Fragment>
 				{this.renderTransferDialog()}
@@ -105,43 +136,63 @@ class PlasmaTokens extends React.Component {
 											<Typography variant="subtitle1">ID: {token}</Typography>
 										</CardContent>
 									</CardActionArea>
-									<CardActions>
-										<Button fullWidth onClick={() => this.openTransferModal(token)} variant="outlined" size="small">Transfer</Button>
-										<Button fullWidth onClick={() => this.exitToken(token)} variant="outlined" size="small">Exit</Button>
-									</CardActions>
+									<Button fullWidth onClick={() => this.openTransferModal(token)} variant="outlined" size="small">Transfer</Button>
+									<Button fullWidth onClick={() => this.exitToken(token)} variant="outlined" size="small">Exit</Button>
 								</Card>
 							</Grid>
 						</React.Fragment>
 					))}
 					{exitingTokens.map(token => (
-						<React.Fragment key={token}>
-							<Grid item xs={2} key={token}>
-								<Card>
-									<CardActionArea>
-										<img
-											src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
-											style={{ width: '100%' }} />
-										<CardContent>
-											<Grid conainer>
-												<Grid item xs={12}>
-													<Typography variant="subtitle1">ID: {token}</Typography>
-												</Grid>
-												<Grid item xs={12}>
-													<ExitToAppIcon ftonSize="small" style={{ color: 'rgb(245, 155, 66)' }} />
-													<Typography variant="subtitle1" style={{ color: 'rgb(245, 155, 66)', display: 'inline' }}>
-														Exiting
-													</Typography>
-												</Grid>
+						<Grid item xs={2} key={token}>
+							<Card>
+								<CardActionArea>
+									<img
+										src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
+										style={{ width: '100%' }} />
+									<CardContent>
+										<Grid container>
+											<Grid item xs={12}>
+												<Typography variant="subtitle1">ID: {token}</Typography>
 											</Grid>
-										</CardContent>
-									</CardActionArea>
-									<CardActions>
-										<Button fullWidth onClick={() => this.openTransferModal(token)} variant="outlined" size="small">Transfer</Button>
-										<Button fullWidth onClick={() => this.exitToken(token)} variant="outlined" size="small">Exit</Button>
-									</CardActions>
-								</Card>
-							</Grid>
-						</React.Fragment>
+											<Grid item xs={12}>
+												<ExitToAppIcon fontSize="small" style={{ color: 'rgb(245, 155, 66)' }} />
+												<Typography variant="subtitle1" style={{ color: 'rgb(245, 155, 66)', display: 'inline' }}>
+													Exiting
+												</Typography>
+											</Grid>
+										</Grid>
+									</CardContent>
+								</CardActionArea>
+								<Button fullWidth onClick={() => this.finalizeExit(token)} variant="outlined" size="small">Finalize Exit</Button>
+							</Card>
+						</Grid>
+					))}
+					{challengeableTokens.map(token => (
+						<Grid item xs={2} key={token}>
+							<Card>
+								<CardActionArea>
+									<img
+										src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
+										style={{ width: '100%' }} />
+									<CardContent>
+										<Grid container>
+											<Grid item xs={12}>
+												<Typography variant="subtitle1">ID: {token}</Typography>
+											</Grid>
+											<Grid item xs={12}>
+												<WarningIcon fontSize="small" style={{ color: 'red' }} />
+												<Typography variant="subtitle1" style={{ color: 'red', display: 'inline' }}>
+													Challengeable token
+												</Typography>
+											</Grid>
+										</Grid>
+									</CardContent>
+								</CardActionArea>
+								<Button fullWidth onClick={() => this.challengeBefore(token)} variant="outlined" size="small">Challenge Before</Button>
+								<Button fullWidth onClick={() => this.challengeBetween(token)} variant="outlined" size="small">Challenge Between</Button>
+								<Button fullWidth onClick={() => this.challengeAfter(token)} variant="outlined" size="small">Challenge After</Button>
+							</Card>
+						</Grid>
 					))}
 				</Grid>
 			</React.Fragment>
@@ -150,16 +201,15 @@ class PlasmaTokens extends React.Component {
 
 }
 
-const mapStateToProps = state => {
-	return {
-		plasmaTokens: state.plasmaTokens,
-		exitingTokens: state.exitingTokens,
-	};
-}
+const mapStateToProps = state => ({
+	plasmaTokens: state.plasmaTokens,
+	exitingTokens: state.exitingTokens,
+	challengeableTokens: state.challengeableTokens,
+});
 
-const mapDispatchToProps = dispatch => {
-  return { };
-}
+const mapDispatchToProps = dispatch => ({
+	getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract))
+});
 
 const connectedPlasmaTokens = connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens);
 const styledPlasmaTokens = withStyles(styles)(connectedPlasmaTokens);

@@ -14,20 +14,45 @@ const gotExitingFrom = tokens => {
   return { type: C.GOT_EXITING_FROM, payload: tokens };
 }
 
+const gotContracts = contracts => {
+  return { type: C.GOT_CONTRACTS, payload: contracts };
+}
+
+const gotChallengeables = tokens => {
+  return { type: C.GOT_CHALLENGEABLES, payload: tokens };
+}
+
+
+
 export const getCryptoMonsFrom = (address, cryptoMonsContract) => (dispatch, getState) => {
-  EthService
+  return EthService
     .getCryptoMonsFrom(address, cryptoMonsContract)
     .then(cryptoMons => dispatch(gotCryptoMons(cryptoMons)));
 }
 
 export const getOwnedTokens = (address, exiting) => (dispatch, getState) => {
-  PlasmaService
+  return PlasmaService
     .getOwnedTokens(address, exiting)
     .then(tokens => dispatch(gotOwnedTokens(tokens)));
 }
 
 export const getExitingFrom = (address, rootChainContract) => (dispatch, getState) => {
-  EthService
+  return EthService
     .getExitingFrom(address, rootChainContract)
     .then(tokens => dispatch(gotExitingFrom(tokens)));
+}
+
+export const loadContracts = () => (dispatch, getState) => {
+  return PlasmaService
+    .loadContracts()
+    .then(res => {
+      dispatch(gotContracts(res))
+      return res
+    });
+}
+
+export const getChallengeableTokens = (address, rootChainContract) => (dispatch, getState) => {
+  return EthService
+    .getChallengeable(address, rootChainContract)
+    .then(tokens => dispatch(gotChallengeables(tokens)));
 }

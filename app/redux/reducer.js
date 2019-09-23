@@ -4,6 +4,7 @@ const initialState = {
 	myCryptoMons: [],
 	plasmaTokens: [],
 	exitingTokens: [],
+	challengeableTokens: [],
 };
 
 const reducerMapper = {
@@ -21,12 +22,21 @@ const reducerMapper = {
       plasmaTokens: action.payload
     });
 	},
+	[C.GOT_CHALLENGEABLES]: (state, action) => {
+		return Object.assign({}, state, {
+			challengeableTokens: action.payload
+		});
+	},
 	[C.GOT_EXITING_FROM]: (state, action) => {
-		console.log(action)
-		console.log(`get exiting tokens ${action.payload}`)
 		return Object.assign({}, state, {
       exitingTokens: action.payload
     });
+	},
+	[C.GOT_CONTRACTS]: (state, action) => {
+		state.rootChain = { ...action.payload.RootChain, address: action.payload.RootChain.networks['5777'].address };
+		state.cryptoMons = { ...action.payload.CryptoMons, address: action.payload.CryptoMons.networks['5777'].address };
+		state.vmc = { ...action.payload.ValidatorManagerContract, address: action.payload.ValidatorManagerContract.networks['5777'].address };
+		return state;
 	},
 }
 

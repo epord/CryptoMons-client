@@ -29,7 +29,6 @@ class App extends React.Component {
 			loading: true,
 			myExitedTokens: [],
 			myChallengedTokens: [],
-			challengeableTokens: [],
 			withdrawableAmount: '0'
 		}
 	}
@@ -51,7 +50,6 @@ class App extends React.Component {
 			this.getPlasmaTokensFrom(this.ethAccount);
 			this.getExitingFrom(this.ethAccount);
 			this.getExitedFrom(this.ethAccount);
-			this.getChallengeable(this.ethAccount);
 			this.getChallengedFrom(this.ethAccount);
 			this.getBalance();
 			this.setState({ loading: false })
@@ -82,7 +80,7 @@ class App extends React.Component {
 			this.getPlasmaTokensFrom(this.ethAccount);
 			this.getExitingFrom(this.ethAccount);
 			this.getChallengedFrom(this.ethAccount);
-			this.getChallengeable(this.ethAccount);
+			getChallengeable(this.ethAccount, rootChain);
 			console.log("Coin Reset - Slot: " + r.args.slot.toFixed())
 		}));
 
@@ -130,7 +128,7 @@ class App extends React.Component {
 		}))
 
 		subscribeToChallengeRespond(rootChain, address, (r => {
-			this.getChallengeable(this.ethAccount);
+			getChallengeable(this.ethAccount, rootChain);
 			this.getChallengedFrom(this.ethAccount);
 			this.getBalance();
 			console.log('RespondedExitChallenge event');
@@ -178,12 +176,6 @@ class App extends React.Component {
 		const { rootChain } = this.state;
 		const challenges = await getChallengedFrom(address, rootChain);
 		this.setState({ myChallengedTokens: challenges });
-	};
-
-	getChallengeable = async address => {
-		const { rootChain } = this.state;
-		const tokens = await getChallengeable(address, rootChain);
-		this.setState({ challengeableTokens: tokens });
 	};
 
 	finalizeExit = async token => {
@@ -303,7 +295,7 @@ class App extends React.Component {
 
 	render() {
 		const { loading, rootChain, cryptoMons, vmc, myExitedTokens,
-			myChallengedTokens, challengeableTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
+			myChallengedTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
 
 		if (loading) return (<div>Loading...</div>)
 
@@ -332,7 +324,7 @@ class App extends React.Component {
 
 				<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
 
-				<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
+				<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={this.ethAccount} />
 
 				<p>My Challenged Tokens:</p>
 				{myChallengedTokens.map(challenge => (
@@ -352,16 +344,6 @@ class App extends React.Component {
           <div key={token}>
             <p style={{ display: "inline" }}>{token}</p>
             <button onClick={() => this.withdraw(token)}>Withdraw</button>
-          </div>
-				))}
-
-        <p>Challengeable tokens:</p>
-        {challengeableTokens.map(token => (
-          <div key={token}>
-            <p style={{ display: "inline" }}>{token}</p>
-            <button onClick={() => this.challengeBefore(token)}>Challenge Before</button>
-            <button onClick={() => this.challengeBetween(token)}>Challenge Between</button>
-            <button onClick={() => this.challengeAfter(token)}>Challenge After</button>
           </div>
 				))}
 

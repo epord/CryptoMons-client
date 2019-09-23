@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {exitToken, challengeBeforeWithExitData, getCoinState, exitDepositToken} from '../../services/ethService';
+import {loadContracts} from '../../services/plasmaServices';
 import {generateTransactionHash, sign} from "../../utils/cryptoUtils";
 
 class Hack extends React.Component {
@@ -9,23 +10,42 @@ class Hack extends React.Component {
     this.state = { history: [] }
   }
 
+	componentDidMount = () => {
+		const interval = setInterval(() => {
+			if (web3.eth.defaultAccount) {
+				this.ethAccount = web3.eth.defaultAccount;
+				this.loadContracts();
+				clearInterval(interval);
+			}
+		}, 100);
+	};
+
+	loadContracts = async () => {
+		const res = await loadContracts();
+		return this.setState({
+			rootChain: { ...res.RootChain, address: res.RootChain.networks['5777'].address },
+			cryptoMons: { ...res.CryptoMons, address: res.CryptoMons.networks['5777'].address },
+			vmc: { ...res.ValidatorManagerContract, address: res.ValidatorManagerContract.networks['5777'].address }
+		});
+	};
+
   onSlotChanged = event => {
     let hackSlot = event.target.value;
     this.setState({ hackSlot: hackSlot });
 
     fetch(`${process.env.API_URL}/api/tokens/${hackSlot}/history`).then(response => {
       response.json().then(res => {
-        this.setState({ history: res.history })
+        this.setState({ history: res })
       })
     });
 
-    getCoinState(hackSlot, this.props.rootChain).then(response => {
+    getCoinState(hackSlot, this.state.rootChain).then(response => {
       this.setState({ isHackSlotExiting: response == "EXITING" });
     })
   };
 
   maliciousExit = exitData => async () => {
-    const { rootChain } = this.props;
+    const { rootChain } = this.state;
     let res;
     if (!exitData.signature) {
       res = await exitDepositToken(rootChain, exitData.slot);
@@ -98,7 +118,7 @@ class Hack extends React.Component {
       exitingBlock: data2.exitData.block
     };
 
-    exitToken(this.props.rootChain, exitData).then(response => {
+    exitToken(this.state.rootChain, exitData).then(response => {
       console.log("Exit successful: ", response);
     }).catch(console.error);
 
@@ -106,7 +126,7 @@ class Hack extends React.Component {
   }
 
 	challengeBefore = (token, exitData) => () => {
-		const { rootChain } = this.props;
+		const { rootChain } = this.state;
     console.log(`Challenging Before: ${token}`)
 
     const newExitData = {
@@ -162,7 +182,7 @@ class Hack extends React.Component {
       exitingBlock: data2.exitData.block
     };
 
-    exitToken(this.props.rootChain, exitData).then(response => {
+    exitToken(this.state.rootChain, exitData).then(response => {
       console.log("Exit successful: ", response);
     }).catch(console.error);
 
