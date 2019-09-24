@@ -34,8 +34,7 @@ class CryptoMons extends React.Component {
 
 		return (
 			<React.Fragment>
-				<Button onClick={this.buyCryptoMon} variant="outlined" size="small">Buy CryptoMon</Button>
-				<p>My CryptoMons:</p>
+				<Button onClick={this.buyCryptoMon} style={{ marginBottom: '1em' }} variant="outlined" size="small">Buy CryptoMon</Button>
 				<Grid container spacing={3}>
 					{myCryptoMons.map(token => (
 						<Grid item xs={2} key={token}>

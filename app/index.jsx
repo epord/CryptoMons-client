@@ -5,6 +5,10 @@ import { Link } from "react-router-dom";
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
+import ExpansionPanel from '@material-ui/core/ExpansionPanel';
+import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
+import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 import CryptoMons from './components/CryptoMons.jsx';
 import PlasmaTokens from './components/PlasmaTokens.jsx';
@@ -270,7 +274,7 @@ class App extends React.Component {
 		if (loading) return (<div>Loading...</div>)
 
 		return (
-			<React.Fragment>
+			<div style={{ padding: '1em' }}>
 			<Typography variant="h5" gutterBottom>Hi {this.ethAccount}!</Typography>
 				<Grid container direction="column">
 					<Grid item style={{ alignSelf: 'center' }}>
@@ -282,6 +286,7 @@ class App extends React.Component {
 						</Paper>
 					</Grid>
 					<Grid item>
+						{/* TODO: take this out */}
 						<div>
 							<Typography style={{ display: "inline-block" }}>Verify token history:</Typography>
 							<input
@@ -296,12 +301,28 @@ class App extends React.Component {
 							{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
 						</div>
 					</Grid>
+					<Grid item>
+						{withdrawableAmount != '0' && <button onClick={this.withdrawBonds}>Withdraw all bonds (total: {withdrawableAmount}) </button>}
+					</Grid>
 				</Grid>
-				{withdrawableAmount != '0' && <button onClick={this.withdrawBonds}>Withdraw all bonds (total: {withdrawableAmount}) </button>}
-
-				<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
-
-				<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={this.ethAccount} />
+				<ExpansionPanel defaultExpanded>
+					<ExpansionPanelSummary
+						expandIcon={<ExpandMoreIcon />}>
+						<Typography>My CryptoMons</Typography>
+					</ExpansionPanelSummary>
+					<ExpansionPanelDetails style={{ flexWrap: 'wrap' }}>
+						<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
+					</ExpansionPanelDetails>
+				</ExpansionPanel>
+				<ExpansionPanel defaultExpanded>
+					<ExpansionPanelSummary
+						expandIcon={<ExpandMoreIcon />}>
+						<Typography>My Plasma Tokens</Typography>
+					</ExpansionPanelSummary>
+					<ExpansionPanelDetails>
+						<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={this.ethAccount} />
+					</ExpansionPanelDetails>
+				</ExpansionPanel>
 
 				<p>My Challenged Tokens:</p>
 				{myChallengedTokens.map(challenge => (
@@ -315,8 +336,7 @@ class App extends React.Component {
 						)}
 					</div>
 				))}
-
-			</React.Fragment>
+			</div>
 		)
 	}
 }

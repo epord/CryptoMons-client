@@ -130,8 +130,7 @@ class PlasmaTokens extends React.Component {
 		return (
 			<React.Fragment>
 				{this.renderTransferDialog()}
-				<p>My Plasma Tokens:</p>
-				<Grid container alignContent="center" alignItems="center">
+				<Grid container spacing={3} alignContent="center" alignItems="center">
 					{plasmaTokens.map(token => (
 						<React.Fragment key={token}>
 							<Grid item xs={2} key={token}>
