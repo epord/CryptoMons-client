@@ -18,6 +18,11 @@ import { getCryptoMonsFrom } from '../redux/actions';
 
 class CryptoMons extends React.Component {
 
+	componentDidMount() {
+		const { cryptoMonsContract, ethAccount, getCryptoMonsFrom } = this.props;
+		getCryptoMonsFrom(ethAccount, cryptoMonsContract);
+	}
+
 	buyCryptoMon = async () => {
 		const { cryptoMonsContract, ethAccount, getCryptoMonsFrom } = this.props;
 		buyCryptoMon(cryptoMonsContract)
@@ -67,7 +72,6 @@ class CryptoMons extends React.Component {
 
 const mapStateToProps = state => {
 	return {
-		ethAccount: state.ethAccount,
 		myCryptoMons: state.myCryptoMons
 	};
 }

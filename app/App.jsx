@@ -21,7 +21,6 @@ import "regenerator-runtime/runtime";
 
 class Routes extends React.Component {
 	render() {
-		console.log(this.props)
 		return (
 			<Provider store={store}>
 				<Router>

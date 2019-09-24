@@ -39,7 +39,7 @@ export const getOwnedTokens = (address, exiting) => (dispatch, getState) => {
     .then(tokens => dispatch(gotOwnedTokens(tokens)));
 }
 
-export const getExitingFrom = (address, rootChainContract) => (dispatch, getState) => {
+export const getExitingTokens = (address, rootChainContract) => (dispatch, getState) => {
   return EthService
     .getExitingFrom(address, rootChainContract)
     .then(tokens => dispatch(gotExitingFrom(tokens)));

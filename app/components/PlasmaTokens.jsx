@@ -19,7 +19,7 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
 import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw } from '../../services/ethService';
 import { transferInPlasma, getExitData } from '../../services/plasmaServices';
-import { getChallengeableTokens, getExitedTokens } from '../redux/actions';
+import { getChallengeableTokens, getExitingTokens, getExitedTokens } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -34,8 +34,9 @@ class PlasmaTokens extends React.Component {
 	}
 
 	componentDidMount() {
-		const { ethAccount, getChallengeableTokens, rootChainContract, getExitedTokens } = this.props;
+		const { ethAccount, getChallengeableTokens, rootChainContract, getExitingTokens, getExitedTokens } = this.props;
 		getChallengeableTokens(ethAccount, rootChainContract);
+		getExitingTokens(ethAccount, rootChainContract);
 		getExitedTokens(ethAccount, rootChainContract);
 	}
 
@@ -242,7 +243,8 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => ({
 	getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract)),
-	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract))
+	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
+	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
 });
 
 const connectedPlasmaTokens = connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens);

@@ -1,9 +1,9 @@
 import React from 'react';
 import { connect } from "react-redux";
-import { Link } from "react-router-dom";
 
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
+import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
 import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
@@ -16,16 +16,16 @@ import PlasmaTokens from './components/PlasmaTokens.jsx';
 import async from 'async';
 
 import {
-	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChallengeRespond,
-	subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToSlashedBond,
-	getChallengedFrom, finalizeExit, withdraw, getChallengeable, challengeAfter, challengeBefore,
-	challengeBetween, getChallenge, respondChallenge, getBalance, withdrawBonds,
-	checkEmptyBlock, checkInclusion } from '../services/ethService';
+	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
+	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
+	subscribeToSlashedBond, getChallengedFrom, finalizeExit, getChallengeable, getChallenge,
+	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion
+} from '../services/ethService';
 
 import { loadContracts, getProofHistory } from '../services/plasmaServices';
 import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingFrom, getExitedTokens } from './redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens } from './redux/actions'
 
 class App extends React.Component {
 
@@ -51,16 +51,11 @@ class App extends React.Component {
 	init = () => {
 		this.loadContracts().then(() => {
 			this.subscribeToEvents(this.ethAccount);
-			this.getCryptoMonsFrom(this.ethAccount);
-			this.getPlasmaTokensFrom(this.ethAccount);
-			this.getExitingFrom(this.ethAccount);
 			this.getChallengedFrom(this.ethAccount);
 			this.getBalance();
 			this.setState({ loading: false })
 		});
-
 	}
-
 
 	loadContracts = async () => {
 		const res = await loadContracts();
@@ -72,43 +67,49 @@ class App extends React.Component {
 	};
 
 	subscribeToEvents = address => {
-		const { rootChain } = this.state;
+		const { rootChain, cryptoMons } = this.state;
 
 		subscribeToDeposits(rootChain, address,(r => {
-			this.getCryptoMonsFrom(this.ethAccount);
-			this.getPlasmaTokensFrom(this.ethAccount);
 			console.log("DEPOSIT - Slot: " + r.args.slot.toFixed())
+			const { getCryptoMonsFrom, getOwnedTokens } = this.props;
+			getCryptoMonsFrom(address, cryptoMons);
+			getOwnedTokens(address, false);
 		}));
 
 		subscribeToCoinReset(rootChain, address,(r => {
-			this.getPlasmaTokensFrom(this.ethAccount);
-			this.getExitingFrom(this.ethAccount);
-			this.getChallengedFrom(this.ethAccount);
-			getChallengeable(this.ethAccount, rootChain);
 			console.log("Coin Reset - Slot: " + r.args.slot.toFixed())
+			const { getOwnedTokens, getExitingTokens } = this.props;
+			getOwnedTokens(address, false);
+			getExitingTokens(address, rootChain);
+			getChallengeable(this.ethAccount, rootChain);
+			this.getChallengedFrom(this.ethAccount);
 		}));
 
 		subscribeToFinalizedExit(rootChain, address,(r => {
-			this.getExitingFrom(this.ethAccount);
-			this.props.getExitedTokens(address, rootChain);
 			console.log("Finalized Exit - Slot: " + r.args.slot.toFixed())
+			const { getExitingTokens } = this.props;
+			getExitingTokens(address, rootChain);
+			getExitedTokens(address, rootChain);
 		}));
 
 		subscribeToStartedExit(rootChain, address,(r => {
-			this.getPlasmaTokensFrom(this.ethAccount);
-			this.getExitingFrom(this.ethAccount);
 			console.log("Started Exit - Slot: " + r.args.slot.toFixed())
+			const { getOwnedTokens, getExitingTokens } = this.props;
+			getOwnedTokens(address, false);
+			getExitingTokens(address, rootChain);
 		}));
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
-			this.getPlasmaTokensFrom(this.ethAccount);
 			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
+			const { getOwnedTokens } = this.props;
+			getOwnedTokens(address, false);
 		}));
 
 		subscribeToWithdrew(rootChain, address,(r => {
-			this.props.getExitedTokens(address, rootChain);
-			this.getCryptoMonsFrom(this.ethAccount);
 			console.log("Withdrawal - Slot: " + r.args.slot.toFixed())
+			const { getCryptoMonsFrom, getExitedTokens } = this.props;
+			getCryptoMonsFrom(address, cryptoMons);
+			getExitedTokens(address, rootChain);
 		}));
 
 		subscribeToFreeBond(rootChain, address, (r => {
@@ -155,21 +156,7 @@ class App extends React.Component {
 		})
 	}
 
-	getCryptoMonsFrom = async address => {
-		const { cryptoMons } = this.state;
-		const { getCryptoMonsFrom } = this.props;
-		getCryptoMonsFrom(address, cryptoMons);
-	};
-
-	getPlasmaTokensFrom = async address => {
-		this.props.getOwnedTokens(address, false);
-	};
-
-  getExitingFrom = async address => {
-		const { rootChain } = this.state;
-		this.props.getExitingFrom(address, rootChain);
-	};
-
+	/// TODO: Remove to a component
 	getChallengedFrom = async address => {
 		const { rootChain } = this.state;
 		const challenges = await getChallengedFrom(address, rootChain);
@@ -302,7 +289,12 @@ class App extends React.Component {
 						</div>
 					</Grid>
 					<Grid item>
-						{withdrawableAmount != '0' && <button onClick={this.withdrawBonds}>Withdraw all bonds (total: {withdrawableAmount}) </button>}
+						{withdrawableAmount != '0' && (
+							<React.Fragment>
+								<Typography style={{ display: 'inline-block', marginRight: '0.5em' }}>You have {withdrawableAmount / 1000000000000000000} ETH to withdraw</Typography>
+								<Button color="primary" variant="contained" size="small" onClick={this.withdrawBonds}>Withdraw all bonds</Button>
+							</React.Fragment>
+						)}
 					</Grid>
 				</Grid>
 				<ExpansionPanel defaultExpanded>
@@ -311,7 +303,7 @@ class App extends React.Component {
 						<Typography>My CryptoMons</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ flexWrap: 'wrap' }}>
-						<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
+						<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={this.ethAccount} />
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
 				<ExpansionPanel defaultExpanded>
@@ -347,7 +339,7 @@ const mapStateToProps = state => ({ });
 const mapDispatchToProps = dispatch => ({
 	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
-	getExitingFrom: (address, rootChainContract) => dispatch(getExitingFrom(address, rootChainContract)),
+	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
 });
 
