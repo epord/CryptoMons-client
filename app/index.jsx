@@ -1,7 +1,10 @@
 import React from 'react';
 import { connect } from "react-redux";
-
 import { Link } from "react-router-dom";
+
+import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
+import Grid from '@material-ui/core/Grid';
 
 import CryptoMons from './components/CryptoMons.jsx';
 import PlasmaTokens from './components/PlasmaTokens.jsx';
@@ -268,26 +271,33 @@ class App extends React.Component {
 
 		return (
 			<React.Fragment>
-				<p>Calling with address: {this.ethAccount}</p>
-				<button onClick={this.loadContracts}>Load contracts</button>
+			<Typography variant="h5" gutterBottom>Hi {this.ethAccount}!</Typography>
+				<Grid container direction="column">
+					<Grid item style={{ alignSelf: 'center' }}>
+						<Paper style={{ padding: '1em', display: 'inline-block' }}>
+							<Typography variant="h5" component="h3">Contracts</Typography>
+							<Typography variant="body2"><b>RootChain address:</b> {rootChain && rootChain.address}</Typography>
+							<Typography variant="body2"><b>CryptoMon address:</b> {cryptoMons && cryptoMons.address}</Typography>
+							<Typography variant="body2"><b>VMC address:</b> {vmc && vmc.address}</Typography>
+						</Paper>
+					</Grid>
+					<Grid item>
+						<div>
+							<Typography style={{ display: "inline-block" }}>Verify token history:</Typography>
+							<input
+								value={tokenToVerify || ''}
+								onChange={event => {
+									this.handleChange("tokenToVerify")(event);
+									this.setState({ historyValid: undefined });
+								}}
+								placeholder="Token" />
+							<button onClick={this.verifyToken}>Verify</button>
+							{tokenToVerify && historyValid === true && <p style={{ display: 'inline', color: 'green' }}>Valid history! Last owner: {lastValidOwner}</p>}
+							{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
+						</div>
+					</Grid>
+				</Grid>
 				{withdrawableAmount != '0' && <button onClick={this.withdrawBonds}>Withdraw all bonds (total: {withdrawableAmount}) </button>}
-				<p>RootChain address: {rootChain && rootChain.address}</p>
-				<p>CryptoMon address: {cryptoMons && cryptoMons.address}</p>
-				<p>VMC address: {vmc && vmc.address}</p>
-
-				<div>
-					<p style={{ display: "inline-block" }}>Verify token history:</p>
-					<input
-						value={tokenToVerify || ''}
-						onChange={event => {
-							this.handleChange("tokenToVerify")(event);
-							this.setState({ historyValid: undefined });
-						}}
-						placeholder="Token" />
-					<button onClick={this.verifyToken}>Verify</button>
-					{tokenToVerify && historyValid === true && <p style={{ display: 'inline', color: 'green' }}>Valid history! Last owner: {lastValidOwner}</p>}
-					{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
-				</div>
 
 				<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} />
 
@@ -305,8 +315,6 @@ class App extends React.Component {
 						)}
 					</div>
 				))}
-
-				<Link to="/hacks/">Hacks!</Link>
 
 			</React.Fragment>
 		)
