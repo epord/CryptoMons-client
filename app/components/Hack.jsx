@@ -1,8 +1,9 @@
 import React from 'react';
+import { connect } from "react-redux";
 
-import {exitToken, challengeBeforeWithExitData, getCoinState, exitDepositToken} from '../../services/ethService';
-import {loadContracts} from '../../services/plasmaServices';
-import {generateTransactionHash, sign} from "../../utils/cryptoUtils";
+import { exitToken, challengeBeforeWithExitData, getCoinState, exitDepositToken } from '../../services/ethService';
+import { loadContracts } from '../redux/actions';
+import { generateTransactionHash, sign } from "../../utils/cryptoUtils";
 
 class Hack extends React.Component {
   constructor(props) {
@@ -10,15 +11,10 @@ class Hack extends React.Component {
     this.state = { history: [] }
   }
 
-	componentDidMount = () => {
-		const interval = setInterval(() => {
-			if (web3.eth.defaultAccount) {
-				this.ethAccount = web3.eth.defaultAccount;
-				this.loadContracts();
-				clearInterval(interval);
-			}
-		}, 100);
-	};
+  componentDidMount() {
+    const { rootChainContract, loadContracts } = this.props;
+    if (!rootChainContract) loadContracts();
+  }
 
 	loadContracts = async () => {
 		const res = await loadContracts();
@@ -39,18 +35,18 @@ class Hack extends React.Component {
       })
     });
 
-    getCoinState(hackSlot, this.state.rootChain).then(response => {
+    getCoinState(hackSlot, this.props.rootChainContract).then(response => {
       this.setState({ isHackSlotExiting: response == "EXITING" });
     })
   };
 
   maliciousExit = exitData => async () => {
-    const { rootChain } = this.state;
+    const { rootChainContract } = this.props;
     let res;
     if (!exitData.signature) {
-      res = await exitDepositToken(rootChain, exitData.slot);
+      res = await exitDepositToken(rootChainContract, exitData.slot);
     } else {
-      res = await exitToken(rootChain, exitData)
+      res = await exitToken(rootChainContract, exitData)
     }
     console.log("Exit successful: ", res);
   };
@@ -189,7 +185,11 @@ class Hack extends React.Component {
   };
 
   render = () => {
-    const { hackSlot, history , isHackSlotExiting} = this.state;
+    const { rootChainContract } = this.props;
+    const { hackSlot, history , isHackSlotExiting } = this.state;
+
+    if (!rootChainContract) return <div>Loading...</div>
+
     return(
       <div>
         <h2>HACKS!</h2>
@@ -230,4 +230,12 @@ class Hack extends React.Component {
   }
 }
 
-export default Hack;
+const mapStateToProps = state => ({
+  rootChainContract: state.rootChainContract
+})
+
+const mapDispatchToProps = dispatch => ({
+	loadContracts: () => dispatch(loadContracts())
+})
+
+export default connect(mapStateToProps, mapDispatchToProps)(Hack);
