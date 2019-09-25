@@ -3,19 +3,11 @@ import { connect } from "react-redux";
 import { withStyles } from '@material-ui/core/styles';
 
 import TextField from '@material-ui/core/TextField';
-import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
-import CardContent from '@material-ui/core/CardContent';
-import CardActions from '@material-ui/core/CardActions';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Dialog from '@material-ui/core/Dialog';
-
-import ExitToAppIcon from '@material-ui/icons/ExitToApp';
-import WarningIcon from '@material-ui/icons/Warning';
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
@@ -179,7 +171,6 @@ class PlasmaTokens extends React.Component {
 			</React.Fragment>
 		);
 	}
-
 }
 
 const mapStateToProps = state => ({
