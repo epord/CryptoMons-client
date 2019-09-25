@@ -12,19 +12,20 @@ import Dialog from '@material-ui/core/Dialog';
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
 import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw } from '../../services/ethService';
-import { transferInPlasma, getExitData } from '../../services/plasmaServices';
+import { transferInPlasma, getExitData, createAtomicSwap } from '../../services/plasmaServices';
 import { getChallengeableTokens, getExitingTokens, getExitedTokens } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
-		minWidth: '20em',
+		width: '25em',
 	},
 });
 
 class PlasmaTokens extends React.Component {
 
 	state = {
-		modalOpen: false
+		transferModalOpen: false,
+		swapModalOpen: false,
 	}
 
 	componentDidMount() {
@@ -40,9 +41,21 @@ class PlasmaTokens extends React.Component {
 
     transferInPlasma(token, transferAddress).then(() =>{
 			console.log("Successful Submission, wait for mining");
-			this.handleClose();
+			this.closeTransferModal();
 		})
 	};
+
+	swapInPlasma = async token => {
+		console.log(`Swapping ${token} with ${swapToken}`);
+
+		const { swapToken } = this.state;
+
+		this.setState({ swapping: true });
+		createAtomicSwap(token, swapToken).then(secret => {
+			this.setState({ secret, swapping: false })
+		})
+
+	}
 
 	exitToken = async token => {
 		const { rootChainContract } = this.props;
@@ -88,33 +101,66 @@ class PlasmaTokens extends React.Component {
 	};
 
 
-	openTransferModal = token => this.setState({ modalOpen: true, tokenToTransact: token });
+	openTransferModal = token => this.setState({ transferModalOpen: true, tokenToTransact: token });
+
+	openSwapModal = token => this.setState({ swapModalOpen: true, tokenToSwap: token });
+
+	closeTransferModal= () => this.setState({ transferModalOpen: false });
+
+	closeSwapModal= () => this.setState({ swapModalOpen: false, secret: undefined });
 
 	handleChange = fieldName => event => {
 		this.setState({ [fieldName]: event.target.value });
 	}
 
-
-  handleClose = () => this.setState({ modalOpen: false });
-
 	renderTransferDialog = () => {
-		const { modalOpen, tokenToTransact } = this.state;
+		const { transferModalOpen, tokenToTransact } = this.state;
 		const { classes } = this.props;
 		return (
-			<Dialog onClose={this.handleClose} open={modalOpen} classes={{ paper: classes.dialogPaper }}>
+			<Dialog onClose={this.closeTransferModal} open={transferModalOpen} classes={{ paper: classes.dialogPaper }}>
 				<DialogTitle>Transfer token</DialogTitle>
-				<Grid container>
+				<Grid container style={{ padding: '1em' }}>
 					<Grid item xs={12} style={{ padding: '1em' }}>
 						<TextField
 							label="Transfer to"
 							fullWidth
 							onChange={this.handleChange('transferAddress')}
-							value={this.state.transferAddress}
+							value={this.state.transferAddress || ''}
 							placeholder="Address" />
 					</Grid>
 					<Grid item xs={12} style={{ padding: '1em' }}>
 						<Button color="primary" fullWidth onClick={() => this.transferInPlasma(tokenToTransact)} variant="outlined" size="small">Transfer</Button>
 					</Grid>
+				</Grid>
+			</Dialog>
+		)
+	}
+
+	renderSwapDialog = () => {
+		const { swapModalOpen, tokenToSwap, swapping, secret } = this.state;
+		const { classes } = this.props;
+		return (
+			<Dialog onClose={this.closeSwapModal} open={swapModalOpen} classes={{ paper: classes.dialogPaper }}>
+				<DialogTitle>Swap token</DialogTitle>
+				<Grid container style={{ padding: '1em' }}>
+					<Grid item xs={12}>
+						<TextField
+							label="Swap with"
+							fullWidth
+							onChange={this.handleChange('swapToken')}
+							value={this.state.swapToken || ''}
+							placeholder="Token" />
+					</Grid>
+					<Grid item xs={12} style={{ padding: '1em' }}>
+						<Button disabled={swapping || secret} color="primary" fullWidth onClick={() => this.swapInPlasma(tokenToSwap)} variant="outlined" size="small">Swap</Button>
+					</Grid>
+					{secret && (
+						<React.Fragment>
+							<Typography variant="body1" style={{ display: 'block', margin: 'auto' }}><b>IMPORTANT!</b></Typography>
+							<Typography variant="body1" style={{ display: 'block', margin: 'auto' }}>This is the random generated secret you will need to reveal in order to validate the transaction later:</Typography>
+							<Typography variant="body1" style={{ display: 'block', margin: 'auto' }}><b>{secret}</b></Typography>
+						</React.Fragment>
+					)}
 				</Grid>
 			</Dialog>
 		)
@@ -132,12 +178,14 @@ class PlasmaTokens extends React.Component {
 		return (
 			<React.Fragment>
 				{this.renderTransferDialog()}
+				{this.renderSwapDialog()}
 				<Grid container spacing={3} alignContent="center" alignItems="center">
 					{plasmaTokens.map(token => (
 						<Grid key={token}>
 							<CryptoMonCard
 								token={token}
 								onTransferClicked={() => this.openTransferModal(token)}
+								onSwapClicked={() => this.openSwapModal(token)}
 								onExitClicked={() => this.exitToken(token)} />
 						</Grid>
 					))}

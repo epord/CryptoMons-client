@@ -15,7 +15,7 @@ class CryptoMonCard extends React.Component {
 	render = () => {
 		const { token, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
-			onChallengeAfterClick, onWithdrawClick } = this.props;
+			onChallengeAfterClick, onWithdrawClick, onSwapClicked } = this.props;
 
 		return (
 			<Card style={{ maxWidth: '12em', minHeight: '19em' }}>
@@ -55,6 +55,7 @@ class CryptoMonCard extends React.Component {
 				</Grid>
 				{onDepositClicked && <Button fullWidth size="small" variant="outlined" onClick={onDepositClicked}>Deposit to Plasma</Button>}
 				{onTransferClicked && <Button fullWidth onClick={onTransferClicked} variant="outlined" size="small">Transfer</Button>}
+				{onSwapClicked && <Button fullWidth onClick={onSwapClicked} variant="outlined" size="small">Swap</Button>}
 				{onExitClicked && <Button fullWidth onClick={onExitClicked} variant="outlined" size="small">Exit</Button>}
 				{onFinalizeExitClick && <Button fullWidth onClick={onFinalizeExitClick} variant="outlined" size="small">Finalize Exit</Button>}
 				{onChallengeBeforeClick && <Button fullWidth onClick={onChallengeBeforeClick} variant="outlined" size="small">Challenge Before</Button>}
