@@ -17,6 +17,8 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
+import CryptoMonCard from './common/CryptoMonCard.jsx';
+
 import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw } from '../../services/ethService';
 import { transferInPlasma, getExitData } from '../../services/plasmaServices';
 import { getChallengeableTokens, getExitingTokens, getExitedTokens } from '../redux/actions';
@@ -128,103 +130,49 @@ class PlasmaTokens extends React.Component {
 
 	render = () => {
 		const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens } = this.props;
+
+		if (plasmaTokens.length + exitingTokens.length + challengeableTokens.length + exitedTokens.length === 0) {
+			return (
+				<Typography style={{ margin: 'auto' }}  variant="body1">You do not have any Plasma token. Deposit one of your CryptoMons once you have one!</Typography>
+			)
+		}
+
 		return (
 			<React.Fragment>
 				{this.renderTransferDialog()}
 				<Grid container spacing={3} alignContent="center" alignItems="center">
 					{plasmaTokens.map(token => (
-						<React.Fragment key={token}>
-							<Grid item xs={2} key={token}>
-								<Card>
-									<CardActionArea>
-										<img
-											src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
-											style={{ width: '100%' }} />
-										<CardContent>
-											<Typography variant="subtitle1">ID: {token}</Typography>
-										</CardContent>
-									</CardActionArea>
-									<Button fullWidth onClick={() => this.openTransferModal(token)} variant="outlined" size="small">Transfer</Button>
-									<Button fullWidth onClick={() => this.exitToken(token)} variant="outlined" size="small">Exit</Button>
-								</Card>
-							</Grid>
-						</React.Fragment>
+						<Grid key={token}>
+							<CryptoMonCard
+								token={token}
+								onTransferClicked={() => this.openTransferModal(token)}
+								onExitClicked={() => this.exitToken(token)} />
+						</Grid>
 					))}
 					{exitingTokens.map(token => (
-						<Grid item xs={2} key={token}>
-							<Card>
-								<CardActionArea>
-									<img
-										src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
-										style={{ width: '100%' }} />
-									<CardContent>
-										<Grid container>
-											<Grid item xs={12}>
-												<Typography variant="subtitle1">ID: {token}</Typography>
-											</Grid>
-											<Grid item xs={12}>
-												<ExitToAppIcon fontSize="small" style={{ color: 'rgb(245, 155, 66)' }} />
-												<Typography variant="subtitle1" style={{ color: 'rgb(245, 155, 66)', display: 'inline' }}>
-													Exiting
-												</Typography>
-											</Grid>
-										</Grid>
-									</CardContent>
-								</CardActionArea>
-								<Button fullWidth onClick={() => this.finalizeExit(token)} variant="outlined" size="small">Finalize Exit</Button>
-							</Card>
+						<Grid item key={token}>
+							<CryptoMonCard
+								token={token}
+								exiting
+								onFinalizeExitClick={() => this.finalizeExit(token)} />
 						</Grid>
 					))}
 					{challengeableTokens.map(token => (
-						<Grid item xs={2} key={token}>
-							<Card>
-								<CardActionArea>
-									<img
-										src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
-										style={{ width: '100%' }} />
-									<CardContent>
-										<Grid container>
-											<Grid item xs={12}>
-												<Typography variant="subtitle1">ID: {token}</Typography>
-											</Grid>
-											<Grid item xs={12}>
-												<WarningIcon fontSize="small" style={{ color: 'red' }} />
-												<Typography variant="subtitle1" style={{ color: 'red', display: 'inline' }}>
-													Challengeable token
-												</Typography>
-											</Grid>
-										</Grid>
-									</CardContent>
-								</CardActionArea>
-								<Button fullWidth onClick={() => this.challengeBefore(token)} variant="outlined" size="small">Challenge Before</Button>
-								<Button fullWidth onClick={() => this.challengeBetween(token)} variant="outlined" size="small">Challenge Between</Button>
-								<Button fullWidth onClick={() => this.challengeAfter(token)} variant="outlined" size="small">Challenge After</Button>
-							</Card>
+						<Grid item key={token}>
+							<CryptoMonCard
+								token={token}
+								challengeable
+								onChallengeBeforeClick={() => this.challengeBefore(token)}
+								onChallengeBetweenClick={() => this.challengeBetween(token)}
+								onChallengeAfterClick={() => this.challengeAfter(token)} />
 						</Grid>
 					))}
 					{exitedTokens.map(token => (
-						<Grid item xs={2} key={token}>
-							<Card>
-								<CardActionArea>
-									<img
-										src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
-										style={{ width: '100%' }} />
-									<CardContent>
-										<Grid container>
-											<Grid item xs={12}>
-												<Typography variant="subtitle1">ID: {token}</Typography>
-											</Grid>
-											<Grid item xs={12}>
-												<CheckCircleIcon fontSize="small" style={{ color: 'green' }} />
-												<Typography variant="subtitle1" style={{ color: 'green', display: 'inline' }}>
-													Exit Successful
-												</Typography>
-											</Grid>
-										</Grid>
-									</CardContent>
-								</CardActionArea>
-								<Button fullWidth onClick={() => this.withdraw(token)} variant="outlined" size="small">withdraw</Button>
-							</Card>
+						<Grid item key={token}>
+							<CryptoMonCard
+								token={token}
+								exited
+								onWithdrawClick={() => this.withdraw(token)} />
 						</Grid>
 					))}
 				</Grid>

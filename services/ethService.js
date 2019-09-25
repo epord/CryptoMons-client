@@ -403,6 +403,9 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 			web3.toBigNumber(prevBlock),
 			web3.toBigNumber(exitingBlock),
 		];
+		console.log({
+			slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks
+		})
 
 	return new Promise((resolve, reject) => {
 		ethContract(rootChain)

@@ -37,31 +37,27 @@ class CryptoMons extends React.Component {
 	render = () => {
 		const { myCryptoMons } = this.props;
 
+		if (myCryptoMons.length === 0) {
+			return (
+				<React.Fragment>
+					<Grid container direction="column" style={{ margin: 'auto' }} alignItems="center">
+						<Grid item>
+							<Typography variant="body1">You do not have any CryptoMon. Click the button below to buy one!</Typography>
+						</Grid>
+						<Grid item>
+							<Button onClick={this.buyCryptoMon} style={{ marginBottom: '1em' }} variant="outlined" size="small">Buy CryptoMon</Button>
+						</Grid>
+					</Grid>
+				</React.Fragment>
+			)
+		}
+
 		return (
 			<React.Fragment>
-				<Button onClick={this.buyCryptoMon} style={{ marginBottom: '1em' }} variant="outlined" size="small">Buy CryptoMon</Button>
 				<Grid container spacing={3}>
 					{myCryptoMons.map(token => (
-						<Grid item xs={2} key={token}>
-							<Card>
-								<CardActionArea>
-									<img
-										src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
-										style={{ width: '100%' }} />
-									<CardContent>
-										<Typography variant="subtitle1">ID: {token}</Typography>
-									</CardContent>
-								</CardActionArea>
-								<CardActions>
-									<Button
-										fullWidth
-										size="small"
-										variant="outlined"
-										onClick={() => this.depositToPlasma(token)}>
-										Deposit to Plasma
-									</Button>
-								</CardActions>
-							</Card>
+						<Grid item key={token}>
+							<CryptoMonCard token={token} onDepositClicked={() => this.depositToPlasma(token)} />
 						</Grid>
 					))}
 				</Grid>

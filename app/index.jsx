@@ -302,7 +302,7 @@ class App extends React.Component {
 						expandIcon={<ExpandMoreIcon />}>
 						<Typography>My CryptoMons</Typography>
 					</ExpansionPanelSummary>
-					<ExpansionPanelDetails style={{ flexWrap: 'wrap' }}>
+					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
 						<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={this.ethAccount} />
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
@@ -311,7 +311,7 @@ class App extends React.Component {
 						expandIcon={<ExpandMoreIcon />}>
 						<Typography>My Plasma Tokens</Typography>
 					</ExpansionPanelSummary>
-					<ExpansionPanelDetails>
+					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
 						<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={this.ethAccount} />
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
