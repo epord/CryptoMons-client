@@ -13,8 +13,6 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import CryptoMons from './components/CryptoMons.jsx';
 import PlasmaTokens from './components/PlasmaTokens.jsx';
 
-import async from 'async';
-
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
@@ -22,10 +20,10 @@ import {
 	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion
 } from '../services/ethService';
 
-import { loadContracts, getProofHistory } from '../services/plasmaServices';
+import { getProofHistory } from '../services/plasmaServices';
 import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon } from './redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts } from './redux/actions'
 
 class App extends React.Component {
 
@@ -58,7 +56,7 @@ class App extends React.Component {
 	}
 
 	loadContracts = async () => {
-		const res = await loadContracts();
+		const res = await this.props.loadContracts();
 		return this.setState({
 			rootChain: { ...res.RootChain, address: res.RootChain.networks['5777'].address },
 			cryptoMons: { ...res.CryptoMons, address: res.CryptoMons.networks['5777'].address },
@@ -181,84 +179,6 @@ class App extends React.Component {
 		buyCryptoMon(this.ethAccount, cryptoMons)
 	};
 
-	verifyToken = async () => {
-		const { tokenToVerify: token, rootChain } = this.state;
-		const { history } = await getProofHistory(token);
-		console.log(history)
-
-		console.log(`validating ${Object.keys(history).length} blocks`)
-
-		let included = await Promise.all(
-		  Object.keys(history).map(blockNumber => {
-        const { transactionBytes, hash, proof } = history[blockNumber];
-        if (!transactionBytes && proof == "0x0000000000000000") {
-          return checkEmptyBlock(blockNumber, rootChain);
-        } else {
-          return checkInclusion(hash, blockNumber, token, proof, rootChain)
-        }
-      })
-		);
-		console.log(included)
-		let fail = included.indexOf(false);
-		//TODO API returns block before they are propagated
-    if(fail != -1 && fail != included.length - 1) {
-      let blockNumber = Object.keys(history)[fail];
-      console.log(`Error in history! Fail validation in block ${blockNumber}`);
-      return this.setState({ historyValid: false, lastValidOwner: "unknown", lastValidBlock: blockNumber });
-    }
-
-    let transactions = Object.keys(history).filter(blockNumber => history[blockNumber].transactionBytes);
-
-		async.waterfall([
-			async cb => {
-				// Deposit
-				const depositBlock = Object.keys(history)[0];
-				const { transactionBytes, proof } = history[depositBlock];
-				const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
-				const hash = generateTransactionHash(slot, blockSpent, recipient);
-
-				if (await checkInclusion(hash, depositBlock, token, proof, rootChain)) {
-					return cb(null, recipient);
-				} else {
-					return cb({error: "Validation failed", blockNumber: blockSpent, lastOwner: owner})
-				}
-
-			},
-			// Other blocks
-			...transactions.slice(1).map(blockNumber => async (owner, cb) => {
-				const { transactionBytes, signature, hash } = history[blockNumber];
-
-				if (transactionBytes) {
-					const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
-					const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
-
-					if(generatedHash.toLowerCase() != hash.toLowerCase()) {
-            return cb({error: "Hash does not match", blockNumber: blockSpent, lastOwner: owner})
-          }
-
-					if(recover(hash, signature) != owner.toLowerCase()) {
-						return cb({error: "Not signed correctly", blockNumber: blockSpent, lastOwner: owner})
-					}
-
-          return cb(null, recipient);
-				}
-			})
-		], (err, lastOwner) => {
-				if (err) {
-					console.log(`Error in history! Last true owner: ${err.lastOwner} in block ${err.blockNumber}`);
-					this.setState({ historyValid: false, lastValidOwner: err.lastOwner, lastValidBlock: err.blockNumber })
-				} else {
-          console.log(`Correct history! Last true owner: ${lastOwner}`);
-          this.setState({historyValid: true, lastValidOwner: lastOwner});
-        }
-
-			});
-	}
-
-	handleChange = fieldName => event => {
-		this.setState({ [fieldName]: event.target.value });
-	}
-
 	render() {
 		const { loading, rootChain, cryptoMons, vmc,
 			myChallengedTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
@@ -278,20 +198,6 @@ class App extends React.Component {
 						</Paper>
 					</Grid>
 					<Grid item>
-						{/* TODO: take this out */}
-						<div>
-							<Typography style={{ display: "inline-block" }}>Verify token history:</Typography>
-							<input
-								value={tokenToVerify || ''}
-								onChange={event => {
-									this.handleChange("tokenToVerify")(event);
-									this.setState({ historyValid: undefined });
-								}}
-								placeholder="Token" />
-							<button onClick={this.verifyToken}>Verify</button>
-							{tokenToVerify && historyValid === true && <p style={{ display: 'inline', color: 'green' }}>Valid history! Last owner: {lastValidOwner}</p>}
-							{tokenToVerify && historyValid === false && <p style={{ display: 'inline', color: 'red' }}>Invalid history! Last owner: {lastValidOwner} in block {lastValidBlock}</p>}
-						</div>
 					</Grid>
 					<Grid item>
 						{withdrawableAmount != '0' && (
@@ -302,10 +208,10 @@ class App extends React.Component {
 						)}
 					</Grid>
 					<Grid item>
-						<Button onClick={this.buyCryptoMon} variant="contained" size="small">Buy CryptoMon</Button>
+						<Button onClick={this.buyCryptoMon} variant="contained" color="primary">Buy CryptoMon</Button>
 					</Grid>
 				</Grid>
-				<ExpansionPanel defaultExpanded>
+				<ExpansionPanel defaultExpanded style={{ marginTop: '1em' }}>
 					<ExpansionPanelSummary
 						expandIcon={<ExpandMoreIcon />}>
 						<Typography>My CryptoMons</Typography>
@@ -345,6 +251,7 @@ class App extends React.Component {
 const mapStateToProps = state => ({ });
 
 const mapDispatchToProps = dispatch => ({
+	loadContracts: () => dispatch(loadContracts()),
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
 	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),

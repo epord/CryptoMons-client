@@ -39,10 +39,11 @@ const reducerMapper = {
     });
 	},
 	[C.GOT_CONTRACTS]: (state, action) => {
-		state.rootChain = { ...action.payload.RootChain, address: action.payload.RootChain.networks['5777'].address };
-		state.cryptoMons = { ...action.payload.CryptoMons, address: action.payload.CryptoMons.networks['5777'].address };
-		state.vmc = { ...action.payload.ValidatorManagerContract, address: action.payload.ValidatorManagerContract.networks['5777'].address };
-		return state;
+		return Object.assign({}, state, {
+			rootChainContract: { ...action.payload.RootChain, address: action.payload.RootChain.networks['5777'].address },
+			cryptoMonsContract: { ...action.payload.CryptoMons, address: action.payload.CryptoMons.networks['5777'].address },
+			vmcContract: { ...action.payload.ValidatorManagerContract, address: action.payload.ValidatorManagerContract.networks['5777'].address },
+		});
 	},
 }
 

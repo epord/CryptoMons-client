@@ -21,6 +21,7 @@ const gotContracts = contracts => {
 const gotChallengeables = tokens => {
   return { type: C.GOT_CHALLENGEABLES, payload: tokens };
 }
+
 const gotExited = tokens => {
   return { type: C.GOT_EXITED, payload: tokens };
 }
@@ -48,6 +49,7 @@ export const getExitingTokens = (address, rootChainContract) => (dispatch, getSt
 }
 
 export const loadContracts = () => (dispatch, getState) => {
+  console.log('action')
   return PlasmaService
     .loadContracts()
     .then(res => {
