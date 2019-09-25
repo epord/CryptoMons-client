@@ -49,7 +49,6 @@ export const getExitingTokens = (address, rootChainContract) => (dispatch, getSt
 }
 
 export const loadContracts = () => (dispatch, getState) => {
-  console.log('action')
   return PlasmaService
     .loadContracts()
     .then(res => {
