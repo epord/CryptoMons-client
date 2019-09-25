@@ -7,8 +7,8 @@ import Grid from '@material-ui/core/Grid';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import { depositToPlasma, buyCryptoMon } from '../../services/ethService';
-import { getCryptoMonsFrom } from '../redux/actions';
+import { depositToPlasma } from '../../services/ethService';
+import { getCryptoMonsFrom, buyCryptoMon } from '../redux/actions';
 
 
 class CryptoMons extends React.Component {
@@ -19,9 +19,8 @@ class CryptoMons extends React.Component {
 	}
 
 	buyCryptoMon = async () => {
-		const { cryptoMonsContract, ethAccount, getCryptoMonsFrom } = this.props;
-		buyCryptoMon(cryptoMonsContract)
-			.then(() => getCryptoMonsFrom(ethAccount, cryptoMonsContract));
+		const { cryptoMonsContract, ethAccount, buyCryptoMon } = this.props;
+		buyCryptoMon(ethAccount, cryptoMonsContract)
 	};
 
 	depositToPlasma = async token => {
@@ -69,6 +68,7 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
+		buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
 		getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract))
 	};
 }

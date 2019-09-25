@@ -27,6 +27,8 @@ const gotExited = tokens => {
 
 
 
+
+
 export const getCryptoMonsFrom = (address, cryptoMonsContract) => (dispatch, getState) => {
   return EthService
     .getCryptoMonsFrom(address, cryptoMonsContract)
@@ -64,4 +66,10 @@ export const getExitedTokens = (address, rootChainContract) => (dispatch, getSta
   return EthService
     .getExitedFrom(address, rootChainContract)
     .then(tokens => dispatch(gotExited(tokens)));
+}
+
+export const buyCryptoMon = (address, rootChainContract) => (dispatch, getState) => {
+  return EthService
+    .buyCryptoMon(rootChainContract)
+    .then(() => dispatch(getCryptoMonsFrom(address, rootChainContract)));
 }

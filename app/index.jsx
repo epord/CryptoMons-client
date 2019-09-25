@@ -25,7 +25,7 @@ import {
 import { loadContracts, getProofHistory } from '../services/plasmaServices';
 import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens } from './redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon } from './redux/actions'
 
 class App extends React.Component {
 
@@ -176,6 +176,11 @@ class App extends React.Component {
 		respondChallenge(token, challengingBlock, hash, rootChain);
 	};
 
+	buyCryptoMon = async () => {
+		const { buyCryptoMon } = this.props;
+		buyCryptoMon(this.ethAccount, cryptoMons)
+	};
+
 	verifyToken = async () => {
 		const { tokenToVerify: token, rootChain } = this.state;
 		const { history } = await getProofHistory(token);
@@ -296,6 +301,9 @@ class App extends React.Component {
 							</React.Fragment>
 						)}
 					</Grid>
+					<Grid item>
+						<Button onClick={this.buyCryptoMon} variant="contained" size="small">Buy CryptoMon</Button>
+					</Grid>
 				</Grid>
 				<ExpansionPanel defaultExpanded>
 					<ExpansionPanelSummary
@@ -337,6 +345,7 @@ class App extends React.Component {
 const mapStateToProps = state => ({ });
 
 const mapDispatchToProps = dispatch => ({
+	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
 	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
