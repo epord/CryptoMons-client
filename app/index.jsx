@@ -20,9 +20,6 @@ import {
 	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion
 } from '../services/ethService';
 
-import { getProofHistory } from '../services/plasmaServices';
-import { recover, decodeTransactionBytes, generateTransactionHash } from '../utils/cryptoUtils';
-
 import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts } from './redux/actions'
 
 class App extends React.Component {
@@ -176,12 +173,13 @@ class App extends React.Component {
 
 	buyCryptoMon = async () => {
 		const { buyCryptoMon } = this.props;
+		const { cryptoMons } = this.state;
 		buyCryptoMon(this.ethAccount, cryptoMons)
 	};
 
 	render() {
 		const { loading, rootChain, cryptoMons, vmc,
-			myChallengedTokens, withdrawableAmount, tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
+			myChallengedTokens, withdrawableAmount } = this.state;
 
 		if (loading) return (<div>Loading...</div>)
 

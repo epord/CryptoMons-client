@@ -34,7 +34,6 @@ export const transferInPlasma = (token, receiverAddress) => {
   })
 };
 
-
 export const createAtomicSwap = (slot, swappingSlot) => {
   return new Promise((resolve, reject) => {
     Promise.all([
@@ -81,6 +80,25 @@ export const createAtomicSwap = (slot, swappingSlot) => {
   })
 }
 
+export const revealSecret = (token, secret) => {
+  return new Promise((resolve, reject) => {
+    getSwapData(token).then(swapData => {
+      const body = {
+        slot: token,
+        minedBlock: swapData.mined_block,
+        secret: secret,
+      }
+      fetch(`${process.env.API_URL}/api/transactions/reveal-secret`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).then(resolve);
+    })
+  })
+}
+
 const basicGet = (url) => {
   return new  Promise(async (resolve, reject) => {
     const response = await fetch(url);
@@ -102,6 +120,27 @@ export const getExitData = token => {
   return basicGet(`${process.env.API_URL}/api/exits/data/${token}`);
 };
 
-export const getProofHistory = (token) => {
+export const getProofHistory = token => {
   return basicGet(`${process.env.API_URL}/api/tokens/${token}/history-proof`);
+}
+
+export const getHistory = token => {
+  return basicGet(`${process.env.API_URL}/api/tokens/${token}/history`);
+}
+
+export const getLastTransaction = token => {
+  return basicGet(`${process.env.API_URL}/api/transactions/last/${token}`);
+}
+
+export const getSwapData = token => {
+  return new Promise((resolve, reject) => {
+    getLastTransaction(token).then(lastTx => {
+      if (!lastTx) reject('There was no transactions');
+      if (!lastTx.isSwap) reject('Last transaction wasn\'t a swap');
+      return lastTx.hash;
+    }).then(async lastTxHash => {
+      const swapData = await basicGet(`${process.env.API_URL}/api/transactions/swap-data/${lastTxHash}`);
+      resolve(swapData);
+    })
+  })
 }

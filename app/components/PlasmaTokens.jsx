@@ -13,7 +13,7 @@ import CryptoMonCard from './common/CryptoMonCard.jsx';
 
 import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw } from '../../services/ethService';
 import { transferInPlasma, getExitData, createAtomicSwap } from '../../services/plasmaServices';
-import { getChallengeableTokens, getExitingTokens, getExitedTokens } from '../redux/actions';
+import { getChallengeableTokens, getExitingTokens, getExitedTokens, revealSecret } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -23,9 +23,13 @@ const styles = theme => ({
 
 class PlasmaTokens extends React.Component {
 
-	state = {
-		transferModalOpen: false,
-		swapModalOpen: false,
+	constructor(props) {
+		super(props);
+		this.state = {
+			transferModalOpen: false,
+			swapModalOpen: false,
+			onSwapClicked: false,
+		}
 	}
 
 	componentDidMount() {
@@ -46,15 +50,23 @@ class PlasmaTokens extends React.Component {
 	};
 
 	swapInPlasma = async token => {
-		console.log(`Swapping ${token} with ${swapToken}`);
-
 		const { swapToken } = this.state;
+
+		console.log(`Swapping ${token} with ${swapToken}`);
 
 		this.setState({ swapping: true });
 		createAtomicSwap(token, swapToken).then(secret => {
 			this.setState({ secret, swapping: false })
 		})
+	}
 
+	revealSecret = async () => {
+		const { tokenToReveal, secretToReveal } = this.state;
+		const { revealSecret } = this.props;
+
+		this.setState({ revealingSecret: true });
+		revealSecret(tokenToReveal, secretToReveal)
+			.then(() => this.setState({ revealingSecret: false }))
 	}
 
 	exitToken = async token => {
@@ -105,12 +117,23 @@ class PlasmaTokens extends React.Component {
 
 	openSwapModal = token => this.setState({ swapModalOpen: true, tokenToSwap: token });
 
+	openRevealSecretModal = token => this.setState({ secretModalOpen: true, tokenToReveal: token });
+
 	closeTransferModal= () => this.setState({ transferModalOpen: false });
 
 	closeSwapModal= () => this.setState({ swapModalOpen: false, secret: undefined });
 
+	closeRevealSecretModal= () => this.setState({ secretModalOpen: false });
+
 	handleChange = fieldName => event => {
 		this.setState({ [fieldName]: event.target.value });
+	}
+
+	handleTokenChangeInReveal = event => {
+		const { tokenToReveal } = this.state;
+		const swappingTokenReveal = event.target.value;
+		const savedSecret = localStorage.getItem(`swap_${tokenToReveal}_${swappingTokenReveal}`);
+		this.setState({ swappingTokenReveal, secretToReveal: savedSecret });
 	}
 
 	renderTransferDialog = () => {
@@ -139,6 +162,7 @@ class PlasmaTokens extends React.Component {
 	renderSwapDialog = () => {
 		const { swapModalOpen, tokenToSwap, swapping, secret } = this.state;
 		const { classes } = this.props;
+
 		return (
 			<Dialog onClose={this.closeSwapModal} open={swapModalOpen} classes={{ paper: classes.dialogPaper }}>
 				<DialogTitle>Swap token</DialogTitle>
@@ -166,6 +190,36 @@ class PlasmaTokens extends React.Component {
 		)
 	}
 
+	renderRevealSecretDialog = () => {
+		const { secretModalOpen, tokenToReveal, revealingSecret, swappingTokenReveal } = this.state;
+		const { classes } = this.props;
+		return (
+			<Dialog onClose={this.closeRevealSecretModal} open={secretModalOpen} classes={{ paper: classes.dialogPaper }}>
+				<DialogTitle>Reveal secret</DialogTitle>
+				<Grid container style={{ padding: '1em' }}>
+					<Grid item xs={12}>
+						<TextField
+							label="Swapping token"
+							fullWidth
+							onChange={this.handleTokenChangeInReveal}
+							value={swappingTokenReveal || ''}
+							placeholder="Token" />
+					</Grid>
+					<Grid item xs={12}>
+						<TextField
+							label="Secret"
+							fullWidth
+							onChange={this.handleChange('secretToReveal')}
+							value={this.state.secretToReveal || ''} />
+					</Grid>
+					<Grid item xs={12} style={{ padding: '1em' }}>
+						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.revealSecret(tokenToReveal)} variant="outlined" size="small">Reveal</Button>
+					</Grid>
+				</Grid>
+			</Dialog>
+		)
+	}
+
 	render = () => {
 		const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens } = this.props;
 
@@ -179,6 +233,7 @@ class PlasmaTokens extends React.Component {
 			<React.Fragment>
 				{this.renderTransferDialog()}
 				{this.renderSwapDialog()}
+				{this.renderRevealSecretDialog()}
 				<Grid container spacing={3} alignContent="center" alignItems="center">
 					{plasmaTokens.map(token => (
 						<Grid key={token}>
@@ -186,6 +241,7 @@ class PlasmaTokens extends React.Component {
 								token={token}
 								onTransferClicked={() => this.openTransferModal(token)}
 								onSwapClicked={() => this.openSwapModal(token)}
+								onRevealSecretClicked={() => this.openRevealSecretModal(token)}
 								onExitClicked={() => this.exitToken(token)} />
 						</Grid>
 					))}
@@ -232,6 +288,7 @@ const mapDispatchToProps = dispatch => ({
 	getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
+	revealSecret: (token, secret) => dispatch(revealSecret(token, secret)),
 });
 
 const connectedPlasmaTokens = connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens);

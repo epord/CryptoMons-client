@@ -74,3 +74,8 @@ export const buyCryptoMon = (address, rootChainContract) => (dispatch, getState)
     .buyCryptoMon(rootChainContract)
     .then(() => dispatch(getCryptoMonsFrom(address, rootChainContract)));
 }
+
+export const revealSecret = (token, secret) => (dispatch, getState) => {
+  return PlasmaService
+    .revealSecret(token, secret);
+}

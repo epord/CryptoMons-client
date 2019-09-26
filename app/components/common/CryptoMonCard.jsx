@@ -15,7 +15,7 @@ class CryptoMonCard extends React.Component {
 	render = () => {
 		const { token, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
-			onChallengeAfterClick, onWithdrawClick, onSwapClicked } = this.props;
+			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked } = this.props;
 
 		return (
 			<Card style={{ maxWidth: '12em', minHeight: '19em' }}>
@@ -62,6 +62,7 @@ class CryptoMonCard extends React.Component {
 				{onChallengeBetweenClick && <Button fullWidth onClick={onChallengeBetweenClick} variant="outlined" size="small">Challenge Between</Button>}
 				{onChallengeAfterClick && <Button fullWidth onClick={onChallengeAfterClick} variant="outlined" size="small">Challenge After</Button>}
 				{onWithdrawClick && <Button fullWidth onClick={onWithdrawClick} variant="outlined" size="small">Withdraw</Button>}
+				{onRevealSecretClicked && <Button fullWidth onClick={onRevealSecretClicked} variant="outlined" size="small">Reveal Secret</Button>}
 
 			</Card>
 		)
