@@ -9,6 +9,7 @@ import { HashRouter as Router, Route, Link } from "react-router-dom";
 import App from './index.jsx';
 import Hack from './components/Hack.jsx';
 import History from './components/History.jsx';
+import Swap from './components/Swap.jsx';
 
 import Typography from '@material-ui/core/Typography';
 import AppBar from '@material-ui/core/AppBar';
@@ -24,6 +25,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import BugReportIcon from '@material-ui/icons/BugReport';
 import HomeIcon from '@material-ui/icons/Home';
 import HistoryIcon from '@material-ui/icons/History';
+import SwapHorizIcon from '@material-ui/icons/SwapHoriz';
 
 import "core-js/stable";
 import "regenerator-runtime/runtime";
@@ -65,6 +67,14 @@ class Routes extends React.Component {
 							<ListItemText primary="Hacks" style={{ color: 'rgba(0, 0, 0, 0.87)' }} />
 						</ListItem>
 					</Link>
+					<Link to="/swaps" style={{ textDecoration: 'none' }}>
+						<ListItem button align="center">
+							<ListItemIcon>
+								<SwapHorizIcon />
+							</ListItemIcon>
+							<ListItemText primary="Swaps" style={{ color: 'rgba(0, 0, 0, 0.87)' }} />
+						</ListItem>
+					</Link>
 				</List>
 			</Drawer>
 		);
@@ -88,6 +98,7 @@ class Routes extends React.Component {
 					<Route path="/" exact component={App} />
 					<Route path="/history" component={History} />
 					<Route path="/hacks" component={Hack} />
+					<Route path="/swaps" component={Swap} />
 				</Router>
 			</Provider>
 		);

@@ -6,6 +6,7 @@ const initialState = {
 	exitingTokens: [],
 	exitedTokens: [],
 	challengeableTokens: [],
+	swappingTokens: [],
 };
 
 const reducerMapper = {
@@ -36,6 +37,11 @@ const reducerMapper = {
 	[C.GOT_EXITED]: (state, action) => {
 		return Object.assign({}, state, {
       exitedTokens: action.payload
+    });
+	},
+	[C.GOT_SWAPPING]: (state, action) => {
+		return Object.assign({}, state, {
+      swappingTokens: action.payload
     });
 	},
 	[C.GOT_CONTRACTS]: (state, action) => {

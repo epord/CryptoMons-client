@@ -3,6 +3,7 @@ import async from 'async';
 import { zip, unique } from '../utils/utils';
 
 import { getOwnedTokens } from "./plasmaServices";
+import { isSwapBytes } from '../utils/cryptoUtils';
 
 const ethContract = (data) => web3.eth.contract(data.abi).at(data.address);
 
@@ -101,7 +102,7 @@ export const subscribeToChallengeRespond = (rootChain, address, cb) => {
 
 export const getChallengeable = (address, rootChain) => {
   return new Promise(async (resolve, reject) => {
-		const exiting = await getOwnedTokens(address, true);
+		const exiting = await getOwnedTokens(address, 'exiting');
 		const slotFilter = { slot: exiting };
 		const filteredTokens = await getExitingTokens(slotFilter, rootChain);
 		resolve(unique(
@@ -132,7 +133,7 @@ export const getChallenge = (slot, txHash, rootChain) => {
 /// TODO: Shouldn't return all exits, but should return multiple times the same slot if there are multiple challengeBefore going on
 export const getChallengedFrom = (address, rootChain) => {
 	return new Promise(async (resolve, reject) => {
-		const exiting = await getOwnedTokens(address, true);
+		const exiting = await getOwnedTokens(address, 'exiting');
 		const slotFilter = { slot: exiting };
 		const filteredTokens = unique((await getExitingTokens(slotFilter, rootChain)).map(t => t.args.slot));
 		const challenges = await Promise.all(filteredTokens.map(s => getChallenges(s, rootChain)));
@@ -280,12 +281,14 @@ export const checkEmptyBlock = (blockNumber, rootChain) => {
 			blockNumber,
 			(err, res) => {
 			if (err) return reject(err);
+			console.log("blocknumber:",blockNumber,' ' ,res)
 			resolve(res == "0x6f35419d1da1260bc0f33d52e8f6d73fc5d672c0dca13bb960b4ae1adec17937");
 		});
 	});
 }
+// const checkAtomicSwap = ()
 
-export const checkInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
+const checkBasicInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
 	const rcContract = ethContract(rootChain);
 
   return new Promise((resolve, reject) => {
@@ -299,6 +302,15 @@ export const checkInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
 			resolve(res); // true or false
 		});
 	});
+}
+
+export const checkInclusion = (transactionBytes, txHash, blockNumber, slot, proof, rootChain) => {
+	if(isSwapBytes(transactionBytes)) {
+		console.log("SWAP IN ", blockNumber)
+		return Promise.resolve(true);
+	} else {
+		return checkBasicInclusion(txHash, blockNumber, slot, proof, rootChain)
+	}
 }
 
 export const withdrawBonds = (rootChain) => {

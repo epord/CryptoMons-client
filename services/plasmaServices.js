@@ -112,8 +112,12 @@ export const loadContracts = () => {
 };
 
 
-export const getOwnedTokens = (address, exiting) => {
-  return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}?exiting=${exiting}`);
+export const getOwnedTokens = (address, state) => {
+  return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}?state=${state}`);
+};
+
+export const getSwappingTokens = (address) => {
+  return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}?state=swapping`);
 };
 
 export const getExitData = token => {

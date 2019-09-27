@@ -68,13 +68,13 @@ class App extends React.Component {
 			console.log("DEPOSIT - Slot: " + r.args.slot.toFixed())
 			const { getCryptoMonsFrom, getOwnedTokens } = this.props;
 			getCryptoMonsFrom(address, cryptoMons);
-			getOwnedTokens(address, false);
+			getOwnedTokens(address, 'deposited');
 		}));
 
 		subscribeToCoinReset(rootChain, address,(r => {
 			console.log("Coin Reset - Slot: " + r.args.slot.toFixed())
 			const { getOwnedTokens, getExitingTokens } = this.props;
-			getOwnedTokens(address, false);
+			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
 			getChallengeable(this.ethAccount, rootChain);
 			this.getChallengedFrom(this.ethAccount);
@@ -90,14 +90,14 @@ class App extends React.Component {
 		subscribeToStartedExit(rootChain, address,(r => {
 			console.log("Started Exit - Slot: " + r.args.slot.toFixed())
 			const { getOwnedTokens, getExitingTokens } = this.props;
-			getOwnedTokens(address, false);
+			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
 		}));
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
 			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
 			const { getOwnedTokens } = this.props;
-			getOwnedTokens(address, false);
+			getOwnedTokens(address, 'deposited');
 		}));
 
 		subscribeToWithdrew(rootChain, address,(r => {
@@ -251,7 +251,7 @@ const mapStateToProps = state => ({ });
 const mapDispatchToProps = dispatch => ({
 	loadContracts: () => dispatch(loadContracts()),
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
-	getOwnedTokens: (address, exiting) => dispatch(getOwnedTokens(address, exiting)),
+	getOwnedTokens: (address, state) => dispatch(getOwnedTokens(address, state)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),

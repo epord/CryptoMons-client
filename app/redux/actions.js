@@ -26,6 +26,10 @@ const gotExited = tokens => {
   return { type: C.GOT_EXITED, payload: tokens };
 }
 
+const gotSwappingTokens = tokens => {
+  return { type: C.GOT_SWAPPING, payload: tokens };
+}
+
 
 
 
@@ -36,9 +40,9 @@ export const getCryptoMonsFrom = (address, cryptoMonsContract) => (dispatch, get
     .then(cryptoMons => dispatch(gotCryptoMons(cryptoMons)));
 }
 
-export const getOwnedTokens = (address, exiting) => (dispatch, getState) => {
+export const getOwnedTokens = (address, state) => (dispatch, getState) => {
   return PlasmaService
-    .getOwnedTokens(address, exiting)
+    .getOwnedTokens(address, state)
     .then(tokens => dispatch(gotOwnedTokens(tokens)));
 }
 
@@ -71,11 +75,16 @@ export const getExitedTokens = (address, rootChainContract) => (dispatch, getSta
 
 export const buyCryptoMon = (address, rootChainContract) => (dispatch, getState) => {
   return EthService
-    .buyCryptoMon(rootChainContract)
-    .then(() => dispatch(getCryptoMonsFrom(address, rootChainContract)));
+    .buyCryptoMon(rootChainContract);
 }
 
 export const revealSecret = (token, secret) => (dispatch, getState) => {
   return PlasmaService
     .revealSecret(token, secret);
+}
+
+export const getSwappingTokens = (address) => (dispatch, getState) => {
+  return PlasmaService
+    .getSwappingTokens(address)
+    .then(tokens => dispatch(gotSwappingTokens(tokens)))
 }

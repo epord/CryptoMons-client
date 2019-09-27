@@ -65,6 +65,10 @@ export const sign = (message) => {
 	});
 }
 
+export const isSwapBytes = (txBytes) => {
+	return RLP.decode(txBytes).length == 9;
+}
+
 export const recover = (hash, signature) => {
   const SignatureMode = [
     'EIP712',

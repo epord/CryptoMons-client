@@ -37,7 +37,7 @@ class History extends React.Component {
         if (!transactionBytes && proof == "0x0000000000000000") {
           return checkEmptyBlock(blockNumber, rootChainContract);
         } else {
-          return checkInclusion(hash, blockNumber, token, proof, rootChainContract)
+          return checkInclusion(transactionBytes, hash, blockNumber, token, proof, rootChainContract)
         }
       })
 		);
