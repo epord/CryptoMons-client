@@ -8,7 +8,14 @@ import Paper from '@material-ui/core/Paper';
 
 import { checkEmptyBlock, checkInclusion } from '../../services/ethService';
 import { getProofHistory } from '../../services/plasmaServices';
-import { recover, decodeTransactionBytes, generateTransactionHash } from '../../utils/cryptoUtils';
+import {
+  recover,
+  decodeTransactionBytes,
+  decodeSwapTransactionBytes,
+  generateTransactionHash,
+  generateSwapTransactionHash,
+  isSwapBytes, getHash
+} from '../../utils/cryptoUtils';
 
 import { loadContracts } from '../redux/actions'
 
@@ -60,7 +67,7 @@ class History extends React.Component {
 				const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
 				const hash = generateTransactionHash(slot, blockSpent, recipient);
 
-				if (await checkInclusion(hash, depositBlock, token, proof, rootChainContract)) {
+				if (await checkInclusion(transactionBytes, hash, depositBlock, token, proof, rootChainContract)) {
 					return cb(null, recipient);
 				} else {
 					return cb({error: "Validation failed", blockNumber: blockSpent, lastOwner: owner})
@@ -72,22 +79,49 @@ class History extends React.Component {
 				const { transactionBytes, signature, hash } = history[blockNumber];
 
 				if (transactionBytes) {
-					const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
-					const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
+				  if(isSwapBytes(transactionBytes)) {
+				    //TODO Validate Secrets
+				    const { slotA, blockSpentA, secretA, B, slotB, blockSpentB, secretB, A, signatureB } =
+              decodeSwapTransactionBytes(transactionBytes);
 
-					if(generatedHash.toLowerCase() != hash.toLowerCase()) {
-            return cb({error: "Hash does not match", blockNumber: blockSpent, lastOwner: owner})
+            const generatedHashA = generateSwapTransactionHash(slotA, blockSpentA, getHash(secretA), B, slotB);
+            const generatedHashB = generateSwapTransactionHash(slotB, blockSpentB, getHash(secretB), A, slotA);
+
+            if (generatedHashA.toLowerCase() != hash.toLowerCase()) {
+              return cb({error: "Hash does not match", blockNumber: blockNumber, lastOwner: owner})
+            }
+
+            if (recover(hash, signature) != owner.toLowerCase()) {
+              return cb({error: "Not signed correctly", blockNumber: blockNumber, lastOwner: owner})
+            }
+
+            if (recover(generatedHashB, signatureB) != B.toLowerCase()) {
+              return cb({error: "Not signed by counterpart correctly", blockNumber: blockNumber, lastOwner: owner})
+            }
+
+            return cb(null, B);
+
+          } else {
+            const {slot, blockSpent, recipient} = decodeTransactionBytes(transactionBytes);
+            const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
+
+            if (generatedHash.toLowerCase() != hash.toLowerCase()) {
+              console.log(generatedHash)
+              console.log(hash)
+              return cb({error: "Hash does not match", blockNumber: blockNumber, lastOwner: owner})
+            }
+
+            if (recover(hash, signature) != owner.toLowerCase()) {
+              return cb({error: "Not signed correctly", blockNumber: blockNumber, lastOwner: owner})
+            }
+
+            return cb(null, recipient);
           }
-
-					if(recover(hash, signature) != owner.toLowerCase()) {
-						return cb({error: "Not signed correctly", blockNumber: blockSpent, lastOwner: owner})
-					}
-
-          return cb(null, recipient);
 				}
 			})
 		], (err, lastOwner) => {
 				if (err) {
+				  console.log(err)
 					console.log(`Error in history! Last true owner: ${err.lastOwner} in block ${err.blockNumber}`);
 					this.setState({ historyValid: false, lastValidOwner: err.lastOwner, lastValidBlock: err.blockNumber })
 				} else {

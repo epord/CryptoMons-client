@@ -14,6 +14,28 @@ export const generateTransactionHash = (slot, blockSpent, recipient) => {
 	}
 };
 
+export const generateSwapTransactionHash = (slot, blockSpent, hashSecret, recipient, swappingSlot) => {
+	const slotBN = new BN(slot);
+	const blockSpentBN = new BN(blockSpent);
+	const swappingSlotBN = new BN(swappingSlot);
+
+	let params = [
+		//TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
+		EthUtils.setLengthLeft(slotBN.toArrayLike(Buffer), 256/8), 		 // uint256 little endian
+		EthUtils.setLengthLeft(blockSpentBN.toArrayLike(Buffer), 256/8),	 // uint256 little endian
+		EthUtils.toBuffer(hashSecret),													 // must start with 0x
+		EthUtils.toBuffer(recipient),												     // must start with 0x
+		EthUtils.setLengthLeft(swappingSlotBN.toArrayLike(Buffer), 256/8), // uint256 little endian
+	];
+
+	const bytes = EthUtils.bufferToHex(RLP.encode(params));
+	return EthUtils.bufferToHex(EthUtils.keccak256(bytes))
+};
+
+export const getHash = (message) => {
+	return EthUtils.bufferToHex(EthUtils.keccak256(message))
+};
+
 const getTransactionBytes = (slot, blockSpent, recipient) => {
 	const params = [
 		EthUtils.setLengthLeft(slot.toArrayLike(Buffer), 256/8), 			// uint256 little endian
@@ -30,6 +52,23 @@ export const decodeTransactionBytes = bytes => {
 	const blockSpent = web3.toBigNumber(EthUtils.bufferToHex(decoded[1])).toFixed();
 	const recipient = EthUtils.bufferToHex(decoded[2]);
 	return { slot, blockSpent, recipient }
+}
+
+export const decodeSwapTransactionBytes = bytes => {
+	const decoded = RLP.decode(bytes);
+	const slotA = web3.toBigNumber(EthUtils.bufferToHex(decoded[0])).toFixed();
+	const blockSpentA = web3.toBigNumber(EthUtils.bufferToHex(decoded[1])).toFixed();
+	const secretA = EthUtils.bufferToHex(decoded[2]);
+	const B = EthUtils.bufferToHex(decoded[3]);
+
+	const slotB = web3.toBigNumber(EthUtils.bufferToHex(decoded[4])).toFixed();
+	const blockSpentB = web3.toBigNumber(EthUtils.bufferToHex(decoded[5])).toFixed();
+	const secretB = EthUtils.bufferToHex(decoded[6]);
+	const A = EthUtils.bufferToHex(decoded[7]);
+
+	const signatureB = EthUtils.bufferToHex(decoded[8]);
+
+	return { slotA, blockSpentA, secretA, B, slotB, blockSpentB, secretB, A, signatureB }
 }
 
 export const generateSwapHash = (slot, blockSpent, hashSecret, recipient, swappingSlot) => {

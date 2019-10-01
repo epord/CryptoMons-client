@@ -63,6 +63,10 @@ const subscribeToEvent = (event, filter, rootChain, cb) => {
 	})
 };
 
+export const subscribeToCryptoMonTransfer = (cryptoMon, address, cb) => {
+	subscribeToEvent("Transfer", {to: address}, cryptoMon, cb)
+};
+
 export const subscribeToDeposits = (rootChain, address, cb) => {
 	subscribeToEvent("Deposit", {from: address}, rootChain, cb)
 };

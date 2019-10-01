@@ -18,7 +18,7 @@ class CryptoMonCard extends React.Component {
 			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked } = this.props;
 
 		return (
-			<Card style={{ maxWidth: '12em', minHeight: '19em' }}>
+			<Card style={{ maxWidth: '12em' }}>
 				<CardActionArea>
 					<img
 						src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"

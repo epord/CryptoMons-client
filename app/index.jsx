@@ -17,7 +17,7 @@ import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
 	subscribeToSlashedBond, getChallengedFrom, finalizeExit, getChallengeable, getChallenge,
-	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion
+	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion, subscribeToCryptoMonTransfer
 } from '../services/ethService';
 
 import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts } from './redux/actions'
@@ -63,6 +63,12 @@ class App extends React.Component {
 
 	subscribeToEvents = address => {
 		const { rootChain, cryptoMons } = this.state;
+
+		subscribeToCryptoMonTransfer(cryptoMons, address, (r => {
+			const { getCryptoMonsFrom } = this.props;
+			console.log("CryptoMon Transfer");
+			getCryptoMonsFrom(address, cryptoMons);
+		}));
 
 		subscribeToDeposits(rootChain, address,(r => {
 			console.log("DEPOSIT - Slot: " + r.args.slot.toFixed())
