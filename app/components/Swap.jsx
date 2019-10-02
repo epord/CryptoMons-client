@@ -15,6 +15,7 @@ import Button from '@material-ui/core/Button';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
+import { getSwapData } from '../../services/plasmaServices'
 import { getSwappingTokens, revealSecret } from '../redux/actions';
 
 const styles = theme => ({
@@ -45,33 +46,25 @@ class Swap extends React.Component {
 		this.setState({ [fieldName]: event.target.value });
 	}
 
-	handleTokenChangeInReveal = event => {
-		const { tokenToReveal } = this.state;
-		const swappingTokenReveal = event.target.value;
-		const savedSecret = localStorage.getItem(`swap_${tokenToReveal}_${swappingTokenReveal}`);
-		this.setState({ swappingTokenReveal, secretToReveal: savedSecret });
-	}
 	renderRevealSecretDialog = () => {
-		const { secretModalOpen, tokenToReveal, revealingSecret, swappingTokenReveal } = this.state;
+		const { secretModalOpen, tokenToReveal, revealingSecret, swappingTokenReveal, loadingSwapData, secretToReveal } = this.state;
 		const { classes } = this.props;
+
+		if (loadingSwapData) return <div>Loading...</div>
+
 		return (
 			<Dialog onClose={this.closeRevealSecretModal} open={secretModalOpen} classes={{ paper: classes.dialogPaper }}>
 				<DialogTitle>Reveal secret</DialogTitle>
 				<Grid container style={{ padding: '1em' }}>
 					<Grid item xs={12}>
-						<TextField
-							label="Swapping token"
-							fullWidth
-							onChange={this.handleTokenChangeInReveal}
-							value={swappingTokenReveal || ''}
-							placeholder="Token" />
+						<Typography variant="body1"><u>Swapping token:</u> {swappingTokenReveal}</Typography>
 					</Grid>
 					<Grid item xs={12}>
 						<TextField
 							label="Secret"
 							fullWidth
 							onChange={this.handleChange('secretToReveal')}
-							value={this.state.secretToReveal || ''} />
+							value={secretToReveal || ''} />
 					</Grid>
 					<Grid item xs={12} style={{ padding: '1em' }}>
 						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.revealSecret(tokenToReveal)} variant="outlined" size="small">Reveal</Button>
@@ -81,12 +74,8 @@ class Swap extends React.Component {
 		)
 	}
 
-  revealSecret = () => {
-    console.log('reveal')
-  }
-
   renderSwappingTokensSection = () => {
-    const { swappingTokens } = this.props;
+		const { swappingTokens } = this.props;
 
     if (swappingTokens.length == 0){
       return <Typography style={{ margin: 'auto' }}  variant="body1">You do not have any Plasma token. Deposit one of your CryptoMons once you have one!</Typography>
@@ -107,10 +96,20 @@ class Swap extends React.Component {
 
 		this.setState({ revealingSecret: true });
 		revealSecret(tokenToReveal, secretToReveal)
-			.then(() => this.setState({ revealingSecret: false }))
+			.then(() => {
+				this.setState({ revealingSecret: false })
+				this.closeRevealSecretModal();
+			})
   }
 
-	openRevealSecretModal = token => this.setState({ secretModalOpen: true, tokenToReveal: token });
+	openRevealSecretModal = token => {
+		this.setState({ secretModalOpen: true, tokenToReveal: token, loadingSwapData: true });
+		getSwapData(token).then(swapData => {
+			const swappingTokenReveal = swapData.counterpart.data.slot;
+			const savedSecret = localStorage.getItem(`swap_${token}_${swappingTokenReveal}`);
+			this.setState({ swappingTokenReveal, secretToReveal: savedSecret, loadingSwapData: false })
+		})
+	}
 
 	closeRevealSecretModal= () => this.setState({ secretModalOpen: false });
 

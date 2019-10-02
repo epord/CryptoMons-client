@@ -71,11 +71,9 @@ export const createAtomicSwap = (slot, swappingSlot) => {
         }).then(() => {
           localStorage.setItem(`swap_${slot}_${swappingSlot}`, secret);
           resolve(secret);
-        });
-
-      });
-
-    });
+        }).catch(reject);
+      }).catch(reject);
+    }).catch(reject);
 
   })
 }

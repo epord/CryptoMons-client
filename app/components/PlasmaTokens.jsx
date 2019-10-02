@@ -17,7 +17,8 @@ import { getChallengeableTokens, getExitingTokens, getExitedTokens, revealSecret
 
 const styles = theme => ({
 	dialogPaper: {
-		width: '25em',
+		maxWidth: '40em',
+		width: '40em',
 	},
 });
 
@@ -57,6 +58,8 @@ class PlasmaTokens extends React.Component {
 		this.setState({ swapping: true });
 		createAtomicSwap(token, swapToken).then(secret => {
 			this.setState({ secret, swapping: false })
+		}).catch(err => {
+			this.setState({ swapping: false })
 		})
 	}
 

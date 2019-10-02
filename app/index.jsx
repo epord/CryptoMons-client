@@ -20,7 +20,7 @@ import {
 	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion, subscribeToCryptoMonTransfer
 } from '../services/ethService';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts } from './redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts, getSwappingTokens } from './redux/actions'
 
 class App extends React.Component {
 
@@ -102,8 +102,9 @@ class App extends React.Component {
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
 			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
-			const { getOwnedTokens } = this.props;
+			const { getOwnedTokens, getSwappingTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
+			getSwappingTokens(address)
 		}));
 
 		subscribeToWithdrew(rootChain, address,(r => {
@@ -258,6 +259,7 @@ const mapDispatchToProps = dispatch => ({
 	loadContracts: () => dispatch(loadContracts()),
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
 	getOwnedTokens: (address, state) => dispatch(getOwnedTokens(address, state)),
+	getSwappingTokens: (address) => dispatch(getSwappingTokens(address)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
