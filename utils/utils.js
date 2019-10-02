@@ -18,7 +18,7 @@ export const delay = (ms) => {
 export const randomHex256 = () => {
   const dict = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f'];
   let hex = '0x';
-  for (let i = 0; i < 32; i++) {
+  for (let i = 0; i < 64; i++) {
     const i = Math.floor(Math.random() * dict.length);
     hex += dict[i];
   }

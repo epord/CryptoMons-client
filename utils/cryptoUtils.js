@@ -14,22 +14,21 @@ export const generateTransactionHash = (slot, blockSpent, recipient) => {
 	}
 };
 
-export const generateSwapTransactionHash = (slot, blockSpent, hashSecret, recipient, swappingSlot) => {
+export const generateSwapHash = (slot, blockSpent, hashSecret, recipient, swappingSlot) => {
 	const slotBN = new BN(slot);
 	const blockSpentBN = new BN(blockSpent);
 	const swappingSlotBN = new BN(swappingSlot);
 
 	let params = [
 		//TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
-		EthUtils.setLengthLeft(slotBN.toArrayLike(Buffer), 256/8), 		 // uint256 little endian
+		EthUtils.setLengthLeft(slotBN.toArrayLike(Buffer), 64/8), 		 // uint256 little endian
 		EthUtils.setLengthLeft(blockSpentBN.toArrayLike(Buffer), 256/8),	 // uint256 little endian
 		EthUtils.toBuffer(hashSecret),													 // must start with 0x
 		EthUtils.toBuffer(recipient),												     // must start with 0x
-		EthUtils.setLengthLeft(swappingSlotBN.toArrayLike(Buffer), 256/8), // uint256 little endian
+		EthUtils.setLengthLeft(swappingSlotBN.toArrayLike(Buffer), 64/8), // uint256 little endian
 	];
 
-	const bytes = EthUtils.bufferToHex(RLP.encode(params));
-	return EthUtils.bufferToHex(EthUtils.keccak256(bytes))
+	return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.bufferToHex(Buffer.concat(params))));
 };
 
 export const getHash = (message) => {
@@ -69,31 +68,7 @@ export const decodeSwapTransactionBytes = bytes => {
 	const signatureB = EthUtils.bufferToHex(decoded[8]);
 
 	return { slotA, blockSpentA, secretA, B, slotB, blockSpentB, secretB, A, signatureB }
-}
-
-export const generateSwapHash = (slot, blockSpent, hashSecret, recipient, swappingSlot) => {
-	const slotBN = new BN(slot);
-	const blockSpentBN = new BN(blockSpent);
-	const swappingSlotBN = new BN(swappingSlot);
-
-	if(blockSpentBN.isZero()) {
-		return null; // cannot swap if deposit
-	}
-
-	return EthUtils.bufferToHex(EthUtils.keccak256(getSwapBytes(slotBN, blockSpentBN, hashSecret, recipient, swappingSlotBN)));
-}
-
-const getSwapBytes = (slot, blockSpent, hashSecret, recipient, swappingSlot) => {
-	let params = [
-		EthUtils.setLengthLeft(slot.toArrayLike(Buffer), 256/8),
-		EthUtils.setLengthLeft(blockSpent.toArrayLike(Buffer), 256/8),
-		EthUtils.toBuffer(hashSecret),
-		EthUtils.toBuffer(recipient),
-		EthUtils.setLengthLeft(swappingSlot.toArrayLike(Buffer), 256/8)
-	];
-
-	return EthUtils.bufferToHex(RLP.encode(params));
-}
+};
 
 export const sign = (message) => {
 	return new Promise((resolve, reject) => {

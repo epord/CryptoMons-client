@@ -6,14 +6,14 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
 
-import { checkEmptyBlock, checkInclusion } from '../../services/ethService';
+import {checkEmptyBlock, checkInclusion, checkSecretsIncluded} from '../../services/ethService';
 import { getProofHistory } from '../../services/plasmaServices';
 import {
   recover,
   decodeTransactionBytes,
   decodeSwapTransactionBytes,
   generateTransactionHash,
-  generateSwapTransactionHash,
+  generateSwapHash,
   isSwapBytes, getHash
 } from '../../utils/cryptoUtils';
 
@@ -34,9 +34,8 @@ class History extends React.Component {
     const { rootChainContract } = this.props;
 		const { tokenToVerify: token } = this.state;
 		const { history } = await getProofHistory(token);
-		console.log(history)
 
-		console.log(`validating ${Object.keys(history).length} blocks`)
+		console.log(`validating ${Object.keys(history).length} blocks`);
 
 		let included = await Promise.all(
 		  Object.keys(history).map(blockNumber => {
@@ -48,7 +47,26 @@ class History extends React.Component {
         }
       })
 		);
-		console.log(included)
+
+		let swapped = (await Promise.all(
+		  Object.keys(history).map( async blockNumber => {
+        const { transactionBytes } = history[blockNumber];
+        if(transactionBytes && isSwapBytes(transactionBytes)) {
+          const result = await checkSecretsIncluded(blockNumber, history[blockNumber], rootChainContract);
+          return {blockNumber, result}
+        } else {
+          return {}
+        }
+
+      })
+    )).filter(v => v.blockNumber);
+
+    swapped = swapped.reduce(function(result, item) {
+      result[item.blockNumber] = item.result;
+      return result;
+    }, {});
+
+
 		let fail = included.indexOf(false);
 		//TODO API returns block before they are propagated
     if(fail != -1 && fail != included.length - 1) {
@@ -76,16 +94,15 @@ class History extends React.Component {
 			},
 			// Other blocks
 			...transactions.slice(1).map(blockNumber => async (owner, cb) => {
-				const { transactionBytes, signature, hash } = history[blockNumber];
+				const { transactionBytes, signature, hash, hashSecretA, hashSecretB } = history[blockNumber];
 
 				if (transactionBytes) {
 				  if(isSwapBytes(transactionBytes)) {
-				    //TODO Validate Secrets
-				    const { slotA, blockSpentA, secretA, B, slotB, blockSpentB, secretB, A, signatureB } =
+				    const { slotA, blockSpentA, B, slotB, blockSpentB, A, signatureB } =
               decodeSwapTransactionBytes(transactionBytes);
 
-            const generatedHashA = generateSwapTransactionHash(slotA, blockSpentA, getHash(secretA), B, slotB);
-            const generatedHashB = generateSwapTransactionHash(slotB, blockSpentB, getHash(secretB), A, slotA);
+            const generatedHashA = generateSwapHash(slotA, blockSpentA, hashSecretA, B, slotB);
+            const generatedHashB = generateSwapHash(slotB, blockSpentB, hashSecretB, A, slotA);
 
             if (generatedHashA.toLowerCase() != hash.toLowerCase()) {
               return cb({error: "Hash does not match", blockNumber: blockNumber, lastOwner: owner})
@@ -99,6 +116,10 @@ class History extends React.Component {
               return cb({error: "Not signed by counterpart correctly", blockNumber: blockNumber, lastOwner: owner})
             }
 
+            if(!swapped[blockNumber]) {
+              return cb(null, A);
+            }
+
             return cb(null, B);
 
           } else {
@@ -106,8 +127,6 @@ class History extends React.Component {
             const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
 
             if (generatedHash.toLowerCase() != hash.toLowerCase()) {
-              console.log(generatedHash)
-              console.log(hash)
               return cb({error: "Hash does not match", blockNumber: blockNumber, lastOwner: owner})
             }
 
@@ -130,11 +149,11 @@ class History extends React.Component {
         }
 
 			});
-	}
+	};
 
 	handleChange = fieldName => event => {
 		this.setState({ [fieldName]: event.target.value });
-  }
+  };
 
   render = () => {
     const { tokenToVerify, historyValid, lastValidOwner, lastValidBlock } = this.state;
