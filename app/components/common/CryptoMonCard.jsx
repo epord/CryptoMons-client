@@ -26,7 +26,7 @@ class CryptoMonCard extends React.Component {
 				</CardActionArea>
 				<Grid container>
 					<Grid item xs={12}>
-						<Typography variant="caption" gutterBottom>ID: {token}</Typography>
+						<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>ID: {token}</Typography>
 					</Grid>
 					{exiting && (
 						<Grid item xs={12}>

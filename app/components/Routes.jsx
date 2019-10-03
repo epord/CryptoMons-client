@@ -30,7 +30,7 @@ import "regenerator-runtime/runtime";
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
-	subscribeToSlashedBond, getChallengeable, subscribeToCryptoMonTransfer
+	subscribeToSlashedBond, getChallengeable, subscribeToCryptoMonTransfer, subscribeToSubmittedSecretBlocks
 } from '../../services/ethService';
 
 import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts, getSwappingTokens } from '../redux/actions'
@@ -106,6 +106,13 @@ class Routes extends React.Component {
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
 			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
+			const { getOwnedTokens, getSwappingTokens } = this.props;
+			getOwnedTokens(address, 'deposited');
+			getSwappingTokens(address)
+		}));
+
+		subscribeToSubmittedSecretBlocks(rootChain,(r => {
+			console.log("Secret Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
 			const { getOwnedTokens, getSwappingTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address)

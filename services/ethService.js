@@ -75,6 +75,10 @@ export const subscribeToSubmittedBlocks = (rootChain, cb) => {
 	subscribeToEvent("SubmittedBlock", {}, rootChain, cb)
 };
 
+export const subscribeToSubmittedSecretBlocks = (rootChain, cb) => {
+	subscribeToEvent("SubmittedSecretBlock", {}, rootChain, cb)
+};
+
 export const subscribeToStartedExit = (rootChain, address, cb) => {
 	subscribeToEvent("StartedExit", {owner: address}, rootChain, cb)
 };

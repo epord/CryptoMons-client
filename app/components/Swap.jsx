@@ -12,11 +12,14 @@ import Dialog from '@material-ui/core/Dialog';
 import Grid from '@material-ui/core/Grid';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import Paper from '@material-ui/core/Paper';
+
+import CompareArrowsIcon from '@material-ui/icons/CompareArrows';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import { getSwapData } from '../../services/plasmaServices'
-import { getSwappingTokens, revealSecret } from '../redux/actions';
+import { getSwapData, createAtomicSwap } from '../../services/plasmaServices'
+import { getSwappingTokens, getSwappingRequests, revealSecret } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -31,15 +34,57 @@ class Swap extends React.Component {
   }
 
   componentDidMount() {
-    const { getSwappingTokens } = this.props;
+    const { getSwappingTokens, getSwappingRequests } = this.props;
 		const interval = setInterval(() => {
 			if (web3.eth.defaultAccount) {
 				this.ethAccount = web3.eth.defaultAccount;
         getSwappingTokens(web3.eth.defaultAccount).then(console.log)
+        getSwappingRequests(web3.eth.defaultAccount).then(console.log)
 				clearInterval(interval);
 			}
 		}, 100);
-  }
+	}
+
+	revealSecret = async () => {
+		const { tokenToReveal, secretToReveal } = this.state;
+		const { revealSecret } = this.props;
+
+		this.setState({ revealingSecret: true });
+		revealSecret(tokenToReveal, secretToReveal)
+			.then(() => {
+				this.setState({ revealingSecret: false })
+				this.closeRevealSecretModal();
+			})
+	}
+
+	swapInPlasma = async (tokenToSwap, swapToken) => {
+
+		console.log(`Swapping ${tokenToSwap} with ${swapToken}`);
+
+		this.setState({ swapping: true });
+		createAtomicSwap(tokenToSwap, swapToken).then(secret => {
+			this.setState({ secret, swapping: false })
+		}).catch(err => {
+			this.setState({ swapping: false })
+		})
+	}
+
+	openRevealSecretModal = token => {
+		this.setState({ secretModalOpen: true, tokenToReveal: token, loadingSwapData: true });
+		getSwapData(token).then(swapData => {
+			const swappingTokenReveal = swapData.counterpart.data.slot;
+			const savedSecret = localStorage.getItem(`swap_${token}_${swappingTokenReveal}`);
+			this.setState({ swappingTokenReveal, secretToReveal: savedSecret, loadingSwapData: false })
+		})
+	}
+
+	closeRevealSecretModal= () => this.setState({ secretModalOpen: false });
+
+	openAcceptSwapModal= transaction => () => {
+		this.setState({ acceptSwapModalOpen: true, transactionToAccept: transaction, swapToken: transaction.swappingSlot })
+	};
+
+	closeAcceptSwapModal= () => this.setState({ acceptSwapModalOpen: false });
 
 
 	handleChange = fieldName => event => {
@@ -74,6 +119,42 @@ class Swap extends React.Component {
 		)
 	}
 
+	renderAcceptSwapDialog = () => {
+		const { acceptSwapModalOpen, transactionToAccept, swapping, secret } = this.state;
+		const { classes } = this.props;
+
+		if (!transactionToAccept) return null;
+
+		return (
+			<Dialog onClose={this.closeAcceptSwapModal} open={acceptSwapModalOpen} classes={{ paper: classes.dialogPaper }}>
+				<DialogTitle>Do you want to accept this swap request?</DialogTitle>
+				<Grid container style={{ padding: '1em' }}>
+					<Grid item xs={12} style={{ display: 'flex', alignItems: 'center',  }}>
+						<CryptoMonCard token={transactionToAccept.slot} />
+						<CompareArrowsIcon fontSize="large" />
+						<CryptoMonCard token={transactionToAccept.swappingSlot}/>
+					</Grid>
+				</Grid>
+				{secret && (
+					<React.Fragment>
+						<Typography variant="body1" style={{ display: 'block', margin: 'auto' }}><b>IMPORTANT!</b></Typography>
+						<Typography variant="body1" style={{ display: 'block', margin: 'auto' }}>This is the random generated secret you will need to reveal in order to validate the transaction later:</Typography>
+						<Typography variant="body1" style={{ display: 'block', margin: 'auto' }}><b>{secret}</b></Typography>
+					</React.Fragment>
+				)}
+				<Button
+					variant="countained"
+					color="primary"
+					fullWidth
+					onClick={() => this.swapInPlasma(transactionToAccept.swappingSlot, transactionToAccept.slot)}
+					disabled={swapping || secret}
+				>
+					Accept
+				</Button>
+			</Dialog>
+		)
+	}
+
   renderSwappingTokensSection = () => {
 		const { swappingTokens } = this.props;
 
@@ -88,36 +169,48 @@ class Swap extends React.Component {
         ))}
       </React.Fragment>
     )
-  }
-
-	revealSecret = async () => {
-		const { tokenToReveal, secretToReveal } = this.state;
-		const { revealSecret } = this.props;
-
-		this.setState({ revealingSecret: true });
-		revealSecret(tokenToReveal, secretToReveal)
-			.then(() => {
-				this.setState({ revealingSecret: false })
-				this.closeRevealSecretModal();
-			})
-  }
-
-	openRevealSecretModal = token => {
-		this.setState({ secretModalOpen: true, tokenToReveal: token, loadingSwapData: true });
-		getSwapData(token).then(swapData => {
-			const swappingTokenReveal = swapData.counterpart.data.slot;
-			const savedSecret = localStorage.getItem(`swap_${token}_${swappingTokenReveal}`);
-			this.setState({ swappingTokenReveal, secretToReveal: savedSecret, loadingSwapData: false })
-		})
 	}
 
-	closeRevealSecretModal= () => this.setState({ secretModalOpen: false });
+  renderSwappingRequestsSection = () => {
+		const { swappingRequests } = this.props;
+
+    if (swappingRequests.length == 0){
+      return <Typography style={{ margin: 'auto' }}  variant="body1">You do not have any Plasma token. Deposit one of your CryptoMons once you have one!</Typography>
+    }
+
+    return(
+      <React.Fragment>
+				<Grid container direction="row" alignItems="center" spacing={2}>
+					{swappingRequests.map(transaction => (
+						<Grid item key={transaction.hash} xs={12} md={6}>
+							<Paper style={{ padding: '1em' }}>
+								<Grid container spacing={3} direction="column" alignItems="center">
+									<Grid item xs={12}>
+										<Typography variant="body1" style={{ maxWidth: '25em', textAlign: 'center' }}>{transaction.owner} wants to swap with you!</Typography>
+									</Grid>
+									<Grid item xs={12} style={{ display: 'flex', alignItems: 'center',  }}>
+										<CryptoMonCard token={transaction.slot} />
+										<CompareArrowsIcon fontSize="large" />
+										<CryptoMonCard token={transaction.swappingSlot}/>
+									</Grid>
+									<Grid item xs={8}>
+										<Button variant="contained" size="large" color="primary" fullWidth onClick={this.openAcceptSwapModal(transaction)}>View</Button>
+									</Grid>
+								</Grid>
+							</Paper>
+						</Grid>
+					))}
+				</Grid>
+      </React.Fragment>
+    )
+  }
 
   render = () => {
     return (
 			<div style={{ padding: '1em' }}>
-      {this.renderRevealSecretDialog()}
-			<Typography variant="h5" gutterBottom>Swaps</Typography>
+				{this.renderRevealSecretDialog()}
+				{this.renderAcceptSwapDialog()}
+				<Typography variant="h5" gutterBottom>Swaps</Typography>
 				<ExpansionPanel defaultExpanded style={{ marginTop: '1em' }}>
 					<ExpansionPanelSummary
 						expandIcon={<ExpandMoreIcon />}>
@@ -133,7 +226,7 @@ class Swap extends React.Component {
 						<Typography>Swapping requests</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails>
-            <Typography style={{ margin: 'auto' }}  variant="body1">You do not have any Plasma token. Deposit one of your CryptoMons once you have one!</Typography>
+            {this.renderSwappingRequestsSection()}
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
       </div>
@@ -144,10 +237,12 @@ class Swap extends React.Component {
 
 const mapStateToProps = state => ({
   swappingTokens: state.swappingTokens,
+  swappingRequests: state.swappingRequests,
 })
 
 const mapDispatchToProps = dispatch => ({
   getSwappingTokens: address => dispatch(getSwappingTokens(address)),
+  getSwappingRequests: address => dispatch(getSwappingRequests(address)),
 	revealSecret: (token, secret) => dispatch(revealSecret(token, secret)),
 })
 

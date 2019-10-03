@@ -29,6 +29,9 @@ const gotExited = tokens => {
 const gotSwappingTokens = tokens => {
   return { type: C.GOT_SWAPPING, payload: tokens };
 }
+const gotSwappingRequests = tokens => {
+  return { type: C.GOT_SWAPPING_REQUESTS, payload: tokens };
+}
 
 
 
@@ -87,4 +90,10 @@ export const getSwappingTokens = (address) => (dispatch, getState) => {
   return PlasmaService
     .getSwappingTokens(address)
     .then(tokens => dispatch(gotSwappingTokens(tokens)))
+}
+
+export const getSwappingRequests = (address) => (dispatch, getState) => {
+  return PlasmaService
+    .getSwappingRequests(address)
+    .then(tokens => dispatch(gotSwappingRequests(tokens)))
 }

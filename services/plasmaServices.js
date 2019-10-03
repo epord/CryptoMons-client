@@ -118,6 +118,10 @@ export const getSwappingTokens = (address) => {
   return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}?state=swapping`);
 };
 
+export const getSwappingRequests = (address) => {
+  return basicGet(`${process.env.API_URL}/api/tokens/swapping-requests/${address}`);
+};
+
 export const getExitData = token => {
   return basicGet(`${process.env.API_URL}/api/exits/data/${token}`);
 };
