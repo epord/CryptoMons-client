@@ -27,6 +27,7 @@
     "redux-thunk": "^2.3.0",
     "regenerator-runtime": "^0.13.3",
     "rlp": "^2.2.3",
+    "web3": "^1.2.1",
     "web3-utils": "^1.2.1"
   },
   "devDependencies": {

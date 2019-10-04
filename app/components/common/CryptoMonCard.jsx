@@ -1,4 +1,5 @@
 import React from 'react';
+import { connect } from "react-redux";
 
 import Card from '@material-ui/core/Card';
 import CardActionArea from '@material-ui/core/CardActionArea';
@@ -10,18 +11,33 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
+import { getCryptomon } from '../../../services/ethService';
+
 class CryptoMonCard extends React.Component {
+
+	state = { }
+
+	componentDidMount = () => {
+		const { token, cryptoMonsContract } = this.props;
+		getCryptomon(token, cryptoMonsContract).then(ans => {
+			var pad = "000";
+			var id = (pad + ans.Id).slice(-pad.length);
+			const imageUrl = `https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/images/${id}.png`;
+			this.setState({ img: imageUrl });
+		})
+	}
 
 	render = () => {
 		const { token, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
 			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked } = this.props;
+		const { img } = this.state
 
 		return (
 			<Card style={{ maxWidth: '12em' }}>
 				<CardActionArea>
 					<img
-						src="http://www.gifs-animados.es/clip-art/caricaturas/pokemon/gifs-animados-pokemon-8118017.jpg"
+						src={img || null}
 						style={{ width: '100%' }} />
 				</CardActionArea>
 				<Grid container>
@@ -69,4 +85,13 @@ class CryptoMonCard extends React.Component {
 	}
 }
 
-export default CryptoMonCard;
+
+
+const mapStateToProps = state => ({
+  cryptoMonsContract: state.cryptoMonsContract
+})
+
+const mapDispatchToProps = dispatch => ({
+})
+
+export default connect(mapStateToProps, mapDispatchToProps)(CryptoMonCard);

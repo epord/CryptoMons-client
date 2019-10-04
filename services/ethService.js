@@ -63,6 +63,20 @@ const subscribeToEvent = (event, filter, rootChain, cb) => {
 	})
 };
 
+export const getCryptomon = (slot, cryptoMons) => {
+	return new Promise((resolve, reject) => {
+
+		const NewWeb3 = require('web3'); //=======> This breaks other contract calls
+		const newWeb3 = new NewWeb3(NewWeb3.givenProvider)
+		const cmContract = new newWeb3.eth.Contract(cryptoMons.abi, cryptoMons.address);
+		cmContract.methods.getCryptomon(slot).call((err, res) => {
+			if (err) return reject(err);
+			resolve(res)
+		})
+		// resolve({ Id: 9 })
+	})
+}
+
 export const subscribeToCryptoMonTransfer = (cryptoMon, address, cb) => {
 	subscribeToEvent("Transfer", {to: address}, cryptoMon, cb)
 };
