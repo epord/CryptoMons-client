@@ -46,7 +46,7 @@ class App extends React.Component {
 	getBalance = () => {
 		const { rootChain } = this.props;
 		return getBalance(rootChain).then(async withdrawable => {
-			await this.setState({ withdrawableAmount: withdrawable.toFixed() });
+			await this.setState({ withdrawableAmount: withdrawable });
 			return withdrawable;
 		})
 	}

@@ -47,21 +47,21 @@ const getTransactionBytes = (slot, blockSpent, recipient) => {
 
 export const decodeTransactionBytes = bytes => {
 	const decoded = RLP.decode(bytes);
-	const slot = web3.toBigNumber(EthUtils.bufferToHex(decoded[0])).toFixed();
-	const blockSpent = web3.toBigNumber(EthUtils.bufferToHex(decoded[1])).toFixed();
+	const slot = (EthUtils.bufferToHex(decoded[0])).toFixed();
+	const blockSpent = (EthUtils.bufferToHex(decoded[1])).toFixed();
 	const recipient = EthUtils.bufferToHex(decoded[2]);
 	return { slot, blockSpent, recipient }
 }
 
 export const decodeSwapTransactionBytes = bytes => {
 	const decoded = RLP.decode(bytes);
-	const slotA = web3.toBigNumber(EthUtils.bufferToHex(decoded[0])).toFixed();
-	const blockSpentA = web3.toBigNumber(EthUtils.bufferToHex(decoded[1])).toFixed();
+	const slotA = (EthUtils.bufferToHex(decoded[0])).toFixed();
+	const blockSpentA = (EthUtils.bufferToHex(decoded[1])).toFixed();
 	const secretA = EthUtils.bufferToHex(decoded[2]);
 	const B = EthUtils.bufferToHex(decoded[3]);
 
-	const slotB = web3.toBigNumber(EthUtils.bufferToHex(decoded[4])).toFixed();
-	const blockSpentB = web3.toBigNumber(EthUtils.bufferToHex(decoded[5])).toFixed();
+	const slotB = (EthUtils.bufferToHex(decoded[4])).toFixed();
+	const blockSpentB = (EthUtils.bufferToHex(decoded[5])).toFixed();
 	const secretB = EthUtils.bufferToHex(decoded[6]);
 	const A = EthUtils.bufferToHex(decoded[7]);
 

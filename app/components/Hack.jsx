@@ -102,7 +102,7 @@ class Hack extends React.Component {
     const data2 = await data2Res.json();
 
     const exitData = {
-      slot: web3.toBigNumber(token),
+      slot: (token),
       prevTxBytes: data1.exitData.bytes,
       prevTxInclusionProof: data1.exitData.proof,
       exitingTxBytes: data2.exitData.bytes,
@@ -122,7 +122,7 @@ class Hack extends React.Component {
   }
 
 	challengeBefore = (token, exitData) => () => {
-		const { rootChain } = this.state;
+		const { rootChain } = this.props;
     console.log(`Challenging Before: ${token}`)
 
     const newExitData = {
@@ -168,7 +168,7 @@ class Hack extends React.Component {
     const data2 = await data2Res.json();
 
     const exitData = {
-      slot: web3.toBigNumber(token),
+      slot: (token),
       prevTxBytes: data1.bytes,
       exitingTxBytes: data2.exitData.bytes,
       prevTxInclusionProof: data1.proof,

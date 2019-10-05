@@ -75,14 +75,14 @@ class Routes extends React.Component {
 		}));
 
 		subscribeToDeposits(rootChain, address,(r => {
-			console.log("DEPOSIT - Slot: " + r.args.slot.toFixed())
+			console.log("DEPOSIT - Slot: " + r.returnValues.slot)
 			const { getCryptoMonsFrom, getOwnedTokens } = this.props;
 			getCryptoMonsFrom(address, cryptoMons);
 			getOwnedTokens(address, 'deposited');
 		}));
 
 		subscribeToCoinReset(rootChain, address,(r => {
-			console.log("Coin Reset - Slot: " + r.args.slot.toFixed())
+			console.log("Coin Reset - Slot: " + r.returnValues.slot)
 			const { getOwnedTokens, getExitingTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
@@ -91,35 +91,35 @@ class Routes extends React.Component {
 		}));
 
 		subscribeToFinalizedExit(rootChain, address,(r => {
-			console.log("Finalized Exit - Slot: " + r.args.slot.toFixed())
+			console.log("Finalized Exit - Slot: " + r.returnValues.slot)
 			const { getExitingTokens } = this.props;
 			getExitingTokens(address, rootChain);
 			getExitedTokens(address, rootChain);
 		}));
 
 		subscribeToStartedExit(rootChain, address,(r => {
-			console.log("Started Exit - Slot: " + r.args.slot.toFixed())
+			console.log("Started Exit - Slot: " + r.returnValues.slot)
 			const { getOwnedTokens, getExitingTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
 		}));
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
-			console.log("Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
+			console.log("Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
 			const { getOwnedTokens, getSwappingTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address)
 		}));
 
 		subscribeToSubmittedSecretBlocks(rootChain,(r => {
-			console.log("Secret Block Submitted - BlockNumber: " + r.args.blockNumber.toFixed())
+			console.log("Secret Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
 			const { getOwnedTokens, getSwappingTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address)
 		}));
 
 		subscribeToWithdrew(rootChain, address,(r => {
-			console.log("Withdrawal - Slot: " + r.args.slot.toFixed())
+			console.log("Withdrawal - Slot: " + r.returnValues.slot)
 			const { getCryptoMonsFrom, getExitedTokens } = this.props;
 			getCryptoMonsFrom(address, cryptoMons);
 			getExitedTokens(address, rootChain);

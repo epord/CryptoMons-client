@@ -5,14 +5,22 @@ import { zip, unique } from '../utils/utils';
 import { getOwnedTokens } from "./plasmaServices";
 import { isSwapBytes } from '../utils/cryptoUtils';
 
-const ethContract = (data) => web3.eth.contract(data.abi).at(data.address);
+const Web3 = require('web3');
+const web3 = new Web3(Web3.givenProvider)
+const ethContract = (data) => new web3.eth.Contract(data.abi, data.address).methods;
+const baseEthContract = (data) => new web3.eth.Contract(data.abi, data.address);
+
+window.ethereum.enable().then((account) =>{
+	const defaultAccount = account[0]
+	web3.eth.defaultAccount = defaultAccount
+});
 
 export const getCoinState = (slot, rootChain) => {
-	const slotBN = web3.toBigNumber(slot);
+	const slotBN = (slot);
 	const states = ["NOT_EXITING", "EXITING", "EXITED"];
 
 	return new Promise((resolve, reject) => {
-		ethContract(rootChain).getPlasmaCoin(slotBN, (err, res) => {
+		ethContract(rootChain).getPlasmaCoin(slotBN).call((err, res) => {
 			if (err) return reject(err);
 			resolve(states[res[3]]);
 		});
@@ -21,13 +29,13 @@ export const getCoinState = (slot, rootChain) => {
 
 const getStateTokens = (filter, rootChain, state) => {
 	return new Promise((resolve, reject) => {
-		const rcContract = ethContract(rootChain);
 		const blockFilter = { fromBlock: 0, toBlock: 'latest' };
 
 		//TODO: if the coin is exiting, another call to getExit to check the owner coincides should be made
-		rcContract.StartedExit(filter, blockFilter).get(async (err, result) => {
+		baseEthContract(rootChain).getPastEvents("StartedExit",
+			{ filter: filter, fromBlock: 0, toBlock: 'latest' }, async (err, result) => {
 			if(err) return reject(err);
-			const callBacks = result.map((s) => getCoinState(s.args.slot, rootChain));
+			const callBacks = result.map((s) => getCoinState(s.returnValues.slot, rootChain));
 			const exitingBool = await Promise.all(callBacks);
 			resolve(zip(result, exitingBool).filter(e => e[1] == state).map(e => e[0]));
 		});
@@ -40,10 +48,10 @@ const getExitedTokens = (filter, rootChain) => getStateTokens(filter, rootChain,
 
 export const depositToPlasma = (token, cryptoMons, rootChain) => {
 	const rootChainAddress = rootChain.address;
-	const sender = web3.eth.accounts[0];
+	const sender = web3.eth.defaultAccount;
 
 	return new Promise((resolve, reject) => {
-		ethContract(cryptoMons).safeTransferFrom(sender, rootChainAddress, token, (err, res) => {
+		ethContract(cryptoMons).safeTransferFrom(sender, rootChainAddress, token).send({from: web3.eth.defaultAccount},(err, res) => {
 			if (err) return reject(err);
 			resolve(res)
 		})
@@ -51,9 +59,8 @@ export const depositToPlasma = (token, cryptoMons, rootChain) => {
 };
 
 let alreadyLogged = {};
-const subscribeToEvent = (event, filter, rootChain, cb) => {
-	const rcContract = ethContract(rootChain);
-	rcContract[event](filter).watch((err, res) => {
+const subscribeToEvent = (event, filter, data, cb) => {
+	baseEthContract(data).events[event]({ filter: filter}, (err, res) => {
 		if(err) return console.error(err);
 		let key = res.transactionHash + res.logIndex;
 		if(!alreadyLogged[key]) {
@@ -65,11 +72,7 @@ const subscribeToEvent = (event, filter, rootChain, cb) => {
 
 export const getCryptomon = (slot, cryptoMons) => {
 	return new Promise((resolve, reject) => {
-
-		const NewWeb3 = require('web3'); //=======> This breaks other contract calls
-		const newWeb3 = new NewWeb3(NewWeb3.givenProvider)
-		const cmContract = new newWeb3.eth.Contract(cryptoMons.abi, cryptoMons.address);
-		cmContract.methods.getCryptomon(slot).call((err, res) => {
+		ethContract(cryptoMons).getCryptomon(slot).call((err, res) => {
 			if (err) return reject(err);
 			resolve(res)
 		})
@@ -128,15 +131,15 @@ export const getChallengeable = (address, rootChain) => {
 		const slotFilter = { slot: exiting };
 		const filteredTokens = await getExitingTokens(slotFilter, rootChain);
 		resolve(unique(
-			filteredTokens.filter(e => e.args.owner.toLowerCase() !== address.toLowerCase())
-			.map(e=> e.args.slot.toFixed()))
+			filteredTokens.filter(e => e.returnValues.owner.toLowerCase() !== address.toLowerCase())
+			.map(e=> e.returnValues.slot))
 		);
 	});
 };
 
 export const getChallenges = (slot, rootChain) => {
 	return new Promise((resolve, reject) => {
-		ethContract(rootChain).getChallenges(slot, (err, result) => {
+		ethContract(rootChain).getChallenges(slot).call((err, result) => {
 			if(err) return reject(err);
 			resolve(result);
 		});
@@ -145,7 +148,7 @@ export const getChallenges = (slot, rootChain) => {
 
 export const getChallenge = (slot, txHash, rootChain) => {
 	return new Promise((resolve, reject) => {
-		ethContract(rootChain).getChallenge(slot, txHash, (err, result) => {
+		ethContract(rootChain).getChallenge(slot, txHash).call((err, result) => {
 			if(err) return reject(err);
 			resolve(result);
 		});
@@ -157,9 +160,9 @@ export const getChallengedFrom = (address, rootChain) => {
 	return new Promise(async (resolve, reject) => {
 		const exiting = await getOwnedTokens(address, 'exiting');
 		const slotFilter = { slot: exiting };
-		const filteredTokens = unique((await getExitingTokens(slotFilter, rootChain)).map(t => t.args.slot));
+		const filteredTokens = unique((await getExitingTokens(slotFilter, rootChain)).map(t => t.returnValues.slot));
 		const challenges = await Promise.all(filteredTokens.map(s => getChallenges(s, rootChain)));
-		const result = zip(filteredTokens, challenges).filter(e=> e[1].length > 0).map(e => ({ slot: e[0].toFixed(), txHash: e[1] }));
+		const result = zip(filteredTokens, challenges).filter(e=> e[1].length > 0).map(e => ({ slot: e[0], txHash: e[1] }));
 		const filtered = unique(result, (s1) => (s2) => s1.slot == s2.slot);
 		resolve(filtered)
 	});
@@ -169,7 +172,7 @@ export const getExitingFrom = (address, rootChain)  => {
 	return new Promise(async (resolve, reject) => {
 		const ownerFilter = { owner: address };
 		const filteredExits = await getExitingTokens(ownerFilter, rootChain);
-		resolve(unique(filteredExits.map(e=> e.args.slot.toFixed())));
+		resolve(unique(filteredExits.map(e=> e.returnValues.slot)));
 	})
 };
 
@@ -177,15 +180,13 @@ export const getExitedFrom = (address, rootChain)  => {
 	return new Promise(async (resolve, reject) => {
 		const ownerFilter = { owner: address };
 		const filteredExits = await getExitedTokens(ownerFilter, rootChain);
-		resolve(unique(filteredExits.map(e=> e.args.slot.toFixed())));
+		resolve(unique(filteredExits.map(e=> e.returnValues.slot)));
 	})
 };
 
 export const challengeAfter = (slot, rootChain) => {
-	const rcContract = ethContract(rootChain);
-
   return new Promise((resolve, reject) => {
-		rcContract.getExit(slot, async (err, res) => {
+		ethContract(rootChain).getExit(slot).call(async (err, res) => {
 			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const exitBlock = res[2];
@@ -194,11 +195,11 @@ export const challengeAfter = (slot, rootChain) => {
 
 			const exitData = await response.json();
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
-			const slotBN = web3.toBigNumber(slot);
-			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
+			const slotBN = (slot);
+			const challengingBlockNumberBN = (challengingBlockNumber);
 
 			ethContract(rootChain)
-				.challengeAfter(slotBN, challengingTransaction, proof, signature, challengingBlockNumberBN, (err, res) => {
+				.challengeAfter(slotBN, challengingTransaction, proof, signature, challengingBlockNumberBN).send({from: web3.eth.defaultAccount},(err, res) => {
 					if (err) return reject(err)
 					resolve(res);
 				})
@@ -207,10 +208,8 @@ export const challengeAfter = (slot, rootChain) => {
 }
 
 export const challengeBetween = (slot, rootChain) => {
-	const rcContract = ethContract(rootChain);
-
   return new Promise((resolve, reject) => {
-		rcContract.getExit(slot, async (err, res) => {
+		ethContract(rootChain).getExit(slot).call(async (err, res) => {
 			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const parentBlock = res[1];
@@ -219,13 +218,11 @@ export const challengeBetween = (slot, rootChain) => {
 			const exitData = await response.json();
 
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
-			const slotBN = web3.toBigNumber(slot);
-			const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
+			const slotBN = (slot);
+			const challengingBlockNumberBN = (challengingBlockNumber);
 
 			ethContract(rootChain)
-				.challengeBetween(slotBN, challengingTransaction, proof, signature, challengingBlockNumberBN, {
-					from: web3.eth.accounts[0]
-				}, (err, res) => {
+				.challengeBetween(slotBN, challengingTransaction, proof, signature, challengingBlockNumberBN).send({from: web3.eth.defaultAccount},(err, res) => {
 					if (err) return reject(err)
 					resolve(res);
 				})
@@ -240,13 +237,12 @@ export const respondChallenge = (slot, challengingBlock, challengingTxHash,  roo
 		const challengeData = await response.json();
 
 		const { challengingBlockNumber: respondingBlockNumber, challengingTransaction: respondingTransaction, proof, signature} = challengeData;
-		const slotBN = web3.toBigNumber(slot);
-		const respondingBlockNumberBN = web3.toBigNumber(respondingBlockNumber);
+		const slotBN = (slot);
+		const respondingBlockNumberBN = (respondingBlockNumber);
 
 		ethContract(rootChain)
-			.respondChallengeBefore(slotBN, challengingTxHash, respondingBlockNumberBN, respondingTransaction, proof, signature, {
-				from: web3.eth.accounts[0]
-			}, (err, res) => {
+			.respondChallengeBefore(slotBN, challengingTxHash, respondingBlockNumberBN, respondingTransaction, proof, signature)
+			.send({from: web3.eth.defaultAccount},(err, res) => {
 				if (err) return reject(err)
 				resolve(res);
 			})
@@ -254,10 +250,8 @@ export const respondChallenge = (slot, challengingBlock, challengingTxHash,  roo
 }
 
 export const challengeBefore = (slot, rootChain) => {
-	const rcContract = ethContract(rootChain);
-
   return new Promise((resolve, reject) => {
-		rcContract.getExit(slot, async (err, res) => {
+		ethContract(rootChain).getExit(slot).call(async (err, res) => {
 			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const parentBlock = res[1];
@@ -272,10 +266,8 @@ export const challengeBefore = (slot, rootChain) => {
 }
 
 export const getBalance = (rootChain) => {
-	const rcContract = ethContract(rootChain);
-
   return new Promise((resolve, reject) => {
-		rcContract.getBalance(async (err, res) => {
+		ethContract(rootChain).getBalance().call(async (err, res) => {
 			if (err) return reject(err);
 			const withdrawable = res[1];
 			resolve(withdrawable);
@@ -284,10 +276,8 @@ export const getBalance = (rootChain) => {
 }
 
 export const getBlockRoot = (blockNumber, rootChain) => {
-	const rcContract = ethContract(rootChain);
-
   return new Promise((resolve, reject) => {
-		rcContract.getBlockRoot(blockNumber, async (err, res) => {
+		ethContract(rootChain).getBlockRoot(blockNumber).call(async (err, res) => {
 			if (err) return reject(err);
 			resolve(res);
 		});
@@ -295,11 +285,9 @@ export const getBlockRoot = (blockNumber, rootChain) => {
 }
 
 export const checkEmptyBlock = (blockNumber, rootChain) => {
-	const rcContract = ethContract(rootChain);
-
 	return new Promise((resolve, reject) => {
-		rcContract.getBlockRoot(
-			blockNumber,
+		ethContract(rootChain).getBlockRoot(
+			blockNumber).call(
 			(err, res) => {
 			if (err) return reject(err);
 			console.log("blocknumber:",blockNumber,' ' ,res);
@@ -311,13 +299,11 @@ export const checkEmptyBlock = (blockNumber, rootChain) => {
 export const checkSecretsIncluded = (blockNumber, data, rootChain) => {
   const { transactionBytes, proof } = data;
 
-  const rcContract = ethContract(rootChain);
-
 	return new Promise((resolve, reject) => {
-		rcContract.checkValidationAndInclusion(
+		ethContract(rootChain).checkValidationAndInclusion(
       transactionBytes,
       proof,
-			blockNumber,
+			blockNumber).call(
 			(err, res) => {
 				if (err) return resolve(false);
 				resolve(true);
@@ -326,14 +312,12 @@ export const checkSecretsIncluded = (blockNumber, data, rootChain) => {
 };
 
 const checkBasicInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
-	const rcContract = ethContract(rootChain);
-
   return new Promise((resolve, reject) => {
-		rcContract.checkInclusion(
+		ethContract(rootChain).checkInclusion(
 			txHash || web3Utils.soliditySha3(0),
 			blockNumber,
 			slot,
-			proof,
+			proof).call(
 			(err, res) => {
 			if (err) return reject(err);
 			resolve(res); // true or false
@@ -351,10 +335,8 @@ export const checkInclusion = (transactionBytes, txHash, blockNumber, slot, proo
 }
 
 export const withdrawBonds = (rootChain) => {
-	const rcContract = ethContract(rootChain);
-
   return new Promise((resolve, reject) => {
-		rcContract.withdrawBonds(async (err, res) => {
+		ethContract(rootChain).withdrawBonds().send({from: web3.eth.defaultAccount},async (err, res) => {
 			if (err) return reject(err);
 			resolve(res);
 		});
@@ -364,16 +346,18 @@ export const withdrawBonds = (rootChain) => {
 export const challengeBeforeWithExitData = (exitData, rootChain) => {
 	const { slot, challengingTransaction, proof, challengingBlockNumber } = exitData;
 
-	const slotBN = web3.toBigNumber(slot);
-	const challengingBlockNumberBN = web3.toBigNumber(challengingBlockNumber);
+	const slotBN = (slot);
+	const challengingBlockNumberBN = (challengingBlockNumber);
 
 
   return new Promise(async (resolve, reject) => {
 		ethContract(rootChain)
-			.challengeBefore(slotBN, challengingTransaction, proof, challengingBlockNumberBN, {
-				from: web3.eth.accounts[0],
+			.challengeBefore(slotBN, challengingTransaction, proof, challengingBlockNumberBN).send({from: web3.eth.defaultAccount},
+			{
+				from: web3.eth.defaultAccount,
 				value: web3Utils.toWei('0.1', 'ether')
-			}, (err, res) => {
+			},
+			(err, res) => {
 				if (err) return reject(err)
 				resolve(res);
 			})
@@ -382,26 +366,26 @@ export const challengeBeforeWithExitData = (exitData, rootChain) => {
 
 export const getCryptoMonsFrom = (address, cryptoMons) => {
   return new Promise((resolve, reject) => {
-    ethContract(cryptoMons).Transfer({ to: address }, { fromBlock: 0, toBlock: 'latest' })
-      .get((err, res) => {
+    baseEthContract(cryptoMons).getPastEvents("Transfer", { filter: { to: address }, fromBlock: 0, toBlock: 'latest' },
+			(err, res) => {
         if(err) return reject(err)
 
-        const tokens = unique(res.map(transfer => transfer.args.tokenId.toFixed()))
+        const tokens = unique(res.map(transfer => transfer.returnValues.tokenId))
         async.parallel(
-          tokens.map(tokenId => cb => ethContract(cryptoMons).ownerOf(tokenId, cb)),
+          tokens.map(tokenId => cb => ethContract(cryptoMons).ownerOf(tokenId).call(cb)),
           (err, res) => {
             if (err) return reject(err);
-            resolve(zip(tokens, res).filter((e) => e[1] == address).map(e => e[0]))
+            resolve(zip(tokens, res).filter((e) => e[1].toLowerCase() == address.toLowerCase()).map(e => e[0]))
           });
       });
   });
 }
 
 export const finalizeExit = (rootChain, slot) => {
-	const slotBN = web3.toBigNumber(slot);
+	const slotBN = (slot);
 
 	return new Promise((resolve, reject) => {
-		ethContract(rootChain).finalizeExit(slotBN, (err, res) => {
+		ethContract(rootChain).finalizeExit(slotBN).send({from: web3.eth.defaultAccount},(err, res) => {
 			if (err) return reject(err);
 			resolve(res);
 		})
@@ -409,10 +393,10 @@ export const finalizeExit = (rootChain, slot) => {
 }
 
 export const withdraw = (rootChain, slot) => {
-	const slotBN = web3.toBigNumber(slot);
+	const slotBN = (slot);
 
 	return new Promise((resolve, reject) => {
-		ethContract(rootChain).withdraw(slotBN, (err, res) => {
+		ethContract(rootChain).withdraw(slotBN).send({from: web3.eth.defaultAccount},(err, res) => {
 			if (err) return reject(err);
 			resolve(res);
 		})
@@ -421,9 +405,9 @@ export const withdraw = (rootChain, slot) => {
 
 export const buyCryptoMon = cryptoMons => {
 	return new Promise((resolve, reject) => {
-		ethContract(cryptoMons).buyCryptoMon({
-			from: web3.eth.accounts[0],
-			value: web3Utils.toWei('0.01', 'ether')
+		ethContract(cryptoMons).buyCryptoMon().send({from: web3.eth.defaultAccount},{
+			from: web3.eth.defaultAccount,
+			value: web3Utils.toWei('0.001', 'ether')
 		}, (err, res) => {
 			if (err) return reject(err)
 			resolve(res);
@@ -432,12 +416,12 @@ export const buyCryptoMon = cryptoMons => {
 };
 
 export const exitDepositToken = (rootChain, slot) => {
-	const slotBN = web3.toBigNumber(slot);
+	const slotBN = (slot);
 
 	return new Promise((resolve, reject) => {
 		ethContract(rootChain)
-			.startDepositExit(slotBN, {
-				from: web3.eth.accounts[0],
+			.startDepositExit(slotBN).send({from: web3.eth.defaultAccount},{
+				from: web3.eth.defaultAccount,
 				value: web3Utils.toWei('0.1', 'ether')
 			}, (err, res) => {
 				if (err) return reject(err)
@@ -447,10 +431,10 @@ export const exitDepositToken = (rootChain, slot) => {
 };
 export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature,
 	prevBlock, exitingBlock}) => {
-	const slotBN = web3.toBigNumber(slot);
+	const slotBN = (slot);
 	const _blocks = [
-			web3.toBigNumber(prevBlock),
-			web3.toBigNumber(exitingBlock),
+			(prevBlock),
+			(exitingBlock),
 		];
 		console.log({
 			slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks
@@ -458,8 +442,8 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 
 	return new Promise((resolve, reject) => {
 		ethContract(rootChain)
-		.startExit(slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks, {
-			from: web3.eth.accounts[0],
+		.startExit(slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks).send({from: web3.eth.defaultAccount},{
+			from: web3.eth.defaultAccount,
 			value: web3Utils.toWei('0.1', 'ether')
 		}, (err, res) => {
 			if (err) return reject(err)
