@@ -45,11 +45,11 @@ class CryptoMonCard extends React.Component {
 		const { img, type1, type2, isShiny } = this.state
 
 		return (
-			<Card style={{ maxWidth: '12em', boxShadow: isShiny ? '0 0 10px gold' : 'unset'}}>
+			<Card style={{ maxWidth: '12em', boxShadow: isShiny ? '0 0 10px gold' : null}}>
 				<CardActionArea>
 					<img
 						src={img || null}
-						style={{ width: '100%', filter: isShiny ? 'contrast(160%) hue-rotate(90deg)' : 'unset' }} />
+						style={{ width: '100%', filter: isShiny ? 'contrast(160%) hue-rotate(90deg)' : null }} />
 				</CardActionArea>
 				<Grid container>
 					<Grid item xs={6}>

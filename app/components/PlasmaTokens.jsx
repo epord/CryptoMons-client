@@ -186,9 +186,9 @@ class PlasmaTokens extends React.Component {
 			<React.Fragment>
 				{this.renderTransferDialog()}
 				{this.renderSwapDialog()}
-				<Grid container spacing={3} alignContent="center" alignItems="center">
+				<Grid container spacing={3} alignContent="center" alignItems="start">
 					{plasmaTokens.map(token => (
-						<Grid key={token}>
+						<Grid item key={token}>
 							<CryptoMonCard
 								plasmaToken={token}
 								onTransferClicked={() => this.openTransferModal(token)}
