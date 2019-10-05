@@ -28,7 +28,6 @@ export const getCoinState = (slot, rootChain) => {
 };
 
 export const getPlasmaCoinId = (slot, rootChain) => {
-	console.log('getting token id')
 	const slotBN = (slot);
 	return new Promise((resolve, reject) => {
 		ethContract(rootChain).getPlasmaCoin(slotBN).call((err, res) => {
@@ -87,7 +86,15 @@ export const getCryptomon = (slot, cryptoMons) => {
 			if (err) return reject(err);
 			resolve(res)
 		})
-		// resolve({ Id: 9 })
+	})
+}
+
+export const getPokemonData = (id, cryptoMons) => {
+	return new Promise((resolve, reject) => {
+		ethContract(cryptoMons).getPokemonData(id).call((err, res) => {
+			if (err) return reject(err);
+			resolve(res)
+		})
 	})
 }
 

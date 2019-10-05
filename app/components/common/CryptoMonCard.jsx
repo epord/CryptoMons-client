@@ -11,7 +11,9 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
-import { getCryptomon, getPlasmaCoinId } from '../../../services/ethService';
+import { getCryptomon, getPlasmaCoinId, getPokemonData } from '../../../services/ethService';
+
+import { getTypeData } from '../../../utils/pokeUtils';
 
 class CryptoMonCard extends React.Component {
 
@@ -20,11 +22,19 @@ class CryptoMonCard extends React.Component {
 	componentDidMount = async () => {
 		const { plasmaToken, cryptoMonsContract, rootChainContract } = this.props;
 		const token = this.props.token || await getPlasmaCoinId(plasmaToken, rootChainContract);
+
 		getCryptomon(token, cryptoMonsContract).then(ans => {
 			var pad = "000";
 			var id = (pad + ans.Id).slice(-pad.length);
 			const imageUrl = `https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/images/${id}.png`;
 			this.setState({ img: imageUrl });
+
+			getPokemonData(ans.Id, cryptoMonsContract).then(data => {
+				const type1 = getTypeData(data.type1);
+				const type2 = getTypeData(data.type2);
+				this.setState({ type1, type2 })
+			})
+
 		})
 	}
 
@@ -32,7 +42,7 @@ class CryptoMonCard extends React.Component {
 		const { token, plasmaToken, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
 			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked } = this.props;
-		const { img } = this.state
+		const { img, type1, type2 } = this.state
 
 		return (
 			<Card style={{ maxWidth: '12em' }}>
@@ -42,6 +52,12 @@ class CryptoMonCard extends React.Component {
 						style={{ width: '100%' }} />
 				</CardActionArea>
 				<Grid container>
+					<Grid item xs={6}>
+						{type1 && <img src={type1.image || null} style={{ display: 'block', margin: 'auto' }} />}
+					</Grid>
+					<Grid item xs={6}>
+						{type2 && <img src={type2.image || null} style={{ display: 'block', margin: 'auto' }} />}
+					</Grid>
 					{token && (
 						<Grid item xs={12}>
 							<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>Coin: {token}</Typography>
