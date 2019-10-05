@@ -38,8 +38,8 @@ class Swap extends React.Component {
 		const interval = setInterval(() => {
 			if (web3.eth.defaultAccount) {
 				this.ethAccount = web3.eth.defaultAccount;
-        getSwappingTokens(web3.eth.defaultAccount).then(console.log)
-        getSwappingRequests(web3.eth.defaultAccount).then(console.log)
+        getSwappingTokens(web3.eth.defaultAccount)
+        getSwappingRequests(web3.eth.defaultAccount)
 				clearInterval(interval);
 			}
 		}, 100);

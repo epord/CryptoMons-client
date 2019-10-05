@@ -140,7 +140,6 @@ class History extends React.Component {
 			})
 		], (err, lastOwner) => {
 				if (err) {
-				  console.log(err)
 					console.log(`Error in history! Last true owner: ${err.lastOwner} in block ${err.blockNumber}`);
 					this.setState({ historyValid: false, lastValidOwner: err.lastOwner, lastValidBlock: err.blockNumber })
 				} else {

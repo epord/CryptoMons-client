@@ -36,7 +36,6 @@ class App extends React.Component {
 	componentDidUpdate = (prevProps) => {
 		if ((!prevProps.rootChain && this.props.rootChain) || (!prevProps.cryptoMons && this.props.cryptoMons)
 			|| (!prevProps.vmc && this.props.vmc) || (!prevProps.ethAccount && this.props.ethAccount)) {
-				console.log('fetch all')
 				this.getChallengedFrom(this.props.ethAccount);
 				this.getBalance();
 				this.setState({ loading: false })

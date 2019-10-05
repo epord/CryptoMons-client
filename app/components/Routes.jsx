@@ -66,8 +66,6 @@ class Routes extends React.Component {
 	subscribeToEvents = address => {
 		const { rootChain, cryptoMons } = this.state;
 
-		console.log('subscribed to events1')
-
 		subscribeToCryptoMonTransfer(cryptoMons, address, (r => {
 			const { getCryptoMonsFrom } = this.props;
 			console.log("CryptoMon Transfer");
