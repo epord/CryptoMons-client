@@ -17,6 +17,7 @@ module.exports = {
         filename: 'index_bundle.js'
     },
     module : {
+        exprContextCritical: false,
         rules : [
             {
               test: /\.(js|jsx)$/,

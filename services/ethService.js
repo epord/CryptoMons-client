@@ -308,7 +308,6 @@ export const checkEmptyBlock = (blockNumber, rootChain) => {
 			blockNumber).call(
 			(err, res) => {
 			if (err) return reject(err);
-			console.log("blocknumber:",blockNumber,' ' ,res);
 			resolve(res == "0x6f35419d1da1260bc0f33d52e8f6d73fc5d672c0dca13bb960b4ae1adec17937");
 		});
 	});

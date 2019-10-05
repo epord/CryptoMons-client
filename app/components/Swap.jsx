@@ -23,7 +23,8 @@ import { getSwappingTokens, getSwappingRequests, revealSecret } from '../redux/a
 
 const styles = theme => ({
 	dialogPaper: {
-		width: '25em',
+		maxWidth: '40em',
+		width: '40em',
 	},
 });
 
@@ -143,7 +144,7 @@ class Swap extends React.Component {
 					</React.Fragment>
 				)}
 				<Button
-					variant="countained"
+					variant="contained"
 					color="primary"
 					fullWidth
 					onClick={() => this.swapInPlasma(transactionToAccept.swappingSlot, transactionToAccept.slot)}
@@ -159,13 +160,13 @@ class Swap extends React.Component {
 		const { swappingTokens } = this.props;
 
     if (swappingTokens.length == 0){
-      return <Typography style={{ margin: 'auto' }}  variant="body1">You do not have any Plasma token. Deposit one of your CryptoMons once you have one!</Typography>
+      return <Typography style={{ margin: 'auto' }}  variant="body1">There are no swaps to confirm</Typography>
     }
 
     return(
       <React.Fragment>
         {swappingTokens.map(token => (
-          <CryptoMonCard plasmaToken={token} onRevealSecretClicked={() => this.openRevealSecretModal(token)}/>
+          <CryptoMonCard key={token} plasmaToken={token} onRevealSecretClicked={() => this.openRevealSecretModal(token)}/>
         ))}
       </React.Fragment>
     )
@@ -175,7 +176,7 @@ class Swap extends React.Component {
 		const { swappingRequests } = this.props;
 
     if (swappingRequests.length == 0){
-      return <Typography style={{ margin: 'auto' }}  variant="body1">You do not have any Plasma token. Deposit one of your CryptoMons once you have one!</Typography>
+      return <Typography style={{ margin: 'auto' }}  variant="body1">There are no swapping requests for now</Typography>
     }
 
     return(

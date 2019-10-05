@@ -159,7 +159,7 @@ class PlasmaTokens extends React.Component {
 							placeholder="Token" />
 					</Grid>
 					<Grid item xs={12} style={{ padding: '1em' }}>
-						<Button disabled={swapping || secret} color="primary" fullWidth onClick={() => this.swapInPlasma(tokenToSwap)} variant="outlined" size="small">Swap</Button>
+						<Button disabled={swapping || Boolean(secret)} color="primary" fullWidth onClick={() => this.swapInPlasma(tokenToSwap)} variant="outlined" size="small">Swap</Button>
 					</Grid>
 					{secret && (
 						<React.Fragment>

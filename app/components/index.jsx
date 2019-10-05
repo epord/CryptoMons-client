@@ -27,7 +27,7 @@ class App extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
-			loading: true,
+			loading: !props.rootChain || !props.cryptoMons || !props.vmc || !props.ethAccount,
 			myChallengedTokens: [],
 			withdrawableAmount: '0'
 		}
