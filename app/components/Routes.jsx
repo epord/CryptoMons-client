@@ -125,22 +125,12 @@ class Routes extends React.Component {
 
 		subscribeToFreeBond(rootChain, address, (r => {
 			console.log('Free Bond event');
-			this.getBalance().then(withdrawableAmount => {
-				if (withdrawableAmount > 0) {
-					/// TODO: uncomment when events aren't called 11+ times
-					// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawableAmount} wei.`))
-				}
-			});
+			this.getBalance()
 		}))
 
 		subscribeToSlashedBond(rootChain, address, (r => {
 			console.log('Slashed Bond event');
-			this.getBalance().then(withdrawableAmount => {
-				if (withdrawableAmount > 0) {
-					/// TODO: uncomment when events aren't called 11+ times
-					// withdrawBonds(rootChain).then(() => console.log(`You have withdrew ${withdrawableAmount} wei.`))
-				}
-			});
+			this.getBalance()
 		}))
 
 		subscribeToChallengeRespond(rootChain, address, (r => {

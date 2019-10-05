@@ -27,6 +27,17 @@ export const getCoinState = (slot, rootChain) => {
 	});
 };
 
+export const getPlasmaCoinId = (slot, rootChain) => {
+	console.log('getting token id')
+	const slotBN = (slot);
+	return new Promise((resolve, reject) => {
+		ethContract(rootChain).getPlasmaCoin(slotBN).call((err, res) => {
+			if (err) return reject(err);
+			resolve(res[0]);
+		});
+	});
+};
+
 const getStateTokens = (filter, rootChain, state) => {
 	return new Promise((resolve, reject) => {
 		const blockFilter = { fromBlock: 0, toBlock: 'latest' };

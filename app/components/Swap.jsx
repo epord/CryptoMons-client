@@ -130,9 +130,9 @@ class Swap extends React.Component {
 				<DialogTitle>Do you want to accept this swap request?</DialogTitle>
 				<Grid container style={{ padding: '1em' }}>
 					<Grid item xs={12} style={{ display: 'flex', alignItems: 'center',  }}>
-						<CryptoMonCard token={transactionToAccept.slot} />
+						<CryptoMonCard plasmaToken={transactionToAccept.slot} />
 						<CompareArrowsIcon fontSize="large" />
-						<CryptoMonCard token={transactionToAccept.swappingSlot}/>
+						<CryptoMonCard plasmaToken={transactionToAccept.swappingSlot}/>
 					</Grid>
 				</Grid>
 				{secret && (
@@ -165,7 +165,7 @@ class Swap extends React.Component {
     return(
       <React.Fragment>
         {swappingTokens.map(token => (
-          <CryptoMonCard token={token} onRevealSecretClicked={() => this.openRevealSecretModal(token)}/>
+          <CryptoMonCard plasmaToken={token} onRevealSecretClicked={() => this.openRevealSecretModal(token)}/>
         ))}
       </React.Fragment>
     )
@@ -189,9 +189,9 @@ class Swap extends React.Component {
 										<Typography variant="body1" style={{ maxWidth: '25em', textAlign: 'center' }}>{transaction.owner} wants to swap with you!</Typography>
 									</Grid>
 									<Grid item xs={12} style={{ display: 'flex', alignItems: 'center',  }}>
-										<CryptoMonCard token={transaction.slot} />
+										<CryptoMonCard plasmaToken={transaction.slot} />
 										<CompareArrowsIcon fontSize="large" />
-										<CryptoMonCard token={transaction.swappingSlot}/>
+										<CryptoMonCard plasmaToken={transaction.swappingSlot}/>
 									</Grid>
 									<Grid item xs={8}>
 										<Button variant="contained" size="large" color="primary" fullWidth onClick={this.openAcceptSwapModal(transaction)}>View</Button>

@@ -11,14 +11,15 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
-import { getCryptomon } from '../../../services/ethService';
+import { getCryptomon, getPlasmaCoinId } from '../../../services/ethService';
 
 class CryptoMonCard extends React.Component {
 
 	state = { }
 
-	componentDidMount = () => {
-		const { token, cryptoMonsContract } = this.props;
+	componentDidMount = async () => {
+		const { plasmaToken, cryptoMonsContract, rootChainContract } = this.props;
+		const token = this.props.token || await getPlasmaCoinId(plasmaToken, rootChainContract);
 		getCryptomon(token, cryptoMonsContract).then(ans => {
 			var pad = "000";
 			var id = (pad + ans.Id).slice(-pad.length);
@@ -28,7 +29,7 @@ class CryptoMonCard extends React.Component {
 	}
 
 	render = () => {
-		const { token, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
+		const { token, plasmaToken, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
 			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked } = this.props;
 		const { img } = this.state
@@ -41,9 +42,16 @@ class CryptoMonCard extends React.Component {
 						style={{ width: '100%' }} />
 				</CardActionArea>
 				<Grid container>
-					<Grid item xs={12}>
-						<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>ID: {token}</Typography>
-					</Grid>
+					{token && (
+						<Grid item xs={12}>
+							<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>Coin: {token}</Typography>
+						</Grid>
+					)}
+					{plasmaToken && (
+						<Grid item xs={12}>
+							<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>ID: {plasmaToken}</Typography>
+						</Grid>
+					)}
 					{exiting && (
 						<Grid item xs={12}>
 							<ExitToAppIcon fontSize="small" style={{ color: 'rgb(245, 155, 66)' }} />
@@ -88,7 +96,8 @@ class CryptoMonCard extends React.Component {
 
 
 const mapStateToProps = state => ({
-  cryptoMonsContract: state.cryptoMonsContract
+  cryptoMonsContract: state.cryptoMonsContract,
+  rootChainContract: state.rootChainContract
 })
 
 const mapDispatchToProps = dispatch => ({

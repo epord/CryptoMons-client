@@ -190,7 +190,7 @@ class PlasmaTokens extends React.Component {
 					{plasmaTokens.map(token => (
 						<Grid key={token}>
 							<CryptoMonCard
-								token={token}
+								plasmaToken={token}
 								onTransferClicked={() => this.openTransferModal(token)}
 								onSwapClicked={() => this.openSwapModal(token)}
 								onExitClicked={() => this.exitToken(token)} />
@@ -199,7 +199,7 @@ class PlasmaTokens extends React.Component {
 					{exitingTokens.map(token => (
 						<Grid item key={token}>
 							<CryptoMonCard
-								token={token}
+								plasmaToken={token}
 								exiting
 								onFinalizeExitClick={() => this.finalizeExit(token)} />
 						</Grid>
@@ -207,7 +207,7 @@ class PlasmaTokens extends React.Component {
 					{challengeableTokens.map(token => (
 						<Grid item key={token}>
 							<CryptoMonCard
-								token={token}
+								plasmaToken={token}
 								challengeable
 								onChallengeBeforeClick={() => this.challengeBefore(token)}
 								onChallengeBetweenClick={() => this.challengeBetween(token)}
@@ -217,7 +217,7 @@ class PlasmaTokens extends React.Component {
 					{exitedTokens.map(token => (
 						<Grid item key={token}>
 							<CryptoMonCard
-								token={token}
+								plasmaToken={token}
 								exited
 								onWithdrawClick={() => this.withdraw(token)} />
 						</Grid>
