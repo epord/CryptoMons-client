@@ -27,7 +27,7 @@ class CryptoMonCard extends React.Component {
 			var pad = "000";
 			var id = (pad + ans.Id).slice(-pad.length);
 			const imageUrl = `https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/images/${id}.png`;
-			this.setState({ img: imageUrl });
+			this.setState({ img: imageUrl, isShiny: ans.isShiny });
 
 			getPokemonData(ans.Id, cryptoMonsContract).then(data => {
 				const type1 = getTypeData(data.type1);
@@ -42,10 +42,10 @@ class CryptoMonCard extends React.Component {
 		const { token, plasmaToken, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
 			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked } = this.props;
-		const { img, type1, type2 } = this.state
+		const { img, type1, type2, isShiny } = this.state
 
 		return (
-			<Card style={{ maxWidth: '12em' }}>
+			<Card style={{ maxWidth: '12em', boxShadow: isShiny ? '0 0 gold' : 'unset', filter: isShiny ? 'contrast(160%) hue-rotate(90deg)' : 'unset' }}>
 				<CardActionArea>
 					<img
 						src={img || null}
