@@ -29,13 +29,24 @@ const gotExited = tokens => {
 const gotSwappingTokens = tokens => {
   return { type: C.GOT_SWAPPING, payload: tokens };
 }
+
 const gotSwappingRequests = tokens => {
   return { type: C.GOT_SWAPPING_REQUESTS, payload: tokens };
+}
+
+const gotEthAccount = account => {
+  return { type: C.GOT_ETH_ACCOUNT, payload: account };
 }
 
 
 
 
+
+export const getEthAccount = () => (dispatch, getState) => {
+  return window.ethereum.enable().then((account) =>{
+    dispatch(gotEthAccount(account[0]));
+  });
+}
 
 export const getCryptoMonsFrom = (address, cryptoMonsContract) => (dispatch, getState) => {
   return EthService

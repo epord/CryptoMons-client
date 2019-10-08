@@ -1,4 +1,5 @@
 import React from 'react';
+import InitComponent from './common/InitComponent.jsx'
 import { connect } from "react-redux";
 
 import Paper from '@material-ui/core/Paper';
@@ -20,73 +21,68 @@ import {
 	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion, subscribeToCryptoMonTransfer
 } from '../../services/ethService';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts, getSwappingTokens } from '../redux/actions'
+import { getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts, getSwappingTokens } from '../redux/actions'
 
-class App extends React.Component {
+class App extends InitComponent {
 
 	constructor(props) {
 		super(props)
 		this.state = {
-			loading: !props.rootChain || !props.cryptoMons || !props.vmc || !props.ethAccount,
-			myChallengedTokens: [],
+			loading: !props.rootChainContract,
 			withdrawableAmount: '0'
 		}
 	}
 
-	componentDidUpdate = (prevProps) => {
-		if ((!prevProps.rootChain && this.props.rootChain) || (!prevProps.cryptoMons && this.props.cryptoMons)
-			|| (!prevProps.vmc && this.props.vmc) || (!prevProps.ethAccount && this.props.ethAccount)) {
-				this.getChallengedFrom(this.props.ethAccount);
-				this.getBalance();
-				this.setState({ loading: false })
-			}
+	init = () => {
+		this.getBalance();
+		this.setState({ loading: false })
 	}
 
 	getBalance = () => {
-		const { rootChain } = this.props;
-		return getBalance(rootChain).then(async withdrawable => {
+		const { rootChainContract } = this.props;
+		return getBalance(rootChainContract).then(async withdrawable => {
 			await this.setState({ withdrawableAmount: withdrawable });
 			return withdrawable;
 		})
 	}
 
 	withdrawBonds = () => {
-		const { rootChain } = this.props;
+		const { rootChainContract } = this.props;
 		const { withdrawableAmount } = this.state;
-		withdrawBonds(rootChain).then(() => {
+		withdrawBonds(rootChainContract).then(() => {
 			console.log(`You have withdrew ${withdrawableAmount} wei.`);
 			this.setState({ withdrawableAmount: 0 });
 		})
 	}
 
 	/// TODO: Remove to a component
-	getChallengedFrom = async address => {
-		const { rootChain } = this.props;
-		const challenges = await getChallengedFrom(address, rootChain);
-		this.setState({ myChallengedTokens: challenges });
-	};
+	// getChallengedFrom = async address => {
+	// 	const { rootChainContract } = this.props;
+	// 	const challenges = await getChallengedFrom(address, rootChainContract);
+	// 	this.setState({ myChallengedTokens: challenges });
+	// };
 
-	finalizeExit = async token => {
-		const { rootChain } = this.props;
-		await finalizeExit(rootChain, token);
-		console.log("Finalized Exit successful");
-	};
+	// finalizeExit = async token => {
+	// 	const { rootChainContract } = this.props;
+	// 	await finalizeExit(rootChainContract, token);
+	// 	console.log("Finalized Exit successful");
+	// };
 
-	respondChallenge = async (token, hash) => {
-		const { rootChain } = this.props;
-		const challenge = await getChallenge(token, hash, rootChain);
-		const challengingBlock = challenge[3];
-		respondChallenge(token, challengingBlock, hash, rootChain);
-	};
+	// respondChallenge = async (token, hash) => {
+	// 	const { rootChain } = this.props;
+	// 	const challenge = await getChallenge(token, hash, rootChain);
+	// 	const challengingBlock = challenge[3];
+	// 	respondChallenge(token, challengingBlock, hash, rootChain);
+	// };
 
 	buyCryptoMon = async () => {
-		const { buyCryptoMon, cryptoMons, ethAccount } = this.props;
-		buyCryptoMon(ethAccount, cryptoMons)
+		const { buyCryptoMon, cryptoMonsContract, ethAccount } = this.props;
+		buyCryptoMon(ethAccount, cryptoMonsContract)
 	};
 
 	render() {
-		const { cryptoMons, rootChain, vmc, ethAccount } = this.props;
-		const { loading, myChallengedTokens, withdrawableAmount } = this.state;
+		const { cryptoMonsContract, rootChainContract, vmcContract, ethAccount } = this.props;
+		const { loading, withdrawableAmount } = this.state;
 
 		if (loading) return (<div>Loading...</div>)
 
@@ -97,9 +93,9 @@ class App extends React.Component {
 					<Grid item style={{ alignSelf: 'center' }}>
 						<Paper style={{ padding: '1em', display: 'inline-block' }}>
 							<Typography variant="h5" component="h3">Contracts</Typography>
-							<Typography variant="body2"><b>RootChain address:</b> {rootChain && rootChain.address}</Typography>
-							<Typography variant="body2"><b>CryptoMon address:</b> {cryptoMons && cryptoMons.address}</Typography>
-							<Typography variant="body2"><b>VMC address:</b> {vmc && vmc.address}</Typography>
+							<Typography variant="body2"><b>RootChain address:</b> {rootChainContract && rootChainContract.address}</Typography>
+							<Typography variant="body2"><b>CryptoMon address:</b> {cryptoMonsContract && cryptoMonsContract.address}</Typography>
+							<Typography variant="body2"><b>VMC address:</b> {vmcContract && vmcContract.address}</Typography>
 						</Paper>
 					</Grid>
 					<Grid item>
@@ -122,7 +118,7 @@ class App extends React.Component {
 						<Typography>My CryptoMons</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
-						<CryptoMons cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={ethAccount} />
+						<CryptoMons/>
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
 				<ExpansionPanel defaultExpanded>
@@ -131,11 +127,11 @@ class App extends React.Component {
 						<Typography>My Plasma Tokens</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
-						<PlasmaTokens cryptoMonsContract={cryptoMons} rootChainContract={rootChain} ethAccount={ethAccount} />
+						<PlasmaTokens/>
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
 
-				<p>My Challenged Tokens:</p>
+				{/* <p>My Challenged Tokens:</p>
 				{myChallengedTokens.map(challenge => (
 					<div key={challenge.slot}>
 						<p style={{ display: "inline" }}>{challenge.slot}</p>
@@ -146,21 +142,24 @@ class App extends React.Component {
 							</div>
 						)}
 					</div>
-				))}
+				))} */}
 			</div>
 		)
 	}
 }
 
 
-const mapStateToProps = state => ({ });
+const mapStateToProps = state => ({
+	vmcContract: state.vmcContract,
+	cryptoMonsContract: state.cryptoMonsContract,
+	rootChainContract: state.rootChainContract,
+	ethAccount: state.ethAccount
+ });
 
 const mapDispatchToProps = dispatch => ({
 	loadContracts: () => dispatch(loadContracts()),
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
-	getOwnedTokens: (address, state) => dispatch(getOwnedTokens(address, state)),
 	getSwappingTokens: (address) => dispatch(getSwappingTokens(address)),
-	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
 });

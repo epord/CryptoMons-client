@@ -6,14 +6,14 @@ import { getOwnedTokens } from "./plasmaServices";
 import { isSwapBytes } from '../utils/cryptoUtils';
 
 const Web3 = require('web3');
-const web3 = new Web3(Web3.givenProvider)
+const web3 = new Web3(Web3.givenProvider);
+
+export const setDefaultAccount = (account) => {
+	web3.eth.defaultAccount = account;
+}
+
 const ethContract = (data) => new web3.eth.Contract(data.abi, data.address).methods;
 const baseEthContract = (data) => new web3.eth.Contract(data.abi, data.address);
-
-window.ethereum.enable().then((account) =>{
-	const defaultAccount = account[0]
-	web3.eth.defaultAccount = defaultAccount
-});
 
 export const getCoinState = (slot, rootChain) => {
 	const slotBN = (slot);

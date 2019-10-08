@@ -12,8 +12,9 @@ const initialState = {
 
 const reducerMapper = {
 	[C.GOT_ETH_ACCOUNT]: (state, action) => {
-		state.ethAccount = action.payload;
-		return state;
+		return Object.assign({}, state, {
+      ethAccount: action.payload
+    });
 	},
 	[C.GOT_CRYPTOMONS]: (state, action) => {
 		return Object.assign({}, state, {

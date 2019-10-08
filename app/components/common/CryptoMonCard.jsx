@@ -1,4 +1,6 @@
 import React from 'react';
+import InitComponent from './InitComponent.jsx';
+
 import { connect } from "react-redux";
 
 import Card from '@material-ui/core/Card';
@@ -15,12 +17,12 @@ import { getCryptomon, getPlasmaCoinId, getPokemonData } from '../../../services
 
 import { getTypeData } from '../../../utils/pokeUtils';
 
-class CryptoMonCard extends React.Component {
+class CryptoMonCard extends InitComponent {
 
 	state = { }
 
-	componentDidMount = async () => {
-		const { plasmaToken, cryptoMonsContract, rootChainContract } = this.props;
+	init = async () => {
+		const { rootChainContract, plasmaToken, cryptoMonsContract } = this.props;
 		const token = this.props.token || await getPlasmaCoinId(plasmaToken, rootChainContract);
 
 		getCryptomon(token, cryptoMonsContract).then(ans => {
@@ -52,11 +54,15 @@ class CryptoMonCard extends React.Component {
 						style={{ width: '100%', filter: isShiny ? 'contrast(160%) hue-rotate(90deg)' : null }} />
 				</CardActionArea>
 				<Grid container>
-					<Grid item xs={6}>
-						{type1 && <img src={type1.image || null} style={{ display: 'block', margin: 'auto' }} />}
-					</Grid>
-					<Grid item xs={6}>
-						{type2 && <img src={type2.image || null} style={{ display: 'block', margin: 'auto' }} />}
+					<Grid container style={{ flexGrow: '1', justifyContent: "space-around"}}>
+						<Grid item>
+							{type1 && <img src={type1.image || null} style={{ display: 'block', margin: 'auto' }} />}
+						</Grid>
+						{type2 && type2.name !== 'Unknown' &&
+						<Grid item>
+							<img src={type2.image || null} style={{ display: 'block', margin: 'auto' }} />
+						</Grid>
+						}
 					</Grid>
 					{token && (
 						<Grid item xs={12}>
@@ -113,7 +119,8 @@ class CryptoMonCard extends React.Component {
 
 const mapStateToProps = state => ({
   cryptoMonsContract: state.cryptoMonsContract,
-  rootChainContract: state.rootChainContract
+	rootChainContract: state.rootChainContract,
+	ethAccount: state.ethAccount,
 })
 
 const mapDispatchToProps = dispatch => ({

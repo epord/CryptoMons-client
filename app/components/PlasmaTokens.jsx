@@ -1,4 +1,6 @@
 import React from 'react';
+import InitComponent from './common/InitComponent.jsx';
+
 import { connect } from "react-redux";
 import { withStyles } from '@material-ui/core/styles';
 
@@ -13,7 +15,7 @@ import CryptoMonCard from './common/CryptoMonCard.jsx';
 
 import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw } from '../../services/ethService';
 import { transferInPlasma, getExitData, createAtomicSwap } from '../../services/plasmaServices';
-import { getChallengeableTokens, getExitingTokens, getExitedTokens } from '../redux/actions';
+import { getChallengeableTokens, getExitingTokens, getExitedTokens, getOwnedTokens } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -22,7 +24,7 @@ const styles = theme => ({
 	},
 });
 
-class PlasmaTokens extends React.Component {
+class PlasmaTokens extends InitComponent {
 
 	constructor(props) {
 		super(props);
@@ -33,8 +35,9 @@ class PlasmaTokens extends React.Component {
 		}
 	}
 
-	componentDidMount() {
-		const { ethAccount, getChallengeableTokens, rootChainContract, getExitingTokens, getExitedTokens } = this.props;
+	init = () => {
+		const { ethAccount, getChallengeableTokens, rootChainContract, getExitingTokens, getExitedTokens, getOwnedTokens } = this.props;
+		getOwnedTokens(ethAccount, 'deposited');
 		getChallengeableTokens(ethAccount, rootChainContract);
 		getExitingTokens(ethAccount, rootChainContract);
 		getExitedTokens(ethAccount, rootChainContract);
@@ -233,9 +236,12 @@ const mapStateToProps = state => ({
 	exitingTokens: state.exitingTokens,
 	challengeableTokens: state.challengeableTokens,
 	exitedTokens: state.exitedTokens,
+	rootChainContract: state.rootChainContract,
+	ethAccount: state.ethAccount
 });
 
 const mapDispatchToProps = dispatch => ({
+	getOwnedTokens: (address, state) => dispatch(getOwnedTokens(address, state)),
 	getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),

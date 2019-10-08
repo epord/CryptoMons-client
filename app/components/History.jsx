@@ -25,11 +25,6 @@ class History extends React.Component {
 
   state = { }
 
-  componentDidMount() {
-    const { rootChainContract, loadContracts } = this.props;
-    if (!rootChainContract) loadContracts();
-  }
-
 	verifyToken = async () => {
     const { rootChainContract } = this.props;
 		const { tokenToVerify: token } = this.state;

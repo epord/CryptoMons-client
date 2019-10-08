@@ -30,28 +30,32 @@ import "regenerator-runtime/runtime";
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
 	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
-	subscribeToSlashedBond, getChallengeable, subscribeToCryptoMonTransfer, subscribeToSubmittedSecretBlocks
+	subscribeToSlashedBond, getChallengeable, subscribeToCryptoMonTransfer, subscribeToSubmittedSecretBlocks, setDefaultAccount
 } from '../../services/ethService';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts, getSwappingTokens } from '../redux/actions'
+import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon,
+	loadContracts, getSwappingTokens, getSwappingRequests, getEthAccount } from '../redux/actions'
 
 class Routes extends React.Component {
 	state = { drawerOpen: false }
 
 	componentDidMount = () => {
-		const interval = setInterval(() => {
-			if (web3.eth.defaultAccount) {
-				this.ethAccount = web3.eth.defaultAccount;
-				this.init();
-				clearInterval(interval);
-			}
-		}, 100);
+		this.props.getEthAccount();
 	};
+
+	componentDidUpdate = (prevProps) => {
+		const { ethAccount } = this.props;
+		if (!prevProps.ethAccount && ethAccount) {
+			this.init()
+		}
+  }
 
 	init = () => {
 		this.loadContracts().then(() => {
-			this.subscribeToEvents(this.ethAccount);
+			this.subscribeToEvents(this.props.ethAccount);
 		});
+
+		setDefaultAccount(this.props.ethAccount);
 	}
 
 	loadContracts = async () => {
@@ -84,8 +88,8 @@ class Routes extends React.Component {
 			const { getOwnedTokens, getExitingTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
-			getChallengeable(this.ethAccount, rootChain);
-			this.getChallengedFrom(this.ethAccount);
+			getChallengeable(this.props.ethAccount, rootChain);
+			this.getChallengedFrom(this.props.ethAccount);
 		}));
 
 		subscribeToFinalizedExit(rootChain, address,(r => {
@@ -104,9 +108,10 @@ class Routes extends React.Component {
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
 			console.log("Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
-			const { getOwnedTokens, getSwappingTokens } = this.props;
+			const { getOwnedTokens, getSwappingTokens, getSwappingRequests } = this.props;
 			getOwnedTokens(address, 'deposited');
-			getSwappingTokens(address)
+			getSwappingTokens(address);
+			getSwappingRequests(address);
 		}));
 
 		subscribeToSubmittedSecretBlocks(rootChain,(r => {
@@ -134,8 +139,8 @@ class Routes extends React.Component {
 		}))
 
 		subscribeToChallengeRespond(rootChain, address, (r => {
-			getChallengeable(this.ethAccount, rootChain);
-			this.getChallengedFrom(this.ethAccount);
+			getChallengeable(this.props.ethAccount, rootChain);
+			this.getChallengedFrom(this.props.ethAccount);
 			this.getBalance();
 			console.log('RespondedExitChallenge event');
 		}))
@@ -189,7 +194,6 @@ class Routes extends React.Component {
 	}
 
 	render() {
-		const { cryptoMons, rootChain, vmc } = this.state
 		return (
 			<Router>
 				{this.renderDrawer()}
@@ -203,7 +207,7 @@ class Routes extends React.Component {
 						</Typography>
 					</Toolbar>
 				</AppBar>
-				<Route path="/" exact render={routeProps => <App ethAccount={this.ethAccount} cryptoMons={cryptoMons} rootChain={rootChain} vmc={vmc} {...routeProps} />} />
+				<Route path="/" exact component={App} />
 				<Route path="/history" component={History} />
 				<Route path="/hacks" component={Hack} />
 				<Route path="/swaps" component={Swap} />
@@ -214,16 +218,20 @@ class Routes extends React.Component {
 
 
 
-const mapStateToProps = state => ({ });
+const mapStateToProps = state => ({
+	ethAccount: state.ethAccount
+ });
 
 const mapDispatchToProps = dispatch => ({
 	loadContracts: () => dispatch(loadContracts()),
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
 	getOwnedTokens: (address, state) => dispatch(getOwnedTokens(address, state)),
 	getSwappingTokens: (address) => dispatch(getSwappingTokens(address)),
+  getSwappingRequests: address => dispatch(getSwappingRequests(address)),
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
+	getEthAccount: () => dispatch(getEthAccount()),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Routes);

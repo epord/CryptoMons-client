@@ -1,4 +1,5 @@
 import React from 'react';
+import InitComponent from "./common/InitComponent.jsx"
 import { connect } from "react-redux";
 
 import Typography from '@material-ui/core/Typography';
@@ -11,9 +12,9 @@ import { depositToPlasma } from '../../services/ethService';
 import { getCryptoMonsFrom, buyCryptoMon } from '../redux/actions';
 
 
-class CryptoMons extends React.Component {
+class CryptoMons extends InitComponent {
 
-	componentDidMount() {
+	init = () => {
 		const { cryptoMonsContract, ethAccount, getCryptoMonsFrom } = this.props;
 		getCryptoMonsFrom(ethAccount, cryptoMonsContract);
 	}
@@ -62,7 +63,10 @@ class CryptoMons extends React.Component {
 
 const mapStateToProps = state => {
 	return {
-		myCryptoMons: state.myCryptoMons
+		myCryptoMons: state.myCryptoMons,
+		rootChainContract: state.rootChainContract,
+		ethAccount: state.ethAccount,
+		cryptoMonsContract: state.cryptoMonsContract
 	};
 }
 

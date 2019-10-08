@@ -11,20 +11,6 @@ class Hack extends React.Component {
     this.state = { history: [] }
   }
 
-  componentDidMount() {
-    const { rootChainContract, loadContracts } = this.props;
-    if (!rootChainContract) loadContracts();
-  }
-
-	loadContracts = async () => {
-		const res = await loadContracts();
-		return this.setState({
-			rootChain: { ...res.RootChain, address: res.RootChain.networks['5777'].address },
-			cryptoMons: { ...res.CryptoMons, address: res.CryptoMons.networks['5777'].address },
-			vmc: { ...res.ValidatorManagerContract, address: res.ValidatorManagerContract.networks['5777'].address }
-		});
-	};
-
   onSlotChanged = event => {
     let hackSlot = event.target.value;
     this.setState({ hackSlot: hackSlot });

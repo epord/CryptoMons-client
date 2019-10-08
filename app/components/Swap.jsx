@@ -1,4 +1,6 @@
 import React from 'react';
+import InitComponent from './common/InitComponent.jsx';
+
 import { connect } from "react-redux";
 import { withStyles } from '@material-ui/core/styles';
 
@@ -28,22 +30,16 @@ const styles = theme => ({
 	},
 });
 
-class Swap extends React.Component {
+class Swap extends InitComponent{
 
   state = {
     secretModalOpen: false
   }
 
-  componentDidMount() {
-    const { getSwappingTokens, getSwappingRequests } = this.props;
-		const interval = setInterval(() => {
-			if (web3.eth.defaultAccount) {
-				this.ethAccount = web3.eth.defaultAccount;
-        getSwappingTokens(web3.eth.defaultAccount)
-        getSwappingRequests(web3.eth.defaultAccount)
-				clearInterval(interval);
-			}
-		}, 100);
+	init = () => {
+    const { getSwappingTokens, getSwappingRequests, rootChainContract } = this.props;
+		getSwappingTokens(web3.eth.defaultAccount)
+		getSwappingRequests(web3.eth.defaultAccount)
 	}
 
 	revealSecret = async () => {
@@ -207,6 +203,10 @@ class Swap extends React.Component {
   }
 
   render = () => {
+		const { rootChainContract } = this.props;
+
+		if (!rootChainContract) return <div>Loading...</div>
+
     return (
 			<div style={{ padding: '1em' }}>
 				{this.renderRevealSecretDialog()}
@@ -239,6 +239,7 @@ class Swap extends React.Component {
 const mapStateToProps = state => ({
   swappingTokens: state.swappingTokens,
   swappingRequests: state.swappingRequests,
+  rootChainContract: state.rootChainContract,
 })
 
 const mapDispatchToProps = dispatch => ({
