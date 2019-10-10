@@ -8,6 +8,7 @@ const initialState = {
 	challengeableTokens: [],
 	swappingTokens: [],
 	swappingRequests: [],
+	challengedTokens: [],
 };
 
 const reducerMapper = {
@@ -49,6 +50,11 @@ const reducerMapper = {
 	[C.GOT_SWAPPING_REQUESTS]: (state, action) => {
 		return Object.assign({}, state, {
       swappingRequests: action.payload
+    });
+	},
+	[C.GOT_CHALLENGED_TOKENS]: (state, action) => {
+		return Object.assign({}, state, {
+      challengedTokens: action.payload
     });
 	},
 	[C.GOT_CONTRACTS]: (state, action) => {

@@ -41,9 +41,9 @@ class CryptoMonCard extends InitComponent {
 	}
 
 	render = () => {
-		const { token, plasmaToken, exiting, exited, challengeable, onDepositClicked, onTransferClicked,
+		const { token, plasmaToken, exiting, exited, challengeable, challenged, onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
-			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked } = this.props;
+			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked, onChallengeBeforeResponded } = this.props;
 		const { img, type1, type2, isShiny } = this.state
 
 		return (
@@ -90,6 +90,14 @@ class CryptoMonCard extends InitComponent {
 							</Typography>
 						</Grid>
 					)}
+					{challenged && (
+						<Grid item xs={12}>
+							<WarningIcon fontSize="small" style={{ color: 'red' }} />
+							<Typography variant="subtitle1" style={{ color: 'red', display: 'inline' }}>
+								Challenged
+							</Typography>
+						</Grid>
+					)}
 					{exited && (
 						<Grid item xs={12}>
 						<CheckCircleIcon fontSize="small" style={{ color: 'green' }} />
@@ -109,6 +117,7 @@ class CryptoMonCard extends InitComponent {
 				{onChallengeAfterClick && <Button fullWidth onClick={onChallengeAfterClick} variant="outlined" size="small">Challenge After</Button>}
 				{onWithdrawClick && <Button fullWidth onClick={onWithdrawClick} variant="outlined" size="small">Withdraw</Button>}
 				{onRevealSecretClicked && <Button fullWidth onClick={onRevealSecretClicked} variant="outlined" size="small">Reveal Secret</Button>}
+				{onChallengeBeforeResponded && <Button fullWidth onClick={onChallengeBeforeResponded} variant="outlined" size="small">Respond Challenge</Button>}
 
 			</Card>
 		)

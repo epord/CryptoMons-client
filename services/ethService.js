@@ -176,7 +176,7 @@ export const getChallenge = (slot, txHash, rootChain) => {
 /// TODO: Shouldn't return all exits, but should return multiple times the same slot if there are multiple challengeBefore going on
 export const getChallengedFrom = (address, rootChain) => {
 	return new Promise(async (resolve, reject) => {
-		const exiting = await getOwnedTokens(address, 'exiting');
+		const exiting = await getExitingFrom(address, rootChain);
 		const slotFilter = { slot: exiting };
 		const filteredTokens = unique((await getExitingTokens(slotFilter, rootChain)).map(t => t.returnValues.slot));
 		const challenges = await Promise.all(filteredTokens.map(s => getChallenges(s, rootChain)));

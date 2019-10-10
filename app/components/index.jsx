@@ -14,14 +14,9 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import CryptoMons from '../components/CryptoMons.jsx';
 import PlasmaTokens from '../components/PlasmaTokens.jsx';
 
-import {
-	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
-	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
-	subscribeToSlashedBond, getChallengedFrom, finalizeExit, getChallengeable, getChallenge,
-	respondChallenge, getBalance, withdrawBonds, checkEmptyBlock, checkInclusion, subscribeToCryptoMonTransfer
-} from '../../services/ethService';
+import { getBalance, withdrawBonds } from '../../services/ethService';
 
-import { getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon, loadContracts, getSwappingTokens } from '../redux/actions'
+import { buyCryptoMon, loadContracts } from '../redux/actions'
 
 class App extends InitComponent {
 
@@ -54,26 +49,6 @@ class App extends InitComponent {
 			this.setState({ withdrawableAmount: 0 });
 		})
 	}
-
-	/// TODO: Remove to a component
-	// getChallengedFrom = async address => {
-	// 	const { rootChainContract } = this.props;
-	// 	const challenges = await getChallengedFrom(address, rootChainContract);
-	// 	this.setState({ myChallengedTokens: challenges });
-	// };
-
-	// finalizeExit = async token => {
-	// 	const { rootChainContract } = this.props;
-	// 	await finalizeExit(rootChainContract, token);
-	// 	console.log("Finalized Exit successful");
-	// };
-
-	// respondChallenge = async (token, hash) => {
-	// 	const { rootChain } = this.props;
-	// 	const challenge = await getChallenge(token, hash, rootChain);
-	// 	const challengingBlock = challenge[3];
-	// 	respondChallenge(token, challengingBlock, hash, rootChain);
-	// };
 
 	buyCryptoMon = async () => {
 		const { buyCryptoMon, cryptoMonsContract, ethAccount } = this.props;
@@ -159,9 +134,6 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
 	loadContracts: () => dispatch(loadContracts()),
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
-	getSwappingTokens: (address) => dispatch(getSwappingTokens(address)),
-	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
-	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

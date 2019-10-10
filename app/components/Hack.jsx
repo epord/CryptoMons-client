@@ -100,7 +100,7 @@ class Hack extends React.Component {
       exitingBlock: data2.exitData.block
     };
 
-    exitToken(this.state.rootChain, exitData).then(response => {
+    exitToken(this.props.rootChainContract, exitData).then(response => {
       console.log("Exit successful: ", response);
     }).catch(console.error);
 
@@ -108,7 +108,7 @@ class Hack extends React.Component {
   }
 
 	challengeBefore = (token, exitData) => () => {
-		const { rootChain } = this.props;
+		const { rootChainContract } = this.props;
     console.log(`Challenging Before: ${token}`)
 
     const newExitData = {
@@ -119,7 +119,7 @@ class Hack extends React.Component {
       signature: exitData.signature
     };
 
-		challengeBeforeWithExitData(newExitData, rootChain);
+		challengeBeforeWithExitData(newExitData, rootChainContract);
   }
 
 

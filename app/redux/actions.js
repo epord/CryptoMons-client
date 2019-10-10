@@ -38,6 +38,10 @@ const gotEthAccount = account => {
   return { type: C.GOT_ETH_ACCOUNT, payload: account };
 }
 
+const gotChallengedTokens = tokens => {
+  return { type: C.GOT_CHALLENGED_TOKENS, payload: tokens };
+}
+
 
 
 
@@ -107,4 +111,12 @@ export const getSwappingRequests = (address) => (dispatch, getState) => {
   return PlasmaService
     .getSwappingRequests(address)
     .then(tokens => dispatch(gotSwappingRequests(tokens)))
+}
+
+export const getChallengedFrom = (address, rootChainContract) => (dispatch, getState) => {
+  return EthService
+    .getChallengedFrom(address, rootChainContract)
+    .then(tokens => {
+      dispatch(gotChallengedTokens(tokens))
+    })
 }

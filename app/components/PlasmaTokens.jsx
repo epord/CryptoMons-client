@@ -13,9 +13,12 @@ import Dialog from '@material-ui/core/Dialog';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw } from '../../services/ethService';
+import _ from 'lodash';
+import async from 'async';
+
+import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw, getChallenge, respondChallenge } from '../../services/ethService';
 import { transferInPlasma, getExitData, createAtomicSwap } from '../../services/plasmaServices';
-import { getChallengeableTokens, getExitingTokens, getExitedTokens, getOwnedTokens } from '../redux/actions';
+import { getChallengeableTokens, getExitingTokens, getExitedTokens, getOwnedTokens, getChallengedFrom } from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -36,11 +39,21 @@ class PlasmaTokens extends InitComponent {
 	}
 
 	init = () => {
-		const { ethAccount, getChallengeableTokens, rootChainContract, getExitingTokens, getExitedTokens, getOwnedTokens } = this.props;
+		const {
+			ethAccount,
+			getChallengeableTokens,
+			rootChainContract,
+			getExitingTokens,
+			getExitedTokens,
+			getOwnedTokens,
+			getChallengedFrom
+		} = this.props;
+
 		getOwnedTokens(ethAccount, 'deposited');
 		getChallengeableTokens(ethAccount, rootChainContract);
 		getExitingTokens(ethAccount, rootChainContract);
 		getExitedTokens(ethAccount, rootChainContract);
+		getChallengedFrom(ethAccount, rootChainContract);
 	}
 
 	transferInPlasma = async token => {
@@ -109,17 +122,70 @@ class PlasmaTokens extends InitComponent {
 		console.log("Withdrawn successful");
 	};
 
+	respondChallenge = async (token, hash) => {
+		const { rootChainContract } = this.props;
+		const challenge = await getChallenge(token, hash, rootChainContract);
+		const challengingBlock = challenge[3];
+		respondChallenge(token, challengingBlock, hash, rootChainContract);
+	};
+
 
 	openTransferModal = token => this.setState({ transferModalOpen: true, tokenToTransact: token });
 
-	openSwapModal = token => this.setState({ swapModalOpen: true, tokenToSwap: token });
-
 	closeTransferModal= () => this.setState({ transferModalOpen: false });
+
+	openSwapModal = token => this.setState({ swapModalOpen: true, tokenToSwap: token });
 
 	closeSwapModal= () => this.setState({ swapModalOpen: false, secret: undefined });
 
+	openRespondChallengeModal = (challengedSlot, challengeHashes) => {
+		const { rootChainContract } = this.props;
+		const getChallenges = challengeHashes.map(hash => async cb => {
+			const ans = await getChallenge(challengedSlot, hash, rootChainContract)
+			const challenge = {
+				owner: ans[0],
+				challenger: ans[1],
+				txHash: ans[2],
+				blockNumber: ans[3],
+			}
+			cb(null, challenge);
+		});
+		async.parallel(getChallenges, (err, challenges) => {
+			if (err) {
+				console.error(err);
+				this.closeRespondChallengeModal();
+			}
+			this.setState({
+				respondModalOpen: true,
+				challengedSlot,
+				challengesToRespond: challenges
+			});
+		});
+	}
+
+	closeRespondChallengeModal = () => this.setState({ respondModalOpen: false });
+
 	handleChange = fieldName => event => {
 		this.setState({ [fieldName]: event.target.value });
+	}
+
+	renderRespondChallengeDialog = () => {
+		const { respondModalOpen, challengedSlot, challengesToRespond } = this.state;
+		const { classes } = this.props;
+		const challengesCount = challengesToRespond ? challengesToRespond.length : 0;
+
+		return (
+			<Dialog onClose={this.closeRespondChallengeModal} open={respondModalOpen} classes={{ paper: classes.dialogPaper }}>
+				<DialogTitle>Respond to challenges</DialogTitle>
+				<Typography gutterBottom style={{ textAlign: 'center' }} variant="body1">There {challengesCount > 1 ? 'are' : 'is'} active {challengesCount} challenge{challengesCount > 1 ? 's' : ''}</Typography>
+				{(challengesToRespond || []).map(challenge => (
+					<React.Fragment>
+						<Typography>{challenge.owner} challenged you in block number ${challenge.blockNumber}</Typography>
+						<Button variant="contained" color="primary" onClick={() => this.respondChallenge(challengedSlot, challenge.txHash)}>Respond Challenge</Button>
+					</React.Fragment>
+				))}
+			</Dialog>
+		)
 	}
 
 	renderTransferDialog = () => {
@@ -177,7 +243,7 @@ class PlasmaTokens extends InitComponent {
 	}
 
 	render = () => {
-		const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens } = this.props;
+		const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens } = this.props;
 
 		if (plasmaTokens.length + exitingTokens.length + challengeableTokens.length + exitedTokens.length === 0) {
 			return (
@@ -189,6 +255,7 @@ class PlasmaTokens extends InitComponent {
 			<React.Fragment>
 				{this.renderTransferDialog()}
 				{this.renderSwapDialog()}
+				{this.renderRespondChallengeDialog()}
 				<Grid container spacing={3} alignContent="center" alignItems="start">
 					{plasmaTokens.map(token => (
 						<Grid item key={token}>
@@ -199,14 +266,6 @@ class PlasmaTokens extends InitComponent {
 								onExitClicked={() => this.exitToken(token)} />
 						</Grid>
 					))}
-					{exitingTokens.map(token => (
-						<Grid item key={token}>
-							<CryptoMonCard
-								plasmaToken={token}
-								exiting
-								onFinalizeExitClick={() => this.finalizeExit(token)} />
-						</Grid>
-					))}
 					{challengeableTokens.map(token => (
 						<Grid item key={token}>
 							<CryptoMonCard
@@ -215,6 +274,22 @@ class PlasmaTokens extends InitComponent {
 								onChallengeBeforeClick={() => this.challengeBefore(token)}
 								onChallengeBetweenClick={() => this.challengeBetween(token)}
 								onChallengeAfterClick={() => this.challengeAfter(token)} />
+						</Grid>
+					))}
+					{_.difference(exitingTokens, challengedTokens.map(t=>t.slot)).map(token => (
+						<Grid item key={token}>
+							<CryptoMonCard
+								plasmaToken={token}
+								exiting
+								onFinalizeExitClick={() => this.finalizeExit(token)} />
+						</Grid>
+					))}
+					{challengedTokens.map(({ slot, txHash }) => (
+						<Grid item key={slot}>
+							<CryptoMonCard
+								plasmaToken={slot}
+								challenged
+								onChallengeBeforeResponded={() => this.openRespondChallengeModal(slot, txHash)} />
 						</Grid>
 					))}
 					{exitedTokens.map(token => (
@@ -236,6 +311,7 @@ const mapStateToProps = state => ({
 	exitingTokens: state.exitingTokens,
 	challengeableTokens: state.challengeableTokens,
 	exitedTokens: state.exitedTokens,
+	challengedTokens: state.challengedTokens,
 	rootChainContract: state.rootChainContract,
 	ethAccount: state.ethAccount
 });
@@ -245,6 +321,7 @@ const mapDispatchToProps = dispatch => ({
 	getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
+	getChallengedFrom: (address, rootChainContract) => dispatch(getChallengedFrom(address, rootChainContract)),
 });
 
 const connectedPlasmaTokens = connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens);
