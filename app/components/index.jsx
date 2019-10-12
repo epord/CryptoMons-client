@@ -16,7 +16,7 @@ import PlasmaTokens from '../components/PlasmaTokens.jsx';
 
 import { getBalance, withdrawBonds } from '../../services/ethService';
 
-import { buyCryptoMon, loadContracts } from '../redux/actions'
+import { buyCryptoMon, loadContracts } from '../redux/actions';
 
 class App extends InitComponent {
 
@@ -105,24 +105,10 @@ class App extends InitComponent {
 						<PlasmaTokens/>
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
-
-				{/* <p>My Challenged Tokens:</p>
-				{myChallengedTokens.map(challenge => (
-					<div key={challenge.slot}>
-						<p style={{ display: "inline" }}>{challenge.slot}</p>
-						{challenge.txHash.map(hash =>
-							<div>
-								<button key={hash} onClick={() => this.respondChallenge(challenge.slot, hash)}>Respond</button>
-								<button key={hash + "exit"} onClick={() => this.finalizeExit(challenge.slot)}>Finalize Exit</button>
-							</div>
-						)}
-					</div>
-				))} */}
 			</div>
 		)
 	}
 }
-
 
 const mapStateToProps = state => ({
 	vmcContract: state.vmcContract,

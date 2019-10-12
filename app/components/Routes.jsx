@@ -7,6 +7,7 @@ import App from './index.jsx';
 import Hack from './Hack.jsx';
 import History from './History.jsx';
 import Swap from './Swap.jsx';
+import Battles from './Battles.jsx';
 
 import Typography from '@material-ui/core/Typography';
 import AppBar from '@material-ui/core/AppBar';
@@ -211,6 +212,7 @@ class Routes extends React.Component {
 				<Route path="/history" component={History} />
 				<Route path="/hacks" component={Hack} />
 				<Route path="/swaps" component={Swap} />
+				<Route path="/battles" component={Battles} />
 			</Router>
 		);
 	}
