@@ -14,6 +14,10 @@ export const generateTransactionHash = (slot, blockSpent, recipient) => {
 	}
 };
 
+export const keccak256 = (...args) => {
+	return EthUtils.bufferToHex(EthUtils.keccak256(EthUtils.bufferToHex(Buffer.concat(args))));
+}
+
 export const generateSwapHash = (slot, blockSpent, hashSecret, recipient, swappingSlot) => {
 	const slotBN = new BN(slot);
 	const blockSpentBN = new BN(blockSpent);
