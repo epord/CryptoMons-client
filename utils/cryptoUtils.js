@@ -1,7 +1,9 @@
+import {toBytes} from "./RPSExample";
 const EthUtils	= require('ethereumjs-util');
 const BN = require('bn.js');
 const RLP = require('rlp');
 const Buffer = require('buffer').Buffer;
+const abi = require('ethereumjs-abi');
 
 export const generateTransactionHash = (slot, blockSpent, recipient) => {
 	const slotBN = new BN(slot);
@@ -105,3 +107,16 @@ export const recover = (hash, signature) => {
   let res = EthUtils.fromRpcSig(signature)
   return EthUtils.bufferToHex(EthUtils.pubToAddress(EthUtils.ecrecover(EthUtils.toBuffer(_hash), res.v, res.r, res.s)));
 };
+
+export const hashChannelState = (state) => {
+
+	return '0x' + abi.soliditySHA3(["uint256","address","address[]","uint256","bytes"],
+		[
+			state.channelId,
+			state.channelType,
+			state.participants,
+			state.turnNum,
+			toBytes(state.game)
+		]).toString('hex');
+
+}

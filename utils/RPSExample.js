@@ -1,6 +1,7 @@
 import { randomHex256 } from "./utils";
 import {keccak256} from "./cryptoUtils";
 import BN from "bn.js";
+const RLP = require('rlp');
 import * as EthUtils from 'ethereumjs-util';
 
 export const transitionRPSState = (turnNum, gameState, move) => {
@@ -71,4 +72,29 @@ const transitionOddToEven = (game, move, isFirst) => {
   game.salt = undefined;
   game.newHashDecision = undefined;
   return game;
+};
+
+export const toBytes = (state) => {
+  let params = [
+    //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
+    EthUtils.setLengthLeft(new BN(state.gamesToPlay).toArrayLike(Buffer), 256/8), 			// uint256 little endian
+    EthUtils.setLengthLeft(new BN(state.scorePL).toArrayLike(Buffer), 256/8), 			// uint256 little endian
+    EthUtils.setLengthLeft(new BN(state.scoreOP).toArrayLike(Buffer), 256/8), 			// uint256 little endian
+  ];
+
+  if(state.hashDecision) {
+    params.push(EthUtils.toBuffer(state.hashDecision));
+    if(state.decisionPL) {
+      params.push(EthUtils.setLengthLeft(new BN(state.decisionPL).toArrayLike(Buffer), 256/8));
+      if(state.decisionOP) {
+        params.push(EthUtils.setLengthLeft(new BN(state.decisionOP).toArrayLike(Buffer), 256/8));
+        params.push(EthUtils.toBuffer(state.salt));
+        if(state.nextHashDecision) {
+          params.push(EthUtils.toBuffer(state.nextHashDecision));
+        }
+      }
+    }
+  }
+
+  return RLP.encode(params);
 };
