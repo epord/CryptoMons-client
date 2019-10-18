@@ -110,13 +110,15 @@ export const recover = (hash, signature) => {
 
 export const hashChannelState = (state) => {
 
-	return '0x' + abi.soliditySHA3(["uint256","address","address[]","uint256","bytes"],
+	return EthUtils.keccak256(
+			abi.rawEncode(["uint256","address","address[]","uint256","bytes"],
 		[
 			state.channelId,
 			state.channelType,
 			state.participants,
 			state.turnNum,
 			toBytes(state.game)
-		]).toString('hex');
+		])
+	);
 
 }
