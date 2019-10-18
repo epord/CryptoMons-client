@@ -4,6 +4,7 @@ import { zip, unique } from '../utils/utils';
 
 import { getOwnedTokens } from "./plasmaServices";
 import { isSwapBytes } from '../utils/cryptoUtils';
+import { toRPSBytes } from '../utils/RPSExample';
 
 const Web3 = require('web3');
 const web3 = new Web3(Web3.givenProvider);
@@ -141,6 +142,16 @@ export const subscribeToSlashedBond = (rootChain, address, cb) => {
 export const subscribeToChallengeRespond = (rootChain, address, cb) => {
 	//TODO add filter?
 	subscribeToEvent("RespondedExitChallenge", {}, rootChain, cb);
+}
+
+export const subscribeToRPSRequested = (plasmaCM, address, cb) => {
+	subscribeToEvent("RPSRequested", {creator: address}, plasmaCM, cb);
+	subscribeToEvent("RPSRequested", {opponent: address}, plasmaCM, cb);
+}
+
+export const subscribeToChannelFunded = (plasmaCM, address, cb) => {
+	subscribeToEvent("ChannelFunded", {creator: address}, plasmaCM, cb);
+	subscribeToEvent("ChannelFunded", {opponent: address}, plasmaCM, cb);
 }
 
 export const getChallengeable = (address, rootChain) => {
@@ -398,6 +409,39 @@ export const getCryptoMonsFrom = (address, cryptoMons) => {
   });
 }
 
+export const getBattlesFrom = (address, plasmaTurnGame, plasmaCM) => {
+  return new Promise((resolve, reject) => {
+		async.parallel([
+			cb => baseEthContract(plasmaTurnGame).getPastEvents("RPSRequested", { filter: { player: address }, fromBlock: 0, toBlock: 'latest' }, cb),
+			cb => baseEthContract(plasmaTurnGame).getPastEvents("RPSRequested", { filter: { opponent: address }, fromBlock: 0, toBlock: 'latest' }, cb),
+		], (err, [ games1, games2 ]) => {
+			const battleIds = games1.map(g => g.returnValues.gameId).concat(games2.map(g=> g.returnValues.gameId));
+			async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r)).catch(cb)),
+				(err, result) => {
+					if (err) return reject(err);
+					const games = {
+						opened: [],
+						toFund: [],
+						ongoing: [],
+					};
+
+					result.forEach(c => {
+						if(c.state == 0) {
+							if(c.players[0].toLowerCase() == address.toLowerCase()) {
+								games.opened.push(c);
+							} else {
+								games.toFund.push(c);
+							}
+						} else if(c.state == 1) {
+							games.ongoing.push(c);
+						}
+					});
+					resolve(games);
+			});
+		})
+  });
+}
+
 export const finalizeExit = (rootChain, slot) => {
 	const slotBN = (slot);
 
@@ -468,3 +512,107 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 		})
 	})
 };
+
+export const battleDeposit = (plasmaCM) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.makeDeposit().send({from: web3.eth.defaultAccount}, {
+				from: web3.eth.defaultAccount,
+				value: web3Utils.toWei('0.1', 'ether')
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}
+
+export const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGameAttributes) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.initiateChannel(channelType, opponent, web3Utils.toWei(stake.toString(), 'ether'), initialGameAttributes).send({from: web3.eth.defaultAccount}, {
+				from: web3.eth.defaultAccount,
+				value: web3Utils.toWei(stake.toString(), 'ether')
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}
+
+export const fundBattle = (plasmaCM, channelId, stake, initialGameAttributes) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.fundChannel(channelId, initialGameAttributes).send({from: web3.eth.defaultAccount}, {
+				from: web3.eth.defaultAccount,
+				value: stake
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}
+
+export const concludeBattle = (plasmaCM, prevState, currentState) => {
+
+	console.log("prevState", prevState)
+
+	const _prevState = {
+		channelId: prevState.channelId,
+		channelType: prevState.channelType,
+		participants: prevState.participants,
+		turnNum: prevState.turnNum,
+		gameAttributes: toRPSBytes(prevState.game)
+	}
+
+	console.log("currentState", currentState)
+
+	const _currentState = {
+		channelId: currentState.channelId,
+		channelType: currentState.channelType,
+		participants: currentState.participants,
+		turnNum: currentState.turnNum,
+		gameAttributes: toRPSBytes(currentState.game)
+	}
+
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.conclude(currentState.channelId, _prevState, _currentState, [prevState.signature, currentState.signature]).send({from: web3.eth.defaultAccount}, {
+				from: web3.eth.defaultAccount
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}
+
+export const battleRetrieveDeposit = (plasmaCM) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.retrieveDeposit().send({from: web3.eth.defaultAccount}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}
+
+export const battleHasDeposit = (plasmaCM) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.hasDeposit(web3.eth.defaultAccount).call({
+				gas: 74195 + Math.ceil(Math.random() * 10000)
+			}, (err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}
+
+export const getChannel = (channelId, plasmaCM) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.getChannel(channelId).call((err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}

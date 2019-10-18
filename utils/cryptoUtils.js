@@ -1,4 +1,4 @@
-import {toBytes} from "./RPSExample";
+import {toRPSBytes} from "./RPSExample";
 const EthUtils	= require('ethereumjs-util');
 const BN = require('bn.js');
 const RLP = require('rlp');
@@ -110,15 +110,17 @@ export const recover = (hash, signature) => {
 
 export const hashChannelState = (state) => {
 
-	return EthUtils.keccak256(
-			abi.rawEncode(["uint256","address","address[]","uint256","bytes"],
-		[
-			state.channelId,
-			state.channelType,
-			state.participants,
-			state.turnNum,
-			toBytes(state.game)
-		])
+	return EthUtils.bufferToHex(
+			EthUtils.keccak256(
+				abi.rawEncode(["uint256","address","address[]","uint256","bytes"],
+			[
+				state.channelId,
+				state.channelType,
+				state.participants,
+				state.turnNum,
+				toRPSBytes(state.game)
+			])
+		)
 	);
 
 }

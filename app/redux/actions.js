@@ -42,6 +42,10 @@ const gotChallengedTokens = tokens => {
   return { type: C.GOT_CHALLENGED_TOKENS, payload: tokens };
 }
 
+const gotBattles = battles => {
+  return { type: C.GOT_BATTLES, payload: battles };
+}
+
 
 
 
@@ -118,5 +122,13 @@ export const getChallengedFrom = (address, rootChainContract) => (dispatch, getS
     .getChallengedFrom(address, rootChainContract)
     .then(tokens => {
       dispatch(gotChallengedTokens(tokens))
+    })
+}
+
+export const getBattlesFrom = (address, plasmaTurnGameContract, plasmaCMContract) => (dispatch, getState) => {
+  return EthService
+    .getBattlesFrom(address, plasmaTurnGameContract, plasmaCMContract)
+    .then(battles => {
+      dispatch(gotBattles(battles))
     })
 }

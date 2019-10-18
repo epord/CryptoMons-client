@@ -57,11 +57,18 @@ const reducerMapper = {
       challengedTokens: action.payload
     });
 	},
+	[C.GOT_BATTLES]: (state, action) => {
+		return Object.assign({}, state, {
+      battles: action.payload
+    });
+	},
 	[C.GOT_CONTRACTS]: (state, action) => {
 		return Object.assign({}, state, {
 			rootChainContract: { ...action.payload.RootChain, address: action.payload.RootChain.networks['5777'].address },
 			cryptoMonsContract: { ...action.payload.CryptoMons, address: action.payload.CryptoMons.networks['5777'].address },
 			vmcContract: { ...action.payload.ValidatorManagerContract, address: action.payload.ValidatorManagerContract.networks['5777'].address },
+			plasmaCMContract: { ...action.payload.PlasmaCMContract, address: action.payload.PlasmaCMContract.networks['5777'].address },
+			plasmaTurnGameContract: { ...action.payload.PlasmaTurnGameContract, address: action.payload.PlasmaTurnGameContract.networks['5777'].address },
 		});
 	},
 }

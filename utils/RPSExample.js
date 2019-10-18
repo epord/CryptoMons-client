@@ -60,8 +60,22 @@ const transtionEvenToOdd = (game, move) => {
     game.nextHashDecision = newHashDecision;
   }
 
+  console.log(game);
+
   return game;
 };
+
+export const isRPSFinished = (game) => {
+  return game.gamesToPlay == 0;
+}
+
+export const RPSWinner = (state) => {
+  if(state.game.scorePL > state.game.scoreOP) {
+    return state.participants[0];
+  } else {
+    return state.participants[1];
+  }
+}
 
 const transitionOddToEven = (game, move, isFirst) => {
   game.decisionPL = move;
@@ -70,11 +84,12 @@ const transitionOddToEven = (game, move, isFirst) => {
   }
   game.decisionOP = undefined;
   game.salt = undefined;
-  game.newHashDecision = undefined;
+  game.nextHashDecision = undefined;
   return game;
 };
 
-export const toBytes = (state) => {
+export const toRPSBytes = (state) => {
+  console.log("BYTES OF STATE",state)
   let params = [
     //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
     EthUtils.setLengthLeft(new BN(state.gamesToPlay).toArrayLike(Buffer), 256/8), 			// uint256 little endian
@@ -82,19 +97,29 @@ export const toBytes = (state) => {
     EthUtils.setLengthLeft(new BN(state.scoreOP).toArrayLike(Buffer), 256/8), 			// uint256 little endian
   ];
 
-  if(state.hashDecision) {
+  if(state.hashDecision != undefined) {
     params.push(EthUtils.toBuffer(state.hashDecision));
-    if(state.decisionPL) {
+    if(state.decisionPL != undefined) {
       params.push(EthUtils.setLengthLeft(new BN(state.decisionPL).toArrayLike(Buffer), 256/8));
-      if(state.decisionOP) {
+      if(state.decisionOP != undefined) {
         params.push(EthUtils.setLengthLeft(new BN(state.decisionOP).toArrayLike(Buffer), 256/8));
         params.push(EthUtils.toBuffer(state.salt));
-        if(state.nextHashDecision) {
+        if(state.nextHashDecision != undefined) {
           params.push(EthUtils.toBuffer(state.nextHashDecision));
         }
       }
     }
   }
 
+  let a = RLP.encode(params)
+  console.log(RLP.decode(a));
   return RLP.encode(params);
 };
+
+export const getInitialRPSState = gamesToPlay => {
+  return {
+      gamesToPlay,
+      scoreOP: 0,
+      scorePL: 0,
+  }
+}

@@ -29,13 +29,13 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import {
-	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset,
-	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond,
+	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChannelFunded,
+	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToRPSRequested,
 	subscribeToSlashedBond, getChallengeable, subscribeToCryptoMonTransfer, subscribeToSubmittedSecretBlocks, setDefaultAccount
 } from '../../services/ethService';
 
 import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon,
-	loadContracts, getSwappingTokens, getSwappingRequests, getEthAccount } from '../redux/actions'
+	loadContracts, getSwappingTokens, getSwappingRequests, getEthAccount, getBattlesFrom } from '../redux/actions'
 
 class Routes extends React.Component {
 	state = { drawerOpen: false }
@@ -64,12 +64,14 @@ class Routes extends React.Component {
 		return this.setState({
 			rootChain: { ...res.RootChain, address: res.RootChain.networks['5777'].address },
 			cryptoMons: { ...res.CryptoMons, address: res.CryptoMons.networks['5777'].address },
-			vmc: { ...res.ValidatorManagerContract, address: res.ValidatorManagerContract.networks['5777'].address }
+			vmc: { ...res.ValidatorManagerContract, address: res.ValidatorManagerContract.networks['5777'].address },
+			plasmaCM: { ...res.PlasmaCMContract, address: res.PlasmaCMContract.networks['5777'].address },
+			plasmaTurnGame: { ...res.PlasmaTurnGameContract, address: res.PlasmaTurnGameContract.networks['5777'].address }
 		});
 	};
 
 	subscribeToEvents = address => {
-		const { rootChain, cryptoMons } = this.state;
+		const { rootChain, cryptoMons, plasmaCM, plasmaTurnGame } = this.state;
 
 		subscribeToCryptoMonTransfer(cryptoMons, address, (r => {
 			const { getCryptoMonsFrom } = this.props;
@@ -144,6 +146,16 @@ class Routes extends React.Component {
 			this.getChallengedFrom(this.props.ethAccount);
 			this.getBalance();
 			console.log('RespondedExitChallenge event');
+		}))
+
+		subscribeToRPSRequested(plasmaTurnGame, address, (r => {
+			console.log('RPSRequested event');
+			this.props.getBattlesFrom(address, plasmaTurnGame, plasmaCM)
+		}))
+
+		subscribeToChannelFunded(plasmaCM, address, (r => {
+			console.log('ChannelFunded event');
+			this.props.getBattlesFrom(address, plasmaTurnGame, plasmaCM)
 		}))
 	};
 
@@ -234,6 +246,7 @@ const mapDispatchToProps = dispatch => ({
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
 	getEthAccount: () => dispatch(getEthAccount()),
+	getBattlesFrom: (address, plasmaTurnGame, plasmaCM) => dispatch(getBattlesFrom(address, plasmaTurnGame, plasmaCM)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Routes);
