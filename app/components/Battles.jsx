@@ -4,7 +4,8 @@ import io from 'socket.io-client';
 import { transitionRPSState, getInitialRPSState, toRPSBytes, isRPSFinished, RPSWinner } from "../../utils/RPSExample";
 import {hashChannelState, sign} from "../../utils/cryptoUtils";
 import InitComponent from './common/InitComponent.jsx';
-import { battleDeposit, battleHasDeposit, battleRetrieveDeposit, initiateBattle, fundBattle, concludeBattle } from '../../services/ethService';
+import { battleDeposit, battleHasDeposit, battleRetrieveDeposit, initiateBattle, fundBattle,
+  concludeBattle, battleForceMove, battleRespondWithMove } from '../../services/ethService';
 import { getBattlesFrom } from '../redux/actions';
 
 class Battles extends InitComponent {
@@ -108,7 +109,7 @@ class Battles extends InitComponent {
     const { plasmaCMContract, plasmaTurnGameContract, ethAccount } = this.props;
     const opponent = ethAccount == '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d' ? '0x4f821cfb4c995b5d50208b22963698ce06a07bc9' : '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d'
     const initialState = getInitialRPSState(3);
-    initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 0.05, toRPSBytes(initialState));
+    initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toRPSBytes(initialState));
   }
 
   fundBattle = (channelId, stake) => {
@@ -123,6 +124,18 @@ class Battles extends InitComponent {
     concludeBattle(plasmaCMContract, prevState, currentState).then(res => console.log("Battle concluded ", res));
   }
 
+  forceMove = channelId => {
+    const { plasmaCMContract } = this.props;
+    const { prevState, currentState } = this.state;
+    battleForceMove(plasmaCMContract, channelId, prevState, currentState).then(res => console.log("Move forced ", res));
+  }
+
+  respondForceMove = async(channelId, move) => {
+    const { plasmaCMContract } = this.props;
+    const newState = await this.transitionState(move);
+    battleRespondWithMove(plasmaCMContract, channelId, newState).then(res => console.log("Responded force move ", res));
+  }
+
   debugBattles = () => {
     this.socket.emit("debugBattles");
   };
@@ -131,9 +144,10 @@ class Battles extends InitComponent {
     const { loading, deposited, currentState } = this.state;
     const { battles, ethAccount } = this.props;
     const { opened, toFund, ongoing } = battles;
+    console.log(currentState)
 
     if(loading) return <div>Loading...</div>
-    if (currentState) console.log(RPSWinner(currentState))
+
     return (
       <React.Fragment>
         <div>Battles</div>
@@ -172,10 +186,20 @@ class Battles extends InitComponent {
           <React.Fragment key={c.channelId}>
             <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
             <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
+            {currentState && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}
+            {currentState && c.forceMoveChallenge.state.channelId != 0 && c.forceMoveChallenge.state.turnNum == currentState.turnNum && (
+              <button onClick={() => this.respondForceMove(c.channelId, 0)}>Respond Force Move (Rock)</button>
+            )}
+            {currentState && c.forceMoveChallenge.state.channelId != 0 && c.forceMoveChallenge.state.turnNum == currentState.turnNum && (
+              <button onClick={() => this.respondForceMove(c.channelId, 1)}>Respond Force Move (Paper)</button>
+            )}
+            {currentState && c.forceMoveChallenge.state.channelId != 0 && c.forceMoveChallenge.state.turnNum == currentState.turnNum && (
+              <button onClick={() => this.respondForceMove(c.channelId, 2)}>Respond Force Move (Scissors)</button>
+            )}
           </React.Fragment>
         )}
 
-        {currentState && isRPSFinished(currentState.game) && RPSWinner(currentState).toLowerCase() == ethAccount.toLowerCase() && (
+        { (
           <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>
         )}
 

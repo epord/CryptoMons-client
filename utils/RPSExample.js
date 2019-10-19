@@ -89,7 +89,6 @@ const transitionOddToEven = (game, move, isFirst) => {
 };
 
 export const toRPSBytes = (state) => {
-  console.log("BYTES OF STATE",state)
   let params = [
     //TODO check if this can be less than 256 (using other than toUint() in solidity. Maybe to Address())?
     EthUtils.setLengthLeft(new BN(state.gamesToPlay).toArrayLike(Buffer), 256/8), 			// uint256 little endian

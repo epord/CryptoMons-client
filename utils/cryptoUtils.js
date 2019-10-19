@@ -111,8 +111,7 @@ export const recover = (hash, signature) => {
 export const hashChannelState = (state) => {
 
 	return EthUtils.bufferToHex(
-			EthUtils.keccak256(
-				abi.rawEncode(["uint256","address","address[]","uint256","bytes"],
+				abi.soliditySHA3(["uint256","address","address[]","uint256","bytes"],
 			[
 				state.channelId,
 				state.channelType,
@@ -120,7 +119,6 @@ export const hashChannelState = (state) => {
 				state.turnNum,
 				toRPSBytes(state.game)
 			])
-		)
 	);
 
 }

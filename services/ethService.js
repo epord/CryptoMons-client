@@ -513,6 +513,9 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 	})
 };
 
+
+// Battles
+
 export const battleDeposit = (plasmaCM) => {
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
@@ -576,7 +579,7 @@ export const concludeBattle = (plasmaCM, prevState, currentState) => {
 
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
-			.conclude(currentState.channelId, _prevState, _currentState, [prevState.signature, currentState.signature]).send({from: web3.eth.defaultAccount}, {
+			.conclude(currentState.channelId, _prevState, _currentState, [prevState.signature || '0x', currentState.signature]).send({from: web3.eth.defaultAccount}, {
 				from: web3.eth.defaultAccount
 			}, (err, res) => {
 				if (err) return reject(err)
@@ -607,11 +610,76 @@ export const battleHasDeposit = (plasmaCM) => {
 	});
 }
 
+export const battleForceMove = (plasmaCM, channelId, prevState, currentState) => {
+
+	console.log("currentState", currentState)
+	const _currentState = {
+		channelId: currentState.channelId,
+		channelType: currentState.channelType,
+		participants: currentState.participants,
+		turnNum: currentState.turnNum,
+		gameAttributes: toRPSBytes(currentState.game)
+	}
+
+	if (!prevState) {
+		console.log('force first move');
+		return new Promise((resolve, reject) => {
+			ethContract(plasmaCM)
+				.forceFirstMove(channelId, _currentState)
+				.send({from: web3.eth.defaultAccount}, (err, res) => {
+					if (err) return reject(err);
+					resolve(res);
+				})
+		});
+	}
+
+	console.log("prevState", prevState)
+	const _prevState = {
+		channelId: prevState.channelId,
+		channelType: prevState.channelType,
+		participants: prevState.participants,
+		turnNum: prevState.turnNum,
+		gameAttributes: toRPSBytes(prevState.game)
+	}
+
+	console.log('force move');
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.forceMove(channelId, _prevState, _currentState, [prevState.signature || '0x', currentState.signature])
+			.send({from: web3.eth.defaultAccount}, (err, res) => {
+				if (err) return reject(err);
+				resolve(res);
+			})
+	});
+}
+
+export const battleRespondWithMove = (plasmaCM, channelId, nextState) => {
+
+	console.log("nextState", nextState)
+	const _nextState = {
+		channelId: nextState.channelId,
+		channelType: nextState.channelType,
+		participants: nextState.participants,
+		turnNum: nextState.turnNum,
+		gameAttributes: toRPSBytes(nextState.game)
+	}
+
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.respondWithMove(channelId, _nextState, nextState.signature)
+			.send({from: web3.eth.defaultAccount}, (err, res) => {
+				if (err) return reject(err);
+				resolve(res);
+		})
+	})
+}
+
 export const getChannel = (channelId, plasmaCM) => {
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
 			.getChannel(channelId).call((err, res) => {
 				if (err) return reject(err)
+				console.log(res)
 				resolve(res);
 		})
 	});
