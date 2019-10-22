@@ -60,8 +60,6 @@ const transtionEvenToOdd = (game, move) => {
     game.nextHashDecision = newHashDecision;
   }
 
-  console.log(game);
-
   return game;
 };
 
@@ -111,7 +109,6 @@ export const toRPSBytes = (state) => {
   }
 
   let a = RLP.encode(params)
-  console.log(RLP.decode(a));
   return RLP.encode(params);
 };
 

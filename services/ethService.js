@@ -497,9 +497,6 @@ export const exitToken = (rootChain, {slot, prevTxBytes, exitingTxBytes, prevTxI
 			(prevBlock),
 			(exitingBlock),
 		];
-		console.log({
-			slotBN, prevTxBytes, exitingTxBytes, prevTxInclusionProof, exitingTxInclusionProof, signature, _blocks
-		})
 
 	return new Promise((resolve, reject) => {
 		ethContract(rootChain)
@@ -557,8 +554,6 @@ export const fundBattle = (plasmaCM, channelId, stake, initialGameAttributes) =>
 
 export const concludeBattle = (plasmaCM, prevState, currentState) => {
 
-	console.log("prevState", prevState)
-
 	const _prevState = {
 		channelId: prevState.channelId,
 		channelType: prevState.channelType,
@@ -566,8 +561,6 @@ export const concludeBattle = (plasmaCM, prevState, currentState) => {
 		turnNum: prevState.turnNum,
 		gameAttributes: toRPSBytes(prevState.game)
 	}
-
-	console.log("currentState", currentState)
 
 	const _currentState = {
 		channelId: currentState.channelId,
@@ -612,7 +605,6 @@ export const battleHasDeposit = (plasmaCM) => {
 
 export const battleForceMove = (plasmaCM, channelId, prevState, currentState) => {
 
-	console.log("currentState", currentState)
 	const _currentState = {
 		channelId: currentState.channelId,
 		channelType: currentState.channelType,
@@ -632,8 +624,6 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 				})
 		});
 	}
-
-	console.log("prevState", prevState)
 	const _prevState = {
 		channelId: prevState.channelId,
 		channelType: prevState.channelType,
@@ -654,8 +644,6 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 }
 
 export const battleRespondWithMove = (plasmaCM, channelId, nextState) => {
-
-	console.log("nextState", nextState)
 	const _nextState = {
 		channelId: nextState.channelId,
 		channelType: nextState.channelType,
@@ -679,7 +667,6 @@ export const getChannel = (channelId, plasmaCM) => {
 		ethContract(plasmaCM)
 			.getChannel(channelId).call((err, res) => {
 				if (err) return reject(err)
-				console.log(res)
 				resolve(res);
 		})
 	});

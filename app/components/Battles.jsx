@@ -52,7 +52,6 @@ class Battles extends InitComponent {
       const { ethAccount } = this.props;
       console.log('Authentication Request', data);
       sign(data.nonce).then(message => {
-        console.log('response')
         this.socket.emit("authenticationResponse", {user: ethAccount, signature: message})
       })
     });
@@ -84,7 +83,6 @@ class Battles extends InitComponent {
     currentState.turnNum = currentState.turnNum + 1;
 
     const hash = hashChannelState(currentState);
-    console.log(hash);
     currentState.signature = await sign(hash);
     return currentState;
   };
@@ -142,9 +140,8 @@ class Battles extends InitComponent {
 
   render = () => {
     const { loading, deposited, currentState } = this.state;
-    const { battles, ethAccount } = this.props;
+    const { battles } = this.props;
     const { opened, toFund, ongoing } = battles;
-    console.log(currentState)
 
     if(loading) return <div>Loading...</div>
 
