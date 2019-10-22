@@ -48,7 +48,42 @@ const Moves = {
     STATUS2       : 9,
 };
 
+const Gender = {
+  Male      : 0,
+  Female    : 1,
+  Unknown   : 2,
+};
+
 /**
+ enum Gender {
+        Male,
+        Female,
+        Unknown
+    }
+
+ struct Stats {
+        uint8 hp;
+        uint8 atk;
+        uint8 def;
+        uint8 spAtk;
+        uint8 spDef;
+        uint8 speed;
+    }
+
+ struct PokemonData {
+        uint8 id;
+        Type type1;
+        Type type2;
+        Stats base;
+    }
+
+ struct Pokemon {
+        uint8 id;
+        Gender gender;
+        bool isShiny;
+        Stats IVs;
+        Stats stats;
+    }
 CryptoMonState {
     let hp;
     let status1;
