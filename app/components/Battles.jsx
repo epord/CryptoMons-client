@@ -1,12 +1,13 @@
 import React from 'react';
 import { connect } from "react-redux";
 import io from 'socket.io-client';
-import { transitionCMBState, getInitialCMBState, toCMBBytes, isCMBFinished, CMBWinner } from "../../utils/CryptoMonsBattles";
+import { transitionCMBState, getInitialCMBState, toCMBBytes} from "../../utils/CryptoMonsBattles";
 import {hashChannelState, sign} from "../../utils/cryptoUtils";
 import InitComponent from './common/InitComponent.jsx';
 import { initiateBattle, fundBattle,
   concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId } from '../../services/ethService';
 import { getBattlesFrom } from '../redux/actions';
+import {Moves} from "../../utils/BattleDamageCalculator";
 
 class Battles extends InitComponent {
 
@@ -16,7 +17,7 @@ class Battles extends InitComponent {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
-    this.setState({ tokenPL: '4365297341472105176', tokenOP: '5767501881849970565' })
+    this.setState({ tokenPL: '5912203878839052116', tokenOP: '11631887953117068215' })
   }
 
   initSocket = () => {
@@ -70,7 +71,7 @@ class Battles extends InitComponent {
 
   transitionState = async (move) => {
     const { currentState } = this.state;
-    currentState.game = transitionCMBState(currentState.turnNum, currentState.game, move);
+    currentState.game = transitionCMBState(currentState.game, currentState.turnNum, move);
     currentState.turnNum = currentState.turnNum + 1;
 
     const hash = hashChannelState(currentState);
@@ -156,9 +157,10 @@ class Battles extends InitComponent {
         <button onClick={this.initSocket}>Connect</button>
         <button onClick={this.debugBattles}>Debug</button>
 
-        <button onClick={() => this.play(0)}>Rock</button>
-        <button onClick={() => this.play(1)}>Paper</button>
-        <button onClick={() => this.play(2)}>Scissors</button>
+        <button onClick={() => this.play(Moves.ATK1)}>ATTACK</button>
+        <button onClick={() => this.play(Moves.PROTECT)}>PROTECT</button>
+        <button onClick={() => this.play(Moves.STATUS1)}>STATUS</button>
+        <button onClick={() => this.play(Moves.RECHARGE)}>RECHARGE</button>
 
 
         {opened && opened.map(c =>

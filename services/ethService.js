@@ -4,7 +4,7 @@ import { zip, unique } from '../utils/utils';
 
 import { getOwnedTokens } from "./plasmaServices";
 import { isSwapBytes } from '../utils/cryptoUtils';
-import { toRPSBytes } from '../utils/RPSExample';
+import {toCMBBytes} from "../utils/CryptoMonsBattles";
 
 const Web3 = require('web3');
 const web3 = new Web3(Web3.givenProvider);
@@ -557,7 +557,7 @@ export const concludeBattle = (plasmaCM, prevState, currentState) => {
 		channelType: prevState.channelType,
 		participants: prevState.participants,
 		turnNum: prevState.turnNum,
-		gameAttributes: toRPSBytes(prevState.game)
+		gameAttributes: toCMBBytes(prevState.game)
 	}
 
 	const _currentState = {
@@ -565,7 +565,7 @@ export const concludeBattle = (plasmaCM, prevState, currentState) => {
 		channelType: currentState.channelType,
 		participants: currentState.participants,
 		turnNum: currentState.turnNum,
-		gameAttributes: toRPSBytes(currentState.game)
+		gameAttributes: toCMBBytes(currentState.game)
 	}
 
 	return new Promise((resolve, reject) => {
@@ -586,7 +586,7 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 		channelType: currentState.channelType,
 		participants: currentState.participants,
 		turnNum: currentState.turnNum,
-		gameAttributes: toRPSBytes(currentState.game)
+		gameAttributes: toCMBBytes(currentState.game)
 	}
 
 	if (!prevState) {
@@ -605,7 +605,7 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 		channelType: prevState.channelType,
 		participants: prevState.participants,
 		turnNum: prevState.turnNum,
-		gameAttributes: toRPSBytes(prevState.game)
+		gameAttributes: toCMBBytes(prevState.game)
 	}
 
 	console.log('force move');
@@ -625,7 +625,7 @@ export const battleRespondWithMove = (plasmaCM, channelId, nextState) => {
 		channelType: nextState.channelType,
 		participants: nextState.participants,
 		turnNum: nextState.turnNum,
-		gameAttributes: toRPSBytes(nextState.game)
+		gameAttributes: toCMBBytes(nextState.game)
 	}
 
 	return new Promise((resolve, reject) => {

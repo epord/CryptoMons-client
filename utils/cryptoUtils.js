@@ -1,4 +1,4 @@
-import {toRPSBytes} from "./RPSExample";
+import {toCMBBytes} from "./CryptoMonsBattles";
 const EthUtils	= require('ethereumjs-util');
 const BN = require('bn.js');
 const RLP = require('rlp');
@@ -117,7 +117,7 @@ export const hashChannelState = (state) => {
 				state.channelType,
 				state.participants,
 				state.turnNum,
-				toRPSBytes(state.game)
+				toCMBBytes(state.game)
 			])
 	);
 

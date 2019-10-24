@@ -3,9 +3,10 @@ import {keccak256} from "./cryptoUtils";
 import BN from "bn.js";
 const RLP = require('rlp');
 import * as EthUtils from 'ethereumjs-util';
+import {calculateBattle, someoneDied} from "./BattleDamageCalculator";
 const abi = require('ethereumjs-abi');
 
-export const transitionCMBState = (turnNum, gameState, move) => {
+export const transitionCMBState = (gameState, turnNum, move) => {
   if(turnNum == 0) {
     return initialTransition(gameState, move);
   } else if(turnNum%2 == 0) {
@@ -32,16 +33,15 @@ const initialTransition = (game, move) => {
 const transtionEvenToOdd = (game, move) => {
   const oldSalt = localStorage.getItem('salt');
   const oldMove = localStorage.getItem('move');
-
-  game.salt = oldSalt;
-  game.decisionOP = oldMove;
+  game.saltOP = oldSalt;
+  game.decisionOP = parseInt(oldMove);
 
   const state = {
     player: {
       hp: game.HPPL,
       status1: game.status1PL,
       status2: game.status2PL,
-      charges: game.chargesPL,
+      charges: game.chargePL,
       cryptoMon: game.cryptoMonPLInstance,
       data: game.cryptoMonPLData,
       move: game.decisionPL,
@@ -50,7 +50,7 @@ const transtionEvenToOdd = (game, move) => {
       hp: game.HPOP,
       status1: game.status1OP,
       status2: game.status2OP,
-      charges: game.chargesOP,
+      charges: game.chargeOP,
       cryptoMon: game.cryptoMonOPInstance,
       data: game.cryptoMonOPData,
       move: game.decisionOP,
@@ -62,11 +62,15 @@ const transtionEvenToOdd = (game, move) => {
 
   const oddState = {
     cryptoMonPL: game.cryptoMonPL,
+    cryptoMonPLInstance: game.cryptoMonPLInstance,
+    cryptoMonPLData: game.cryptoMonPLData,
     HPPL: nextState.player.hp,
     status1PL: nextState.player.status1,
-    Status2PL: nextState.player.status2,
+    status2PL: nextState.player.status2,
     chargePL: nextState.player.charges,
     cryptoMonOP: game.cryptoMonOP,
+    cryptoMonOPInstance: game.cryptoMonOPInstance,
+    cryptoMonOPData: game.cryptoMonOPData,
     HPOP: nextState.opponent.hp,
     status1OP: nextState.opponent.status1,
     status2OP: nextState.opponent.status2,
@@ -74,9 +78,9 @@ const transtionEvenToOdd = (game, move) => {
     hashDecision: game.hashDecision,
     decisionPL: game.decisionPL,
     saltPL: game.saltPL,
-    decisionOp: game.decisionOP,
+    decisionOP: game.decisionOP,
     saltOP: game.saltOP
-  }
+  };
 
   if (!someoneDied(nextState)) {
     const newSalt = randomHex256();
@@ -109,8 +113,9 @@ const transitionOddToEven = (game, move, isFirst) => {
   if(!isFirst) {
     game.hashDecision = game.nextHashDecision;
   }
+  game.saltPL = randomHex256();
   game.decisionOP = undefined;
-  game.salt = undefined;
+  game.saltOP = undefined;
   game.nextHashDecision = undefined;
   return game;
 };
@@ -121,7 +126,7 @@ export const toCMBBytes = (state) => {
     new BN(state.cryptoMonPL).toArrayLike(Buffer),
     new BN(state.HPPL).toArrayLike(Buffer),
     new BN(booltoInt(state.status1PL)).toArrayLike(Buffer),
-    new BN(booltoInt(state.Status2PL)).toArrayLike(Buffer),
+    new BN(booltoInt(state.status2PL)).toArrayLike(Buffer),
     new BN(state.chargePL).toArrayLike(Buffer),
     new BN(state.cryptoMonOP).toArrayLike(Buffer),
     new BN(state.HPOP).toArrayLike(Buffer),
@@ -158,18 +163,6 @@ export const getInitialCMBState = (
   cryptoMonOPPlasmaId,
   cryptoMonOPInstance) => {
 
-    console.log(cryptoMonPLInstance, {
-      cryptoMonPL: cryptoMonPLPlasmaId,
-      HPPL: cryptoMonPLInstance.stats.hp,
-      status1PL: false,
-      Status2PL: false,
-      chargePL: 1,
-      cryptoMonOP: cryptoMonOPPlasmaId,
-      HPOP: cryptoMonOPInstance.stats.hp,
-      status1OP: false,
-      status2OP: false,
-      chargeOP: 1,
-    })
   return {
     cryptoMonPL: cryptoMonPLPlasmaId,
     HPPL: cryptoMonPLInstance.stats.hp,
