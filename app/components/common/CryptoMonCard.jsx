@@ -27,11 +27,11 @@ class CryptoMonCard extends InitComponent {
 
 		getCryptomon(token, cryptoMonsContract).then(ans => {
 			var pad = "000";
-			var id = (pad + ans.Id).slice(-pad.length);
+			var id = (pad + ans.id).slice(-pad.length);
 			const imageUrl = `https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/images/${id}.png`;
 			this.setState({ img: imageUrl, isShiny: ans.isShiny });
 
-			getPokemonData(ans.Id, cryptoMonsContract).then(data => {
+			getPokemonData(ans.id, cryptoMonsContract).then(data => {
 				const type1 = getTypeData(data.type1);
 				const type2 = getTypeData(data.type2);
 				this.setState({ type1, type2 })

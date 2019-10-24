@@ -1,11 +1,11 @@
 import React from 'react';
 import { connect } from "react-redux";
 import io from 'socket.io-client';
-import { transitionRPSState, getInitialRPSState, toRPSBytes, isRPSFinished, RPSWinner } from "../../utils/RPSExample";
+import { transitionCMBState, getInitialCMBState, toCMBBytes, isCMBFinished, CMBWinner } from "../../utils/CryptoMonsBattles";
 import {hashChannelState, sign} from "../../utils/cryptoUtils";
 import InitComponent from './common/InitComponent.jsx';
-import { battleDeposit, battleHasDeposit, battleRetrieveDeposit, initiateBattle, fundBattle,
-  concludeBattle, battleForceMove, battleRespondWithMove } from '../../services/ethService';
+import { initiateBattle, fundBattle,
+  concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId } from '../../services/ethService';
 import { getBattlesFrom } from '../redux/actions';
 
 class Battles extends InitComponent {
@@ -14,11 +14,10 @@ class Battles extends InitComponent {
 
   init = () => {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
-    this.updateDeposited();
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
+    this.setState({ tokenPL: '4365297341472105176', tokenOP: '5767501881849970565' })
   }
-
 
   initSocket = () => {
 
@@ -64,14 +63,6 @@ class Battles extends InitComponent {
     this.socket.emit("battleRequest", { channelId });
   };
 
-  updateDeposited = () => {
-    const { plasmaCMContract } = this.props;
-    battleHasDeposit(plasmaCMContract).then(deposited => {
-      console.log('update deposit', deposited)
-      this.setState({ deposited })
-    });
-  }
-
   play = async (move) => {
     const newState = await this.transitionState(move);
     this.socket.emit("play", newState);
@@ -79,7 +70,7 @@ class Battles extends InitComponent {
 
   transitionState = async (move) => {
     const { currentState } = this.state;
-    currentState.game = transitionRPSState(currentState.turnNum, currentState.game, move);
+    currentState.game = transitionCMBState(currentState.turnNum, currentState.game, move);
     currentState.turnNum = currentState.turnNum + 1;
 
     const hash = hashChannelState(currentState);
@@ -87,33 +78,34 @@ class Battles extends InitComponent {
     return currentState;
   };
 
-  makeDeposit = async () => {
-    const { plasmaCMContract } = this.props;
-    battleDeposit(plasmaCMContract).then(res => {
-      setTimeout(this.updateDeposited(), 2000);
-      console.log('deposit made', res);
-    })
-  }
-
-  retrieveDeposit = async () => {
-    const { plasmaCMContract } = this.props;
-    battleRetrieveDeposit(plasmaCMContract).then(res => {
-      setTimeout(this.updateDeposited(), 2000);
-      console.log('deposit retrieved', res);
-    })
-  }
-
-  initiateBattle = () => {
-    const { plasmaCMContract, plasmaTurnGameContract, ethAccount } = this.props;
+  initiateBattle = async () => {
+    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
+    const { tokenPL, tokenOP } = this.state;
     const opponent = ethAccount == '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d' ? '0x4f821cfb4c995b5d50208b22963698ce06a07bc9' : '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d'
-    const initialState = getInitialRPSState(3);
-    initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toRPSBytes(initialState));
+
+    const tokenPLID = await getPlasmaCoinId(tokenPL, rootChainContract);
+    const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);
+    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract)
+    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract)
+
+    const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
+    initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toCMBBytes(initialState));
   }
 
-  fundBattle = (channelId, stake) => {
-    const { plasmaCMContract } = this.props;
-    const initialState = getInitialRPSState(3);
-    fundBattle(plasmaCMContract, channelId, stake, toRPSBytes(initialState));
+  fundBattle = async (channelId, stake) => {
+    //TODO decode this from the event
+    //GetPastEvent filtering by channelId, get Tokens and retrieve data
+    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
+    const { tokenPL, tokenOP } = this.state;
+    const opponent = ethAccount == '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d' ? '0x4f821cfb4c995b5d50208b22963698ce06a07bc9' : '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d'
+
+    const tokenPLID = await getPlasmaCoinId(tokenPL, rootChainContract);
+    const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);
+    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract)
+    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract)
+
+    const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
+    fundBattle(plasmaCMContract, channelId, stake, toCMBBytes(initialState));
   }
 
   concludeBattle = () => {
@@ -139,9 +131,9 @@ class Battles extends InitComponent {
   };
 
   render = () => {
-    const { loading, deposited, currentState } = this.state;
+    const { loading, currentState } = this.state;
     const { battles } = this.props;
-    const { opened, toFund, ongoing } = battles;
+  const { opened, toFund, ongoing } = battles;
 
     if(loading) return <div>Loading...</div>
 
@@ -151,11 +143,15 @@ class Battles extends InitComponent {
         <button onClick={this.battleRequest}>Battle Request</button>
         <button onClick={this.initiateBattle}>Initiate Battle</button>
         <input
-          value={this.state.turn}
-          onChange={e => this.setState({ turn: e.target.value })}
+          placeholder="token player"
+          value={this.state.tokenPL}
+          onChange={e => this.setState({ tokenPL: e.target.value })}
         />
-        {deposited === false && <button onClick={this.makeDeposit}>Deposit</button>}
-        {deposited === true && <button onClick={this.retrieveDeposit}>Retrieve Deposit</button>}
+        <input
+          placeholder="token opponent"
+          value={this.state.tokenOP}
+          onChange={e => this.setState({ tokenOP: e.target.value })}
+        />
 
         <button onClick={this.initSocket}>Connect</button>
         <button onClick={this.debugBattles}>Debug</button>
@@ -210,6 +206,8 @@ const mapStateToProps = state => ({
 	ethAccount: state.ethAccount,
 	plasmaCMContract: state.plasmaCMContract,
 	plasmaTurnGameContract: state.plasmaTurnGameContract,
+	cryptoMonsContract: state.cryptoMonsContract,
+	rootChainContract: state.rootChainContract,
 	battles: state.battles || {},
  });
 

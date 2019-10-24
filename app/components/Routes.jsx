@@ -30,7 +30,7 @@ import "regenerator-runtime/runtime";
 
 import {
 	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChannelFunded,
-	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToRPSRequested,
+	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToCMBRequested,
 	subscribeToSlashedBond, getChallengeable, subscribeToCryptoMonTransfer, subscribeToSubmittedSecretBlocks, setDefaultAccount
 } from '../../services/ethService';
 
@@ -66,7 +66,7 @@ class Routes extends React.Component {
 			cryptoMons: { ...res.CryptoMons, address: res.CryptoMons.networks['5777'].address },
 			vmc: { ...res.ValidatorManagerContract, address: res.ValidatorManagerContract.networks['5777'].address },
 			plasmaCM: { ...res.PlasmaCMContract, address: res.PlasmaCMContract.networks['5777'].address },
-			plasmaTurnGame: { ...res.PlasmaTurnGameContract, address: res.PlasmaTurnGameContract.networks['5777'].address }
+			plasmaTurnGame: { ...res.PlasmaTurnGameContract, address: res.PlasmaTurnGameContract.networks['5777'].address },
 		});
 	};
 
@@ -148,8 +148,8 @@ class Routes extends React.Component {
 			console.log('RespondedExitChallenge event');
 		}))
 
-		subscribeToRPSRequested(plasmaTurnGame, address, (r => {
-			console.log('RPSRequested event');
+		subscribeToCMBRequested(plasmaTurnGame, address, (r => {
+			console.log('CMBRequested event');
 			this.props.getBattlesFrom(address, plasmaTurnGame, plasmaCM)
 		}))
 

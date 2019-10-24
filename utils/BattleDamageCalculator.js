@@ -35,7 +35,7 @@ const SINGLE_TYPE_BOOST = 120;
 
 const decimals = 1000000;
 
-const Moves = {
+export const Moves = {
     RECHARGE      : 0,
     CLEANSE       : 1,
     PROTECT       : 2,
@@ -163,26 +163,26 @@ function swapIfSwitched(state, switched){
 
 function moveTurn(state){
   if(state.player.move === Moves.PROTECT) return state;
-  
+
   if(needsCharge(state.player.move)) {
     require(state.player.charges > 0, "Player needs a charge to do this move");
     state.player.charges = state.player.charges - 1;
   }
-  
+
   if(state.player.move === Moves.RECHARGE) {
     require(state.player.charges < 3, "Player recharge not possible when over 3");
     state.player.charges = state.player.charges + 1;
     return state;
   }
-  
+
   if(usesFirstType(state.player.move)) {
     require(state.player.data.type1 !== Type.Unknown, "Player attack cant be done with Unknown type");
   }
-  
+
   if(usesSecondType(state.player.move)) {
     require(state.player.data.type2 !== Type.Unknown, "Player attack cant be done with Unknown type");
   }
-  
+
   if(isAttacking(state.player.move)) {
     [ random1, criticalR ] = getNextR(state.random);
     [ random2, jitterR ]   = getNextR(random1);
@@ -191,11 +191,11 @@ function moveTurn(state){
     let hit = willHit(state.player, state.opponent, hitR);
     if(hit) {
       let damage = calculateEffectiveDamage(state.player, state.opponent, criticalR, jitterR);
-  
+
       if(state.player.data.type2 === Type.Unknown) {
         damage = Math.floor(damage * SINGLE_TYPE_BOOST / 100);
       }
-  
+
       if(state.opponent.hp < damage) {
         state.opponent.hp = 0;
       } else {
@@ -214,10 +214,10 @@ function moveTurn(state){
         }
       }
     }
-  
+
     return state;
   }
-  
+
   if(state.player.move === Moves.SHIELD_BREAK) {
     if(state.opponent.move === Moves.PROTECT) {
       let shieldBreakDmg = Math.floor(state.opponent.cryptoMon.stats.hp / 3);
@@ -561,7 +561,7 @@ function isStatus(move) {
   return move === Moves.STATUS1 || move === Moves.STATUS2;
 }
 
-function someoneDied(state) {
+export function someoneDied(state) {
   return state.player.hp === 0 || state.opponent.hp === 0;
 }
 

@@ -144,9 +144,8 @@ export const subscribeToChallengeRespond = (rootChain, address, cb) => {
 	subscribeToEvent("RespondedExitChallenge", {}, rootChain, cb);
 }
 
-export const subscribeToRPSRequested = (plasmaCM, address, cb) => {
-	subscribeToEvent("RPSRequested", {creator: address}, plasmaCM, cb);
-	subscribeToEvent("RPSRequested", {opponent: address}, plasmaCM, cb);
+export const subscribeToCMBRequested = (plasmaCM, address, cb) => {
+	subscribeToEvent("CryptoMonBattleRequested", {player: address}, plasmaCM, cb);
 }
 
 export const subscribeToChannelFunded = (plasmaCM, address, cb) => {
@@ -411,35 +410,34 @@ export const getCryptoMonsFrom = (address, cryptoMons) => {
 
 export const getBattlesFrom = (address, plasmaTurnGame, plasmaCM) => {
   return new Promise((resolve, reject) => {
-		async.parallel([
-			cb => baseEthContract(plasmaTurnGame).getPastEvents("RPSRequested", { filter: { player: address }, fromBlock: 0, toBlock: 'latest' }, cb),
-			cb => baseEthContract(plasmaTurnGame).getPastEvents("RPSRequested", { filter: { opponent: address }, fromBlock: 0, toBlock: 'latest' }, cb),
-		], (err, [ games1, games2 ]) => {
-			const battleIds = games1.map(g => g.returnValues.gameId).concat(games2.map(g=> g.returnValues.gameId));
-			async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r)).catch(cb)),
-				(err, result) => {
-					if (err) return reject(err);
-					const games = {
-						opened: [],
-						toFund: [],
-						ongoing: [],
-					};
+		baseEthContract(plasmaTurnGame).getPastEvents("CryptoMonBattleRequested", { filter: { player: address }, fromBlock: 0, toBlock: 'latest' },
+			(err, games ) => {
+				if(err) return reject(err);
+				const battleIds = games.map(g => g.returnValues.gameId);
+				async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r)).catch(cb)),
+					(err, result) => {
+						if (err) return reject(err);
+						const games = {
+							opened: [],
+							toFund: [],
+							ongoing: [],
+						};
 
-					result.forEach(c => {
-						if(c.state == 0) {
-							if(c.players[0].toLowerCase() == address.toLowerCase()) {
-								games.opened.push(c);
-							} else {
-								games.toFund.push(c);
+						result.forEach(c => {
+							if(c.state == 0) {
+								if(c.players[0].toLowerCase() == address.toLowerCase()) {
+									games.opened.push(c);
+								} else {
+									games.toFund.push(c);
+								}
+							} else if(c.state == 1) {
+								games.ongoing.push(c);
 							}
-						} else if(c.state == 1) {
-							games.ongoing.push(c);
-						}
-					});
-					resolve(games);
-			});
-		})
-  });
+						});
+						resolve(games);
+				});
+			})
+	});
 }
 
 export const finalizeExit = (rootChain, slot) => {
@@ -574,28 +572,6 @@ export const concludeBattle = (plasmaCM, prevState, currentState) => {
 		ethContract(plasmaCM)
 			.conclude(currentState.channelId, _prevState, _currentState, [prevState.signature || '0x', currentState.signature]).send({from: web3.eth.defaultAccount}, {
 				from: web3.eth.defaultAccount
-			}, (err, res) => {
-				if (err) return reject(err)
-				resolve(res);
-		})
-	});
-}
-
-export const battleRetrieveDeposit = (plasmaCM) => {
-	return new Promise((resolve, reject) => {
-		ethContract(plasmaCM)
-			.retrieveDeposit().send({from: web3.eth.defaultAccount}, (err, res) => {
-				if (err) return reject(err)
-				resolve(res);
-		})
-	});
-}
-
-export const battleHasDeposit = (plasmaCM) => {
-	return new Promise((resolve, reject) => {
-		ethContract(plasmaCM)
-			.hasDeposit(web3.eth.defaultAccount).call({
-				gas: 74195 + Math.ceil(Math.random() * 10000)
 			}, (err, res) => {
 				if (err) return reject(err)
 				resolve(res);
