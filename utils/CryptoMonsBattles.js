@@ -55,7 +55,7 @@ const transtionEvenToOdd = (game, move) => {
       data: game.cryptoMonOPData,
       move: game.decisionOP,
     },
-    random: abi.soliditySHA3(['bytes32', 'bytes32'], game.saltPL, game.saltOP),
+    random: abi.soliditySHA3(['bytes32', 'bytes32'], [game.saltPL, game.saltOP]),
   };
 
   const nextState = calculateBattle(state);
