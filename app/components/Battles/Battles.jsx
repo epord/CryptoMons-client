@@ -1,13 +1,14 @@
 import React from 'react';
 import { connect } from "react-redux";
 import io from 'socket.io-client';
-import { transitionCMBState, getInitialCMBState, toCMBBytes} from "../../utils/CryptoMonsBattles";
-import {hashChannelState, sign} from "../../utils/cryptoUtils";
-import InitComponent from './common/InitComponent.jsx';
+import { transitionCMBState, getInitialCMBState, toCMBBytes} from "../../../utils/CryptoMonsBattles"
+import {hashChannelState, sign} from "../../../utils/cryptoUtils";
+import InitComponent from '../common/InitComponent.jsx';
 import { initiateBattle, fundBattle,
-  concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId } from '../../services/ethService';
-import { getBattlesFrom } from '../redux/actions';
-import {Moves} from "../../utils/BattleDamageCalculator";
+  concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId } from '../../../services/ethService';
+import { getBattlesFrom } from '../../redux/actions';
+import {Moves} from "../../../utils/BattleDamageCalculator";
+import CurrentBattle from './CurrentBattle.jsx';
 
 class Battles extends InitComponent {
 
@@ -17,7 +18,7 @@ class Battles extends InitComponent {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
-    this.setState({ tokenPL: '5912203878839052116', tokenOP: '11631887953117068215' })
+    this.setState({ tokenPL: '4365297341472105176', tokenOP: '5767501881849970565' })
   }
 
   initSocket = () => {
@@ -89,6 +90,7 @@ class Battles extends InitComponent {
     const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract)
     const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract)
 
+
     const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
     initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toCMBBytes(initialState));
   }
@@ -133,7 +135,7 @@ class Battles extends InitComponent {
 
   render = () => {
     const { loading, currentState } = this.state;
-    const { battles } = this.props;
+    const { battles, ethAccount } = this.props;
   const { opened, toFund, ongoing } = battles;
 
     if(loading) return <div>Loading...</div>
@@ -194,8 +196,12 @@ class Battles extends InitComponent {
           </React.Fragment>
         )}
 
-        { (
-          <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>
+        <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>
+
+        {currentState && (
+          <div style={{ padding: '1em' }}>
+            <CurrentBattle play={this.play} isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()} game={currentState.game} />
+          </div>
         )}
 
       </React.Fragment>

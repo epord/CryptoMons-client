@@ -1,7 +1,7 @@
 const { Type } = require("./pokeUtils");
 
-const ATTACK_POWER = 50;
-const CONFUSED_ATTACK_POWER = 25;
+const ATTACK_POWER = 2;
+const CONFUSED_ATTACK_POWER = 1;
 const STATUS_HIT_CHANCE = 0xBE;
 const LEVEL = 100;
 
@@ -165,28 +165,28 @@ export function calculateBattle(state) {
 
   state = moveTurn(state);
 
-  if(someoneDied(state)) return swapIfSwitched(state, switchTurn);
+  if(someoneDied(state)) return [swapIfSwitchded(state, switchTurn), turnEvents];
 
   state = moveTurn(swap(state));
 
-  if(someoneDied(state)) return swapIfSwitched(state, !switchTurn);
+  if(someoneDied(state)) return [swapIfSwitched(state, !switchTurn), turnEvents];
 
   state = calculateEndDamage(swap(state));
 
-  if(someoneDied(state)) return swapIfSwitched(state, switchTurn);
+  if(someoneDied(state)) return [swapIfSwitched(state, switchTurn), turnEvents];
 
   state = calculateEndDamage(swap(state));
 
-  if(someoneDied(state)) return swapIfSwitched(state, !switchTurn);
+  if(someoneDied(state)) return [swapIfSwitched(state, !switchTurn), turnEvents];
 
-  return swapIfSwitched(state, !switchTurn);
+  return [swapIfSwitched(state, !switchTurn), turnEvents];
 }
 
 function swap(state){
   let first = state.opponent;
   state.opponent = state.player;
   state.player = first;
-  return [state, turnEvents];
+  return state;
 }
 
 function swapIfSwitched(state, switched){
@@ -194,7 +194,7 @@ function swapIfSwitched(state, switched){
     return swap(state);
   }
 
-  return [state, turnEvents];
+  return state;
 }
 
 function moveTurn(state){
@@ -230,8 +230,8 @@ function moveTurn(state){
     state.random = random3;
     let hit = willHit(state.player, state.opponent, hitR);
     event = {id: state.player.cryptoMon.id, hit: hit,
-      crit: (criticalR > getCriticalHitThreshold(state.player, state.opponent)),
-      effective: getMultiplierID(state.player.type1, state.opponent.type1, state.opponent.type2)
+      crit: (criticalR < getCriticalHitThreshold(state.player, state.opponent)),
+      effective: getMultiplierID(state.player.data.type1, state.opponent.data.type1, state.opponent.type2)
     };
     if(state.player.move === Moves.ATK1) {
       event.type = 1;
@@ -247,8 +247,6 @@ function moveTurn(state){
       event.code = EventCode.SPAttack;
     }
 
-    turnEvents.push(event);
-
     if(hit) {
       let damage = calculateEffectiveDamage(state.player, state.opponent, criticalR, jitterR);
 
@@ -261,9 +259,12 @@ function moveTurn(state){
       } else {
         state.opponent.hp = state.opponent.hp - damage;
       }
+      event.damage = damage;
+      turnEvents.push(event);
     } else {
       state.player.charges = state.player.charges + 1;
       if(isConfused(state.player, state.opponent)) {
+        turnEvents.push(event);
         let effectiveAtk = state.player.cryptoMon.stats.atk;
         let effectiveDef = state.player.cryptoMon.stats.def;
         let confusedDmg = Math.floor((Math.floor(Math.floor(Math.floor(2*LEVEL/5) + 2) * CONFUSED_ATTACK_POWER * effectiveAtk) / effectiveDef)/50) + 2;
@@ -374,7 +375,7 @@ function calculateEffectiveDamage(state, otherState, criticalR, jitterR) {
     revert("Attacking move should be an attacking move");
   }
 
-  let isCritical = criticalR > getCriticalHitThreshold(state, otherState);
+  let isCritical = criticalR < getCriticalHitThreshold(state, otherState);
   if(isCritical) damage = Math.floor(damage * 150 / 100);
 
   let jitter = ( Math.floor(jitterR * decimals / 255) * (255-217)  ) + (217 * decimals);
@@ -533,6 +534,7 @@ function getCriticalHitThreshold(state, otherState) {
   if(T > 0xFF) {
     return 0xFF;
   }
+  console.log("CRITICAL THRESHOLD" , T);
   return T;
 }
 // ------------------------------------------------------------
@@ -813,7 +815,7 @@ function getMultiplierID(attackingType, defendingType1, defendingType2) {
     if(defendingType1 === Type.Steel  || defendingType2 === Type.Steel)    multiplierID = multiplierID - 1;
     if(defendingType1 === Type.Fire  || defendingType2 === Type.Fire)    multiplierID = multiplierID - 1;
   } else {
-    revert("Unknown type");
+    revert("Unknown type" + attackingType);
   }
 
   return multiplierID;

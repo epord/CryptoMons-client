@@ -7,7 +7,7 @@ import App from './index.jsx';
 import Hack from './Hack.jsx';
 import History from './History.jsx';
 import Swap from './Swap.jsx';
-import Battles from './Battles.jsx';
+import Battles from './Battles';
 
 import Typography from '@material-ui/core/Typography';
 import AppBar from '@material-ui/core/AppBar';
