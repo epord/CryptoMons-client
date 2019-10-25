@@ -53,7 +53,40 @@ const Gender = {
   Female    : 1,
   Unknown   : 2,
 };
+const EventCode ={
+  Recharge:        0,
+  Protect:         1,
+  Cleanse:         2,
+  ShieldBreak:     3,
+  Status:          4,
+  Attack:          5,
+  SPAttack:        6,
+  EndTurnDMG:      7,
+  EndTurnHealing:  8,
+  ConfusedDMG:     9,
+};
 
+//Stuff to check outside
+//Status applied description
+//If someone dies
+//Message for effectiveID
+//Status messages before attack (if missable)
+//EndDamage reason
+//EndHealing reason
+/**
+ * Event (code: EventCode, id: Pokemon, data: ???)
+ * DATA:
+ * Recharge - null
+ * Protect - null
+ * Cleanse - null
+ * ShieldBreak - break: boolean (if hit) damage: int
+ * Status - type: (1|2) hit: boolean
+ * Attack|SPAttack - type: (1|2) hit: boolean
+ *                  if hit - crit: boolean damage: int effective: int (effective ID)
+ * ConfusedDMG - damage: int
+ * EndTurnDMG - name: string, damage: int
+ * EndTurnHealing - healing: int
+ */
 /**
  enum Gender {
         Male,
@@ -111,7 +144,10 @@ function revert(message) {
   throw message;
 }
 
+let turnEvents = [];
+
 export function calculateBattle(state) {
+  turnEvents = [];
   let playerSpeed   = calculateEffectiveSpeed(state.player, state.opponent);
   let opponentSpeed = calculateEffectiveSpeed(state.opponent, state.player);
 
@@ -150,7 +186,7 @@ function swap(state){
   let first = state.opponent;
   state.opponent = state.player;
   state.player = first;
-  return state;
+  return [state, turnEvents];
 }
 
 function swapIfSwitched(state, switched){
@@ -158,11 +194,14 @@ function swapIfSwitched(state, switched){
     return swap(state);
   }
 
-  return state;
+  return [state, turnEvents];
 }
 
 function moveTurn(state){
-  if(state.player.move === Moves.PROTECT) return state;
+  if(state.player.move === Moves.PROTECT) {
+    turnEvents.push({code: EventCode.Protect, id: state.player.cryptoMon.id});
+    return state;
+  }
 
   if(needsCharge(state.player.move)) {
     check(state.player.charges > 0, "Player needs a charge to do this move");
@@ -171,6 +210,7 @@ function moveTurn(state){
 
   if(state.player.move === Moves.RECHARGE) {
     check(state.player.charges < 3, "Player recharge not possible when over 3");
+    turnEvents.push({code: EventCode.Recharge, id: state.player.cryptoMon.id});
     state.player.charges = state.player.charges + 1;
     return state;
   }
@@ -189,6 +229,26 @@ function moveTurn(state){
     let [ random3, hitR ]    = getNextR(random2);
     state.random = random3;
     let hit = willHit(state.player, state.opponent, hitR);
+    event = {id: state.player.cryptoMon.id, hit: hit,
+      crit: (criticalR > getCriticalHitThreshold(state.player, state.opponent)),
+      effective: getMultiplierID(state.player.type1, state.opponent.type1, state.opponent.type2)
+    };
+    if(state.player.move === Moves.ATK1) {
+      event.type = 1;
+      event.code = EventCode.Attack;
+    }else if(state.player.move === Moves.ATK2) {
+      event.type = 2;
+      event.code = EventCode.Attack;
+    }else if (state.player.move === Moves.SPATK1) {
+      event.type = 1;
+      event.code = EventCode.SPAttack;
+    } else if(state.player.move === Moves.SPATK2) {
+      event.type = 2;
+      event.code = EventCode.SPAttack;
+    }
+
+    turnEvents.push(event);
+
     if(hit) {
       let damage = calculateEffectiveDamage(state.player, state.opponent, criticalR, jitterR);
 
@@ -212,6 +272,7 @@ function moveTurn(state){
         } else {
           state.player.hp = state.player.hp - confusedDmg;
         }
+        turnEvents.push({code: EventCode.ConfusedDMG, id: state.player.cryptoMon.id, damage: confusedDmg});
       }
     }
 
@@ -219,6 +280,12 @@ function moveTurn(state){
   }
 
   if(state.player.move === Moves.SHIELD_BREAK) {
+    turnEvents.push({
+      id: state.player.cryptoMon.id,
+      code: EventCode.ShieldBreak,
+      break: state.opponent.move === Moves.PROTECT,
+      damage: Math.floor(state.opponent.cryptoMon.stats.hp / 3)
+    });
     if(state.opponent.move === Moves.PROTECT) {
       let shieldBreakDmg = Math.floor(state.opponent.cryptoMon.stats.hp / 3);
       if(state.opponent.hp < shieldBreakDmg) {
@@ -236,6 +303,12 @@ function moveTurn(state){
 
   if(state.player.move === Moves.STATUS1) {
     let [random, statusHit] = getNextR(state.random);
+    turnEvents.push({
+      id: state.player.cryptoMon.id,
+      code: EventCode.Status,
+      type: 1,
+      hit: statusHit < STATUS_HIT_CHANCE
+    });
     state.random = random;
     if(canStatus(state, statusHit)){
       state.opponent.status1 = true;
@@ -248,6 +321,12 @@ function moveTurn(state){
   if(state.player.move === Moves.STATUS2) {
     let [ random, statusHit] = getNextR(state.random);
     state.random = random;
+    turnEvents.push({
+      id: state.player.cryptoMon.id,
+      code: EventCode.Status,
+      type: 2,
+      hit: statusHit < STATUS_HIT_CHANCE
+    });
     if(canStatus(state, statusHit)){
       state.opponent.status2 = true;
     } else {
@@ -257,6 +336,10 @@ function moveTurn(state){
   }
 
   if(state.player.move === Moves.CLEANSE) {
+    turnEvents.push({
+      id: state.player.cryptoMon.id,
+      code: EventCode.Cleanse
+    });
     state.player.status1 = false;
     state.player.status2 = false;
     return state;
@@ -505,6 +588,14 @@ function calculateEndDamage(state){
     state.player.hp = state.player.cryptoMon.stats.hp;
   }
 
+  if(healing > 0) {
+    turnEvents.push({
+      id: state.player.cryptoMon.id,
+      code: EventCode.EndTurnHealing,
+      healing
+    });
+  }
+
   let damage = 0;
   if(state.player.status1) damage = damage + calculateEndDamageForType(state, state.opponent.data.type1);
   if(state.player.status2) damage = damage + calculateEndDamageForType(state, state.opponent.data.type2);
@@ -513,6 +604,14 @@ function calculateEndDamage(state){
     state.player.hp = 0;
   } else {
     state.player.hp = state.player.hp - damage;
+  }
+
+  if(damage > 0) {
+    turnEvents.push({
+      id: state.player.cryptoMon.id,
+      code: EventCode.EndTurnDMG,
+      damage
+    });
   }
 
   return state;

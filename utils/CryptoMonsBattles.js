@@ -58,7 +58,8 @@ const transtionEvenToOdd = (game, move) => {
     random: abi.soliditySHA3(['bytes32', 'bytes32'], [game.saltPL, game.saltOP]),
   };
 
-  const nextState = calculateBattle(state);
+  const [nextState, events] = calculateBattle(state);
+  console.log(events);
 
   const oddState = {
     cryptoMonPL: game.cryptoMonPL,
