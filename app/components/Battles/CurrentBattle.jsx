@@ -5,7 +5,7 @@ import { Type } from '../../../utils/pokeUtils';
 import { Moves } from "../../../utils/BattleDamageCalculator";
 
 class CurrentBattle extends React.Component {
-  getCryptoMonData(
+  getCryptoMonData = (
     cryptoMonInstance,
     cryptoMonData,
     otherCryptoMonData,
@@ -14,7 +14,8 @@ class CurrentBattle extends React.Component {
     status2,
     otherStatus1,
     otherStatus2,
-    charge) {
+    charge
+  ) => {
 
     return {
       status1: status1 ? otherCryptoMonData.type1 : null,
@@ -28,7 +29,7 @@ class CurrentBattle extends React.Component {
       type1: cryptoMonData.type1,
       type2: cryptoMonData.type2,
       name: pokedex[cryptoMonInstance.id - 1].name.english.toLowerCase(),
-      shiny: cryptoMonInstance.shiny
+      shiny: cryptoMonInstance.isShiny
     }
   }
 
@@ -41,7 +42,13 @@ class CurrentBattle extends React.Component {
       cryptoMonOPData,
       HPOP,
       HPPL,
-      status1OP, status1PL, status2OP, status2PL, chargePL, chargeOP  } = game;
+      status1OP,
+      status1PL,
+      status2OP,
+      status2PL,
+      chargePL,
+      chargeOP
+    } = game;
 
     let player = this.getCryptoMonData(
       cryptoMonPLInstance, cryptoMonPLData, cryptoMonOPData, HPPL, status1PL, status2PL, status1OP, status2OP, chargePL
@@ -71,6 +78,7 @@ class CurrentBattle extends React.Component {
           />
           <PokemonStats cryptoMon={player}/>
         </div>
+        <p>Charges: {player.charge}/3</p>
         <div>
           <button onClick={() => play(Moves.RECHARGE)}>Recharge</button>
           <button onClick={() => play(Moves.PROTECT)}>Protect</button>

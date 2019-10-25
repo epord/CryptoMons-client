@@ -1,7 +1,8 @@
 import React from 'react';
 import { connect } from "react-redux";
 import io from 'socket.io-client';
-import { transitionCMBState, getInitialCMBState, toCMBBytes} from "../../../utils/CryptoMonsBattles"
+import { transitionCMBState, getInitialCMBState, toCMBBytes, shouldIAddMove, readyForBattleCalculation,
+  addNextMove, transtionEvenToOdd } from "../../../utils/CryptoMonsBattles"
 import {hashChannelState, sign} from "../../../utils/cryptoUtils";
 import InitComponent from '../common/InitComponent.jsx';
 import { initiateBattle, fundBattle,
@@ -21,28 +22,40 @@ class Battles extends InitComponent {
     this.setState({ tokenPL: '4365297341472105176', tokenOP: '5767501881849970565' })
   }
 
+  stateUpdate = (prevState, currentState) => {
+    if(currentState) this.setState({ currentState, prevState }, async () => {
+      const { ethAccount } = this.props;
+      if(currentState && readyForBattleCalculation(ethAccount, currentState)) {
+        prevState = currentState;
+        currentState = await this.transitionState(undefined);
+        this.setState({ currentState: currentState, prevState: prevState });
+        console.log('transition before move')
+      }
+    });
+  }
+
   initSocket = () => {
 
     this.socket = io(`http://localhost:4000`);
 
     this.socket.on('battleAccepted', (data) => {
       console.log('Battle accepted',  data);
-      if(data.state) this.setState({ currentState: data.state, prevState: data.prevState });
+      this.stateUpdate(data.prevState, data.state);
     });
 
     this.socket.on('invalidAction', (data) => {
       console.log('Error ', data);
-      if(data.state) this.setState({ currentState: data.state, prevState: data.prevState });
+      this.stateUpdate(data.prevState, data.state);
     });
 
     this.socket.on('battleEstablished', (data) => {
       console.log('battle established ', data);
-      this.setState({ currentState: data.state, prevState: data.prevState });
+      this.stateUpdate(data.prevState, data.state);
     });
 
     this.socket.on('stateUpdated', (data) => {
       console.log('state updated ', data);
-      this.setState({ currentState: data.state, prevState: data.prevState });
+      this.stateUpdate(data.prevState, data.state);
     });
 
     this.socket.on('battleFinished', (data) => {
@@ -66,17 +79,31 @@ class Battles extends InitComponent {
   };
 
   play = async (move) => {
-    const newState = await this.transitionState(move);
+    const { ethAccount } = this.props;
+    const { currentState } = this.state;
+
+    let newState = currentState;
+    if(shouldIAddMove(ethAccount, currentState)) {
+      newState.game = addNextMove(currentState.game, move);
+      const hash = hashChannelState(newState);
+      newState.signature = await sign(hash);
+    } else {
+      newState = await this.transitionState(move);
+    }
     this.socket.emit("play", newState);
   };
 
   transitionState = async (move) => {
     const { currentState } = this.state;
+    const { ethAccount } = this.props;
+
     currentState.game = transitionCMBState(currentState.game, currentState.turnNum, move);
     currentState.turnNum = currentState.turnNum + 1;
 
-    const hash = hashChannelState(currentState);
-    currentState.signature = await sign(hash);
+    if(!shouldIAddMove(ethAccount, currentState)) {
+      const hash = hashChannelState(currentState);
+      currentState.signature = await sign(hash);
+    }
     return currentState;
   };
 
@@ -200,7 +227,11 @@ class Battles extends InitComponent {
 
         {currentState && (
           <div style={{ padding: '1em' }}>
-            <CurrentBattle play={this.play} isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()} game={currentState.game} />
+            <CurrentBattle
+              play={this.play}
+              isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
+              game={currentState.game}
+            />
           </div>
         )}
 

@@ -100,3 +100,137 @@ export const Type =  {
   Fairy       : 17,
   Unknown     : 18
 };
+
+export const Status = {
+  0: {
+    name: 'growl',
+    effects: [{
+      name: '-50% Defense',
+      isBoost: false
+    }],
+  },
+  1: {
+    name: 'focus',
+    effects: [{
+      name: 'x8 critical',
+      isBoost: true
+    }],
+  },
+  2: {
+    name: 'hurricane',
+    effects: [{
+      name: 'Hurricane hit',
+      isBoost: false
+    }],
+  },
+  3: {
+    name: 'poisoned',
+    effects: [],
+    icon: 'POIS',
+  },
+  4: {
+    name: 'sandstorm',
+    effects: [{
+      name: 'Sandstorm hit',
+      isBoost: false
+    }],
+  },
+  5: {
+    name: 'solid defense',
+    effects: [{
+      name: '+50% Defense',
+      isBoost: true
+    }],
+  },
+  6: {
+    name: 'swarm',
+    effects: [{
+      name: 'Swarm hit',
+      isBoost: false
+    }],
+  },
+  7: {
+    name: 'scared',
+    effects: [{
+      name: '-70% Attack',
+      isBoost: false
+    }],
+    icon: 'SCARED'
+  },
+  8: {
+    name: 'iron armor',
+    effects: [{
+      name: '+50% Sp. Defense',
+      isBoost: true
+    }],
+  },
+  9: {
+    name: 'burn',
+    effects: [{
+      name: '-80% Attack',
+      isBoost: false
+    }],
+    icon: 'BURN'
+  },
+  10: {
+    name: 'soaked',effects: [{
+      name: '-60% Speed',
+      isBoost: false
+    }, {
+      name: '-80% Sp. Defense',
+      isBoost: false
+    }],
+    icon: 'SOAK'
+  },
+  11: {
+    name: 'leech seed',
+    effects: [{
+      name: 'Absorb HP',
+      isBoost: false
+    }],
+  },
+  12: {
+    name: 'paralized',
+    effects: [{
+      name: '-60% Speed',
+      isBoost: false
+    }],
+    icon: 'PARAL'
+  },
+  13: {
+    name: 'confused',
+    effects: [],
+    icon: 'CONF'
+  },
+  14: {
+    name: 'frozen',
+    effects: [{
+      name: '-100% Speed',
+      isBoost: false
+    }],
+    icon: 'FROZ'
+  },
+  15: {
+    name: 'dragon dance',
+    effects: [{
+      name: '+30% Attack',
+      isBoost: true
+    }, {
+      name: '+30% Sp. Attack',
+      isBoost: true
+    }],
+  },
+  16: { // Dark, not in use
+    name: '',
+    effects: [/* ??? */],
+  },
+  17: {
+    name: 'charm',
+    effects: [],
+    icon: 'CHARM'
+  },
+  16: { // Unknown, not in use
+    name: '',
+    effects: [/* ??? */],
+  },
+}

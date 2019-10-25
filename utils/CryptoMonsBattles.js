@@ -6,11 +6,20 @@ import * as EthUtils from 'ethereumjs-util';
 import {calculateBattle, someoneDied} from "./BattleDamageCalculator";
 const abi = require('ethereumjs-abi');
 
+export const shouldIAddMove = (me, state) => {
+  return state.turnNum % 2 != 0 && state.turnNum > 1 && me.toLowerCase() == state.participants[1].toLowerCase()
+}
+
+export const readyForBattleCalculation = (me, state) => {
+  return state.turnNum % 2 == 0 && state.turnNum > 0 && me.toLowerCase() == state.participants[1].toLowerCase()
+}
+
 export const transitionCMBState = (gameState, turnNum, move) => {
   if(turnNum == 0) {
     return initialTransition(gameState, move);
   } else if(turnNum%2 == 0) {
-      return transtionEvenToOdd(gameState, move);
+    if(move) throw "Please transition before moving" + move;
+    return transtionEvenToOdd(gameState);
   } else {
       return transitionOddToEven(gameState, move, turnNum == 1);
   }
@@ -30,7 +39,7 @@ const initialTransition = (game, move) => {
   return game;
 };
 
-const transtionEvenToOdd = (game, move) => {
+const transtionEvenToOdd = (game) => {
   const oldSalt = localStorage.getItem('salt');
   const oldMove = localStorage.getItem('move');
   game.saltOP = oldSalt;
@@ -83,19 +92,21 @@ const transtionEvenToOdd = (game, move) => {
     saltOP: game.saltOP
   };
 
-  if (!someoneDied(nextState)) {
-    const newSalt = randomHex256();
-    localStorage.setItem('salt', newSalt)
-    localStorage.setItem('move', move)
-    const newHashDecision = keccak256(
-      EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
-      EthUtils.toBuffer(newSalt)
-    );
-    oddState.nextHashDecision = newHashDecision;
-  }
-
   return oddState;
 };
+
+export const addNextMove = (state, move) => {
+  console.log('add next move')
+  const newSalt = randomHex256();
+  localStorage.setItem('salt', newSalt)
+  localStorage.setItem('move', move)
+  const newHashDecision = keccak256(
+    EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
+    EthUtils.toBuffer(newSalt)
+  );
+  state.nextHashDecision = newHashDecision;
+  return state;
+}
 
 export const isCMBFinished = (game) => {
   return game.HPPL == 0 || game.HPOP == 0;
