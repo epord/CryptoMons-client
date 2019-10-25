@@ -77,6 +77,8 @@ const types = [
   }
 ];
 
+export const getTypeData = id => types[id];
+
 export const Type =  {
   Normal      : 0,
   Fighting    : 1,
