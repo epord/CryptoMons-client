@@ -109,15 +109,19 @@ export const addNextMove = (state, move) => {
 }
 
 export const isCMBFinished = (game) => {
-  return game.HPPL == 0 || game.HPOP == 0;
+  return game.HPPL === 0 || game.HPOP === 0;
 }
 
 export const CMBWinner = (state) => {
-  if(state.game.HPOP == 0) {
+  if(state.game.HPOP === 0) {
     return state.participants[0];
   } else {
     return state.participants[1];
   }
+}
+
+export const CMBmover = (state) => {
+  return state.turnNum%2 === 0 ? state.participants[0]: state.participants[1];
 }
 
 const transitionOddToEven = (game, move, isFirst) => {

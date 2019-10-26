@@ -587,7 +587,7 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 		participants: currentState.participants,
 		turnNum: currentState.turnNum,
 		gameAttributes: toCMBBytes(currentState.game)
-	}
+	};
 
 	if (!prevState) {
 		console.log('force first move');
@@ -600,13 +600,14 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 				})
 		});
 	}
+
 	const _prevState = {
 		channelId: prevState.channelId,
 		channelType: prevState.channelType,
 		participants: prevState.participants,
 		turnNum: prevState.turnNum,
 		gameAttributes: toCMBBytes(prevState.game)
-	}
+	};
 
 	console.log('force move');
 	return new Promise((resolve, reject) => {

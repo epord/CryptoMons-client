@@ -1,7 +1,7 @@
 const { Type } = require("./pokeUtils");
 
-const ATTACK_POWER = 2;
-const CONFUSED_ATTACK_POWER = 1;
+const ATTACK_POWER = 20;
+const CONFUSED_ATTACK_POWER = 10;
 const STATUS_HIT_CHANCE = 0xBE;
 const LEVEL = 100;
 

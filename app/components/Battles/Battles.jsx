@@ -1,8 +1,10 @@
 import React from 'react';
 import { connect } from "react-redux";
 import io from 'socket.io-client';
-import { transitionCMBState, getInitialCMBState, toCMBBytes, shouldIAddMove, readyForBattleCalculation,
-  addNextMove, transtionEvenToOdd } from "../../../utils/CryptoMonsBattles"
+import {
+  transitionCMBState, getInitialCMBState, toCMBBytes, shouldIAddMove, readyForBattleCalculation,
+  addNextMove, transtionEvenToOdd, CMBmover
+} from "../../../utils/CryptoMonsBattles"
 import {hashChannelState, sign} from "../../../utils/cryptoUtils";
 import InitComponent from '../common/InitComponent.jsx';
 import { initiateBattle, fundBattle,
@@ -19,7 +21,7 @@ class Battles extends InitComponent {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
-    this.setState({ tokenPL: '4365297341472105176', tokenOP: '5767501881849970565' })
+    this.setState({ tokenPL: '5912203878839052116', tokenOP: '11631887953117068215' })
   }
 
   stateUpdate = (prevState, currentState) => {
@@ -156,6 +158,15 @@ class Battles extends InitComponent {
     battleRespondWithMove(plasmaCMContract, channelId, newState).then(res => console.log("Responded force move ", res));
   }
 
+  hasForceMove = (channel) => {
+    return channel.forceMoveChallenge.state.channelId > 0;
+  }
+
+  isMyTurn = (channel) => {
+    const { ethAccount } = this.props;
+    return CMBmover(channel.forceMoveChallenge.state).toLowerCase() === ethAccount
+  }
+
   debugBattles = () => {
     this.socket.emit("debugBattles");
   };
@@ -208,23 +219,21 @@ class Battles extends InitComponent {
 
         {ongoing && ongoing.map(c =>
           <React.Fragment key={c.channelId}>
+            {console.log(c)}
             <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
             <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
-            {currentState && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}
-            {currentState && c.forceMoveChallenge.state.channelId != 0 && c.forceMoveChallenge.state.turnNum == currentState.turnNum && (
-              <button onClick={() => this.respondForceMove(c.channelId, 0)}>Respond Force Move (Rock)</button>
+            { currentState &&  !this.hasForceMove(c) && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}
+            {currentState && this.hasForceMove(c) && !this.isMyTurn(c) && (
+              <div>
+                //TODO add others
+                <button onClick={() => this.respondForceMove(c.channelId, 0)}>Respond Force Move (Rock)</button>
+              </div>
             )}
-            {currentState && c.forceMoveChallenge.state.channelId != 0 && c.forceMoveChallenge.state.turnNum == currentState.turnNum && (
-              <button onClick={() => this.respondForceMove(c.channelId, 1)}>Respond Force Move (Paper)</button>
-            )}
-            {currentState && c.forceMoveChallenge.state.channelId != 0 && c.forceMoveChallenge.state.turnNum == currentState.turnNum && (
-              <button onClick={() => this.respondForceMove(c.channelId, 2)}>Respond Force Move (Scissors)</button>
-            )}
+
+            {currentState && this.hasForceMove(c) && this.isMyTurn(c) && c.forceMoveChallenge.expirationTime < Date.now() &&
+              <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>}
           </React.Fragment>
         )}
-
-        <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>
-
         {currentState && (
           <div style={{ padding: '1em' }}>
             <CurrentBattle
@@ -242,7 +251,7 @@ class Battles extends InitComponent {
 }
 
 const mapStateToProps = state => ({
-	ethAccount: state.ethAccount,
+	ethAccount: state.ethAccount? state.ethAccount.toLowerCase() : undefined,
 	plasmaCMContract: state.plasmaCMContract,
 	plasmaTurnGameContract: state.plasmaTurnGameContract,
 	cryptoMonsContract: state.cryptoMonsContract,
