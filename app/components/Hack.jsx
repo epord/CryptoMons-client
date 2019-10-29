@@ -1,13 +1,26 @@
 import React from 'react';
 import { connect } from "react-redux";
 
-import { exitToken, challengeBeforeWithExitData, getCoinState, exitDepositToken } from '../../services/ethService';
+import {
+  exitToken,
+  challengeBeforeWithExitData,
+  getCoinState,
+  exitDepositToken,
+  exitTokenWithData
+} from '../../services/ethService';
 import { loadContracts } from '../redux/actions';
 import { generateTransactionHash, sign } from "../../utils/cryptoUtils";
+import Typography from "@material-ui/core/Typography";
+import TextField from "@material-ui/core/TextField";
+import {getHistory} from "../../services/plasmaServices";
+import Paper from "@material-ui/core/Paper";
+import Button from "@material-ui/core/Button";
+import {doubleSpendTransactions, nonExistentTransactions} from "../../utils/HackUtils";
+import {toAddressColor, toReadableAddress} from "../../utils/utils";
 
 class Hack extends React.Component {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = { history: [] }
   }
 
@@ -15,100 +28,25 @@ class Hack extends React.Component {
     let hackSlot = event.target.value;
     this.setState({ hackSlot: hackSlot });
 
-    fetch(`${process.env.API_URL}/api/tokens/${hackSlot}/history`).then(response => {
-      response.json().then(res => {
-        this.setState({ history: res })
-      })
-    });
-
-    getCoinState(hackSlot, this.props.rootChainContract).then(response => {
-      this.setState({ isHackSlotExiting: response == "EXITING" });
-    })
+    getHistory(hackSlot).then(history => this.setState({ history }));
+    getCoinState(hackSlot, this.props.rootChainContract).then(response =>
+      this.setState({ isHackSlotExiting: response == "EXITING" })
+    );
   };
 
-  maliciousExit = exitData => async () => {
+  forceOldExit = exitData => () => {
     const { rootChainContract } = this.props;
-    let res;
-    if (!exitData.signature) {
-      res = await exitDepositToken(rootChainContract, exitData.slot);
-    } else {
-      res = await exitToken(rootChainContract, exitData)
-    }
-    console.log("Exit successful: ", res);
+    exitTokenWithData(rootChainContract, exitData).then(() => console.log("Exit successful"));
   };
 
-  maliciousTransaction = token => async () => {
-
-    const hacker = web3.eth.defaultAccount;
-    const ltResponse = await fetch(`${process.env.API_URL}/api/tokens/${token}/last-transaction`);
-    const lastTransaction = await ltResponse.json();
-
-    console.log("generating first fake transaction");
-
-    const hash1 = generateTransactionHash(token, lastTransaction.minedBlock, hacker);
-    const sign1 = await sign(hash1);
-
-    const body1 = {
-      "slot": token,
-      "owner": hacker,
-      "recipient": hacker,
-      "hash": hash1,
-      "blockSpent": lastTransaction.minedBlock,
-      "signature": sign1
-    };
-
-    const data1Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/create`, {
-      method: 'POST',
-      body: JSON.stringify(body1),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data1 = await data1Res.json();
-
-    const hash2 = generateTransactionHash(token, data1.block.blockNumber, hacker);
-    const sign2 = await sign(hash2);
-    const body2 = {
-      "slot": token,
-      "owner": hacker,
-      "recipient": hacker,
-      "hash": hash2,
-      "blockSpent": data1.block.blockNumber,
-      "signature": sign2
-    };
-
-    const data2Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/create`, {
-      method: 'POST',
-      body: JSON.stringify(body2),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    const data2 = await data2Res.json();
-
-    const exitData = {
-      slot: (token),
-      prevTxBytes: data1.exitData.bytes,
-      prevTxInclusionProof: data1.exitData.proof,
-      exitingTxBytes: data2.exitData.bytes,
-      exitingTxInclusionProof: data2.exitData.proof,
-      signature: data2.exitData.signature,
-      prevTransactionHash: data1.exitData.hash,
-      lastTransactionHash: data2.exitData.hash,
-      prevBlock: data1.exitData.block,
-      exitingBlock: data2.exitData.block
-    };
-
-    exitToken(this.props.rootChainContract, exitData).then(response => {
-      console.log("Exit successful: ", response);
-    }).catch(console.error);
-
-
+  nonExistentTransactions() {
+    const { hackSlot } = this.state;
+    nonExistentTransactions(hackSlot).then(d => exitToken(rootChainContract, d)
+      .then(_ => console.log("Exit Successful")))
   }
 
-	challengeBefore = (token, exitData) => () => {
-		const { rootChainContract } = this.props;
+  challengeBefore = (token, exitData) => () => {
+    const { rootChainContract } = this.props;
     console.log(`Challenging Before: ${token}`)
 
     const newExitData = {
@@ -119,55 +57,13 @@ class Hack extends React.Component {
       signature: exitData.signature
     };
 
-		challengeBeforeWithExitData(newExitData, rootChainContract);
-  }
-
+    challengeBeforeWithExitData(newExitData, rootChainContract);
+  };
 
   doubleSpend = (token, transactionHash) => async() => {
-
-    const hacker = web3.eth.defaultAccount;
-    const ltResponse = await fetch(`${process.env.API_URL}/api/transactions/${transactionHash}`);
-    const lastTransaction = await ltResponse.json();
-
-    const data1Res = await fetch(`${process.env.API_URL}/api/exits/singleData/${transactionHash}`);
-    const data1 = await data1Res.json();
-
-    const hash = generateTransactionHash(token, lastTransaction.minedBlock, hacker);
-    const signature = await sign(hash);
-
-    const body = {
-      "slot": token,
-      "owner": hacker,
-      "recipient": hacker,
-      "hash": hash,
-      "blockSpent": lastTransaction.minedBlock,
-      "signature": signature
-    };
-
-    const data2Res = await fetch(`${process.env.API_URL}/api/hacks/transactions/create`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    const data2 = await data2Res.json();
-
-    const exitData = {
-      slot: (token),
-      prevTxBytes: data1.bytes,
-      exitingTxBytes: data2.exitData.bytes,
-      prevTxInclusionProof: data1.proof,
-      exitingTxInclusionProof: data2.exitData.proof,
-      signature: data2.exitData.signature,
-      prevBlock: data1.block,
-      exitingBlock: data2.exitData.block
-    };
-
-    exitToken(this.state.rootChain, exitData).then(response => {
-      console.log("Exit successful: ", response);
-    }).catch(console.error);
-
+    doubleSpendTransactions(toke, web3.eth.defaultAccount, transactionHash)
+      .then(exitData => exitTokenWithData(this.state.rootChain, exitData)
+        .then(() => console.log("Exit successful")));
   };
 
   render = () => {
@@ -177,38 +73,78 @@ class Hack extends React.Component {
     if (!rootChainContract) return <div>Loading...</div>
 
     return(
-      <div>
-        <h2>HACKS!</h2>
-        <input
-          style={{ marginLeft: '1em', minWidth: '25em' }}
-          onChange={this.onSlotChanged}
-          value={hackSlot || ''}
-          placeholder="Slot To Hack" />
-        {hackSlot &&
-        (<div>
-            <h4>Fraudulent Non-Existant Transactions</h4>
-            <button onClick={this.maliciousTransaction(hackSlot)}>HACK!</button>
+      <div style={{ padding: '1em' }}>
+        <Typography variant="h5" gutterBottom>HACKS!</Typography>
+        <Paper style={{ margin: '1em', padding: '1em', display: 'inline-block' }}>
 
-            <h4>History Hack</h4>
-            <p>History:</p>
-            {history.map(event => (
-                <div key={event.transaction.minedBlock}>
-                  <p>
-                    Block: {event.transaction.minedBlock } -
-                    from: {event.transaction.owner} -
-                    to: {event.transaction.recipient}
-                  </p>
-                  {event.transaction.recipient.toLowerCase() == web3.eth.defaultAccount.toLowerCase() &&
-                    <React.Fragment>
-                      <button onClick={this.maliciousExit(event.exitData)}>Force Old Exit</button>
-                      <button onClick={this.doubleSpend(hackSlot, event.transaction.hash)}>Create Double Spend Exit</button>
-                    </React.Fragment>
-                  }
-                  {isHackSlotExiting && event.transaction.minedBlock != history[0].transaction.minedBlock
-                    && <button onClick={this.challengeBefore(hackSlot, event.exitData)}>Challenge Before</button>}
-                </div>
-              )
-            )}
+          <TextField
+            style={{ margin: '0 0.5em' }}
+            value={hackSlot || ''}
+            onChange={this.onSlotChanged}
+            placeholder="Slot To Hack" />
+        </Paper>
+
+        {hackSlot &&
+        (<div style={{ padding: '1em'}}>
+            <div style={{ padding: '2em'}}>
+              <Typography variant="h5" gutterBottom>History</Typography>
+              <Button variant="contained" onClick={this.nonExistentTransactions}>
+                Create Non-Existant Transactions And Exit
+              </Button>
+              {history.map(event => (
+                  <div style={{margin: "0.3em",borderStyle: "solid", display: "flex"}} key={event.transaction.minedBlock}>
+                    <div style={{ padding: '0.3em'}}>
+                      Block: <b>{event.transaction.minedBlock}</b> -
+                      from: <span style={{color: toAddressColor(event.transaction.owner)}}>{toReadableAddress(event.transaction.owner)}</span> -
+                      to: <span style={{color: toAddressColor(event.transaction.recipient)}}>{toReadableAddress(event.transaction.recipient)}</span>
+                    </div>
+
+                    <div style={{display: "flex", justifyContent: "space-around"}}>
+                      {event.transaction.recipient.toLowerCase() == web3.eth.defaultAccount.toLowerCase() &&
+                      <React.Fragment>
+                        <Button style={{margin: "0.4em"}} size="small" variant="contained" onClick={this.forceOldExit(event.exitData)}>Force Old Exit</Button>
+                        <Button style={{margin: "0.4em"}} size="small" variant="contained" onClick={this.doubleSpend(hackSlot, event.transaction.hash)}>Create Double Spend Exit</Button>
+                      </React.Fragment>
+                      }
+                      {isHackSlotExiting
+                      && event.transaction.minedBlock != history[0].transaction.minedBlock
+                      && (history.length > 1 && event.transaction.minedBlock != history[1].transaction.minedBlock)
+                      && <Button style={{margin: "0.4em"}} size="small" variant="contained" onClick={this.challengeBefore(hackSlot, event.exitData)}>Challenge Before</Button>}
+                    </div>
+                  </div>
+                )
+              ).reverse()}
+            </div>
+
+            <div style={{ padding: '2em'}}>
+              <Typography variant="h5" gutterBottom>Battles</Typography>
+              <Button variant="contained" onClick={this.nonExistentTransactions}>
+                Create Non-Existant Transactions And Battle
+              </Button>
+              {history.map(event => (
+                  <div style={{margin: "0.3em",borderStyle: "solid", display: "flex"}} key={event.transaction.minedBlock}>
+                    <div style={{ padding: '0.3em'}}>
+                      Block: <b>{event.transaction.minedBlock}</b> -
+                      from: <span style={{color: toAddressColor(event.transaction.owner)}}>{toReadableAddress(event.transaction.owner)}</span> -
+                      to: <span style={{color: toAddressColor(event.transaction.recipient)}}>{toReadableAddress(event.transaction.recipient)}</span>
+                    </div>
+
+                    <div style={{display: "flex", justifyContent: "space-around"}}>
+                      {event.transaction.recipient.toLowerCase() == web3.eth.defaultAccount.toLowerCase() &&
+                      <React.Fragment>
+                        <Button style={{margin: "0.4em"}} size="small" variant="contained" onClick={this.forceOldExit(event.exitData)}>Force Old Exit</Button>
+                        <Button style={{margin: "0.4em"}} size="small" variant="contained" onClick={this.doubleSpend(hackSlot, event.transaction.hash)}>Create Double Spend Exit</Button>
+                      </React.Fragment>
+                      }
+                      {isHackSlotExiting
+                      && event.transaction.minedBlock != history[0].transaction.minedBlock
+                      && (history.length > 1 && event.transaction.minedBlock != history[1].transaction.minedBlock)
+                      && <Button style={{margin: "0.4em"}} size="small" variant="contained" onClick={this.challengeBefore(hackSlot, event.exitData)}>Challenge Before</Button>}
+                    </div>
+                  </div>
+                )
+              ).reverse()}
+            </div>
           </div>
         )}
       </div>
@@ -221,7 +157,7 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = dispatch => ({
-	loadContracts: () => dispatch(loadContracts())
+  loadContracts: () => dispatch(loadContracts())
 })
 
 export default connect(mapStateToProps, mapDispatchToProps)(Hack);

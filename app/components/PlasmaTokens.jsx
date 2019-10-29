@@ -16,7 +16,18 @@ import CryptoMonCard from './common/CryptoMonCard.jsx';
 import _ from 'lodash';
 import async from 'async';
 
-import { exitDepositToken, exitToken, finalizeExit, challengeBefore, challengeBetween, challengeAfter, withdraw, getChallenge, respondChallenge } from '../../services/ethService';
+import {
+	exitDepositToken,
+	exitToken,
+	finalizeExit,
+	challengeBefore,
+	challengeBetween,
+	challengeAfter,
+	withdraw,
+	getChallenge,
+	respondChallenge,
+	exitTokenWithData
+} from '../../services/ethService';
 import { transferInPlasma, getExitData, createAtomicSwap } from '../../services/plasmaServices';
 import { getChallengeableTokens, getExitingTokens, getExitedTokens, getOwnedTokens, getChallengedFrom } from '../redux/actions';
 
@@ -83,13 +94,9 @@ class PlasmaTokens extends InitComponent {
 		const { rootChainContract } = this.props;
 		const exitData = await getExitData(token);
 
-		if (!exitData.signature) {
-			await exitDepositToken(rootChainContract, token);
-		} else {
-			await exitToken(rootChainContract, exitData)
-		}
-
-		console.log("Exit successful");
+		exitTokenWithData(rootChainContract, exitData).then(
+			() => console.log("Exit successful")
+		);
 	};
 
 	finalizeExit = async token => {

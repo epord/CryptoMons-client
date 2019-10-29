@@ -2,7 +2,7 @@ import web3Utils from 'web3-utils';
 import async from 'async';
 import { zip, unique } from '../utils/utils';
 
-import { getOwnedTokens } from "./plasmaServices";
+import {getExitData, getOwnedTokens} from "./plasmaServices";
 import { isSwapBytes } from '../utils/cryptoUtils';
 import {toCMBBytes} from "../utils/CryptoMonsBattles";
 
@@ -472,6 +472,13 @@ export const buyCryptoMon = cryptoMons => {
 			resolve(res);
 		})
 	})
+};
+export const exitTokenWithData = (rootChain, exitData) => {
+	if (!exitData.signature) {
+		return exitDepositToken(rootChain, exitData.slot);
+	} else {
+		return exitToken(rootChain, exitData)
+	}
 };
 
 export const exitDepositToken = (rootChain, slot) => {
