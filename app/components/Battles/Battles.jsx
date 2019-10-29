@@ -5,13 +5,14 @@ import {
   transitionCMBState, getInitialCMBState, toCMBBytes, shouldIAddMove, readyForBattleCalculation,
   addNextMove, CMBmover
 } from "../../../utils/CryptoMonsBattles"
-import {hashChannelState, sign} from "../../../utils/cryptoUtils";
+import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
 import InitComponent from '../common/InitComponent.jsx';
 import { initiateBattle, fundBattle,
   concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId } from '../../../services/ethService';
 import { getBattlesFrom } from '../../redux/actions';
 import {Moves} from "../../../utils/BattleDamageCalculator";
 import CurrentBattle from './CurrentBattle.jsx';
+import {getExitData} from "../../../services/plasmaServices";
 
 class Battles extends InitComponent {
 
@@ -75,9 +76,8 @@ class Battles extends InitComponent {
     this.socket.on("authenticated", () => console.log("authenticated"));
   };
 
-  battleRequest = channelId => {
-    const { ethAccount } = this.props;
-    this.socket.emit("battleRequest", { channelId });
+  battleRequest = () => {
+
   };
 
   play = async (move) => {
@@ -116,12 +116,13 @@ class Battles extends InitComponent {
 
     const tokenPLID = await getPlasmaCoinId(tokenPL, rootChainContract);
     const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);
-    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract)
-    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract)
-
+    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract);
+    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract);
+    const exitData = await getExitData(tokenPL);
+    const exitRLPData = getExitDataToBattleRLPData(0, exitData);
 
     const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
-    initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toCMBBytes(initialState));
+    initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toCMBBytes(initialState), exitRLPData);
   }
 
   fundBattle = async (channelId, stake) => {
@@ -135,9 +136,11 @@ class Battles extends InitComponent {
     const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);
     const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract)
     const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract)
+    const exitData = await getExitData(tokenOP);
+    const exitRLPData = getExitDataToBattleRLPData(1, exitData);
 
     const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
-    fundBattle(plasmaCMContract, channelId, stake, toCMBBytes(initialState));
+    fundBattle(plasmaCMContract, channelId, stake, toCMBBytes(initialState), exitRLPData);
   }
 
   concludeBattle = () => {

@@ -524,10 +524,11 @@ export const battleDeposit = (plasmaCM) => {
 	});
 }
 
-export const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGameAttributes) => {
+export const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGameAttributes, exitRLPData) => {
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
-			.initiateChannel(channelType, opponent, web3Utils.toWei(stake.toString(), 'ether'), initialGameAttributes).send({from: web3.eth.defaultAccount}, {
+			.initiateChannel(channelType, opponent, web3Utils.toWei(stake.toString(), 'ether'), initialGameAttributes, exitRLPData)
+      .send({from: web3.eth.defaultAccount}, {
 				from: web3.eth.defaultAccount,
 				value: web3Utils.toWei(stake.toString(), 'ether')
 			}, (err, res) => {
@@ -537,10 +538,10 @@ export const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGa
 	});
 }
 
-export const fundBattle = (plasmaCM, channelId, stake, initialGameAttributes) => {
+export const fundBattle = (plasmaCM, channelId, stake, initialGameAttributes, exitRLPData) => {
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
-			.fundChannel(channelId, initialGameAttributes).send({from: web3.eth.defaultAccount}, {
+			.fundChannel(channelId, initialGameAttributes, exitRLPData).send({from: web3.eth.defaultAccount}, {
 				from: web3.eth.defaultAccount,
 				value: stake
 			}, (err, res) => {

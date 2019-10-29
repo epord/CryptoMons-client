@@ -121,4 +121,24 @@ export const hashChannelState = (state) => {
 			])
 	);
 
+};
+
+export const getExitDataToBattleRLPData = (playerIndex, exitData) => {
+	if(!exitData.prevBlock) {
+		return EthUtils.bufferToHex(RLP.encode([new BN(playerIndex).toArrayLike(Buffer)]));
+	} else {
+		let params = [
+			new BN(playerIndex).toArrayLike(Buffer),
+			new BN(exitData.slot).toArrayLike(Buffer),
+			new BN(exitData.prevBlock).toArrayLike(Buffer),
+			new BN(exitData.exitingBlock).toArrayLike(Buffer),
+			EthUtils.toBuffer(exitData.prevTxBytes),
+			EthUtils.toBuffer(exitData.exitingTxBytes),
+			EthUtils.toBuffer(exitData.prevTxInclusionProof),
+			EthUtils.toBuffer(exitData.exitingTxInclusionProof),
+			EthUtils.toBuffer(exitData.signature),
+		]
+
+		return EthUtils.bufferToHex(RLP.encode(params));
+	}
 }
