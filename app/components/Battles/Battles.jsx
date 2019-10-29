@@ -8,7 +8,7 @@ import {
 import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
 import InitComponent from '../common/InitComponent.jsx';
 import { initiateBattle, fundBattle,
-  concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId } from '../../../services/ethService';
+  concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId, getBattleTokens } from '../../../services/ethService';
 import { getBattlesFrom } from '../../redux/actions';
 import { Moves } from "../../../utils/BattleDamageCalculator";
 import CurrentBattle from './CurrentBattle.jsx';
@@ -129,8 +129,12 @@ class Battles extends InitComponent {
     //TODO decode this from the event
     //GetPastEvent filtering by channelId, get Tokens and retrieve data
     const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
-    const { tokenPL, tokenOP } = this.state;
-    const opponent = ethAccount == '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d' ? '0x4f821cfb4c995b5d50208b22963698ce06a07bc9' : '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d'
+
+    const participantsTokens = await getBattleTokens(channelId, plasmaTurnGameContract);
+    const tokenOP = participantsTokens[ethAccount];
+    const tokenPL = Object.values(participantsTokens).find(t => t != tokenPL);
+
+    console.log(tokenPL, tokenOP)
 
     const tokenPLID = await getPlasmaCoinId(tokenPL, rootChainContract);
     const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);

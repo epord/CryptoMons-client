@@ -53,8 +53,6 @@ class StartBattleModal extends InitComponent {
   render = () => {
     const { open, handleClose, plasmaTokens, classes, startingBattle } = this.props;
 
-    console.log(this.props)
-
     return (
       <Dialog open={open} onClose={handleClose} classes={{ paper: classes.dialogPaper }}>
         <DialogTitle>Select a Cryptomon to battle with</DialogTitle>

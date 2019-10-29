@@ -656,3 +656,13 @@ export const getChannel = (channelId, plasmaCM) => {
 		})
 	});
 }
+
+export const getBattleTokens = (gameId, plasmaTurnGame) => {
+	return new Promise((resolve, reject) => {
+		baseEthContract(plasmaTurnGame).getPastEvents("CryptoMonBattleRequested",
+			{ filter: { gameId }, fromBlock: 0, toBlock: 'latest' }, async (err, result) => {
+			if(err) return reject(err);
+			resolve(Object.fromEntries(result.map(r => [r.returnValues.player.toLowerCase(), r.returnValues.CryptoMon] )))
+		});
+	});
+};
