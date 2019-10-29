@@ -397,7 +397,7 @@ export const getCryptoMonsFrom = (address, cryptoMons) => {
 			(err, res) => {
         if(err) return reject(err)
 
-        const tokens = unique(res.map(transfer => transfer.returnValues.tokenId))
+				const tokens = unique(res.map(transfer => transfer.returnValues.tokenId))
         async.parallel(
           tokens.map(tokenId => cb => ethContract(cryptoMons).ownerOf(tokenId).call(cb)),
           (err, res) => {

@@ -30,7 +30,7 @@ const styles = theme => ({
 	},
 });
 
-class Swap extends InitComponent{
+class Swap extends InitComponent {
 
   state = {
     secretModalOpen: false

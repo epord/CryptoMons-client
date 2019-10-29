@@ -10,9 +10,9 @@ import InitComponent from '../common/InitComponent.jsx';
 import { initiateBattle, fundBattle,
   concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId } from '../../../services/ethService';
 import { getBattlesFrom } from '../../redux/actions';
-import {Moves} from "../../../utils/BattleDamageCalculator";
+import { Moves } from "../../../utils/BattleDamageCalculator";
 import CurrentBattle from './CurrentBattle.jsx';
-import {getExitData} from "../../../services/plasmaServices";
+import { getExitData } from "../../../services/plasmaServices";
 
 class Battles extends InitComponent {
 
@@ -76,8 +76,8 @@ class Battles extends InitComponent {
     this.socket.on("authenticated", () => console.log("authenticated"));
   };
 
-  battleRequest = () => {
-
+  battleRequest = channelId => {
+    this.socket.emit("battleRequest", { channelId });
   };
 
   play = async (move) => {
@@ -184,7 +184,6 @@ class Battles extends InitComponent {
     return (
       <React.Fragment>
         <div>Battles</div>
-        <button onClick={this.battleRequest}>Battle Request</button>
         <button onClick={this.initiateBattle}>Initiate Battle</button>
         <input
           placeholder="token player"

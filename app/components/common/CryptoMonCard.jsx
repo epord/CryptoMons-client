@@ -41,9 +41,15 @@ class CryptoMonCard extends InitComponent {
 	}
 
 	render = () => {
-		const { token, plasmaToken, exiting, exited, challengeable, challenged, onDepositClicked, onTransferClicked,
+		const { token, plasmaToken, exiting, exited, challengeable, challenged,
+			// TODO: migrate all these clicks to actions
+			onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
-			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked, onChallengeBeforeResponded } = this.props;
+			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked, onChallengeBeforeResponded,
+			onStartBattleClicked,
+			// END TODO
+			actions
+		} = this.props;
 		const { img, type1, type2, isShiny } = this.state
 
 		return (
@@ -118,6 +124,8 @@ class CryptoMonCard extends InitComponent {
 				{onWithdrawClick && <Button fullWidth onClick={onWithdrawClick} variant="outlined" size="small">Withdraw</Button>}
 				{onRevealSecretClicked && <Button fullWidth onClick={onRevealSecretClicked} variant="outlined" size="small">Reveal Secret</Button>}
 				{onChallengeBeforeResponded && <Button fullWidth onClick={onChallengeBeforeResponded} variant="outlined" size="small">Respond Challenge</Button>}
+
+				{actions && actions.map(action => <Button key={action} disabled={action.disabled} fullWidth onClick={action.func} variant="outlined" size="small">{action.title}</Button>)}
 
 			</Card>
 		)
