@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import io from 'socket.io-client';
 import {
   transitionCMBState, getInitialCMBState, toCMBBytes, shouldIAddMove, readyForBattleCalculation,
-  addNextMove, transtionEvenToOdd, CMBmover
+  addNextMove, CMBmover
 } from "../../../utils/CryptoMonsBattles"
 import {hashChannelState, sign} from "../../../utils/cryptoUtils";
 import InitComponent from '../common/InitComponent.jsx';
@@ -21,7 +21,7 @@ class Battles extends InitComponent {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
-    this.setState({ tokenPL: '5912203878839052116', tokenOP: '11631887953117068215' })
+    this.setState({ tokenPL: '4365297341472105176', tokenOP: '5767501881849970565' })
   }
 
   stateUpdate = (prevState, currentState) => {
@@ -219,7 +219,6 @@ class Battles extends InitComponent {
 
         {ongoing && ongoing.map(c =>
           <React.Fragment key={c.channelId}>
-            {console.log(c)}
             <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
             <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
             { currentState &&  !this.hasForceMove(c) && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}

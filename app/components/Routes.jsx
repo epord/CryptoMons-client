@@ -24,6 +24,7 @@ import BugReportIcon from '@material-ui/icons/BugReport';
 import HomeIcon from '@material-ui/icons/Home';
 import HistoryIcon from '@material-ui/icons/History';
 import SwapHorizIcon from '@material-ui/icons/SwapHoriz';
+import WhatshotIcon from '@material-ui/icons/Whatshot';
 
 import "core-js/stable";
 import "regenerator-runtime/runtime";
@@ -199,6 +200,14 @@ class Routes extends React.Component {
 								<SwapHorizIcon />
 							</ListItemIcon>
 							<ListItemText primary="Swaps" style={{ color: 'rgba(0, 0, 0, 0.87)' }} />
+						</ListItem>
+					</Link>
+					<Link to="/battles" style={{ textDecoration: 'none' }}>
+						<ListItem button align="center">
+							<ListItemIcon>
+								<WhatshotIcon />
+							</ListItemIcon>
+							<ListItemText primary="Battles" style={{ color: 'rgba(0, 0, 0, 0.87)' }} />
 						</ListItem>
 					</Link>
 				</List>
