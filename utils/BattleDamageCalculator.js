@@ -54,16 +54,16 @@ const Gender = {
   Unknown   : 2,
 };
 const EventCode ={
-  Recharge:        0,
-  Protect:         1,
-  Cleanse:         2,
-  ShieldBreak:     3,
-  Status:          4,
-  Attack:          5,
-  SPAttack:        6,
-  EndTurnDMG:      7,
-  EndTurnHealing:  8,
-  ConfusedDMG:     9,
+  Recharge:        "Recharge",
+  Protect:         "Protect",
+  Cleanse:         "Cleanse",
+  ShieldBreak:     "ShieldBreak",
+  Status:          "Status",
+  Attack:          "Attack",
+  SPAttack:        "SPAttack",
+  EndTurnDMG:      "EndTurnDMG",
+  EndTurnHealing:  "EndTurnHealing",
+  ConfusedDMG:     "ConfusedDMG",
 };
 
 //Stuff to check outside

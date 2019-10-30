@@ -147,8 +147,6 @@ class Battles extends InitComponent {
     const tokenOP = participantsTokens[ethAccount];
     const tokenPL = Object.values(participantsTokens).find(t => t != tokenPL);
 
-    console.log(tokenPL, tokenOP)
-
     const tokenPLID = await getPlasmaCoinId(tokenPL, rootChainContract);
     const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);
     const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract)

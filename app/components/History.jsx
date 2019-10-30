@@ -71,6 +71,7 @@ class History extends React.Component {
     }
 
     let transactions = Object.keys(history).filter(blockNumber => history[blockNumber].transactionBytes);
+    let transactionsHistory = [];
 
 		async.waterfall([
 			async cb => {
@@ -81,6 +82,7 @@ class History extends React.Component {
 				const hash = generateTransactionHash(slot, blockSpent, recipient);
 
 				if (await checkInclusion(transactionBytes, hash, depositBlock, token, proof, rootChainContract)) {
+          transactionsHistory.push({ depositBlock });
 					return cb(null, recipient);
 				} else {
 					return cb({error: "Validation failed", blockNumber: blockSpent, lastOwner: owner})
@@ -111,6 +113,14 @@ class History extends React.Component {
               return cb({error: "Not signed by counterpart correctly", blockNumber: blockNumber, lastOwner: owner})
             }
 
+            transactionsHistory.push({
+              isSwap: true,
+              successfulSwap: swapped[blockNumber],
+              from: A,
+              to:  B,
+              blockNumber
+            });
+
             if(!swapped[blockNumber]) {
               return cb(null, A);
             }
@@ -129,6 +139,13 @@ class History extends React.Component {
               return cb({error: "Not signed correctly", blockNumber: blockNumber, lastOwner: owner})
             }
 
+            transactionsHistory.push({
+              isSwap: false,
+              from: owner.toLowerCase(),
+              to:  recipient,
+              blockNumber
+            });
+
             return cb(null, recipient);
           }
 				}
@@ -142,7 +159,9 @@ class History extends React.Component {
           this.setState({historyValid: true, lastValidOwner: lastOwner});
         }
 
-			});
+      console.log(transactionsHistory)
+
+    });
 	};
 
 	handleChange = fieldName => event => {

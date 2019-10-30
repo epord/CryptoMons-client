@@ -69,7 +69,7 @@ const transtionEvenToOdd = (game) => {
   };
 
   const [nextState, events] = calculateBattle(state);
-  console.log(events);
+  console.log("EVENTS", events);
 
   const oddState = {
     cryptoMonPL: game.cryptoMonPL,

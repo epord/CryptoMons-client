@@ -54,21 +54,21 @@ const getTransactionBytes = (slot, blockSpent, recipient) => {
 
 export const decodeTransactionBytes = bytes => {
 	const decoded = RLP.decode(bytes);
-	const slot = (EthUtils.bufferToHex(decoded[0])).toFixed();
-	const blockSpent = (EthUtils.bufferToHex(decoded[1])).toFixed();
+	const slot = (new BN(decoded[0])).toString(10);
+	const blockSpent = (new BN(decoded[1])).toString(10);
 	const recipient = EthUtils.bufferToHex(decoded[2]);
 	return { slot, blockSpent, recipient }
 }
 
 export const decodeSwapTransactionBytes = bytes => {
 	const decoded = RLP.decode(bytes);
-	const slotA = (EthUtils.bufferToHex(decoded[0])).toFixed();
-	const blockSpentA = (EthUtils.bufferToHex(decoded[1])).toFixed();
+	const slotA = (new BN(decoded[0])).toString(10);
+	const blockSpentA = (new BN(decoded[1])).toString(10);
 	const secretA = EthUtils.bufferToHex(decoded[2]);
 	const B = EthUtils.bufferToHex(decoded[3]);
 
-	const slotB = (EthUtils.bufferToHex(decoded[4])).toFixed();
-	const blockSpentB = (EthUtils.bufferToHex(decoded[5])).toFixed();
+	const slotB = (new BN(decoded[4])).toString(10);
+	const blockSpentB = (new BN(decoded[5])).toString(10);
 	const secretB = EthUtils.bufferToHex(decoded[6]);
 	const A = EthUtils.bufferToHex(decoded[7]);
 

@@ -22,7 +22,7 @@ class Hack extends React.Component {
     let hackSlot = event.target.value;
     this.setState({ hackSlot: hackSlot });
 
-    getHistory(hackSlot).then(history => this.setState({ history }));
+    getHistory(hackSlot).then(res => this.setState({ history: res.history }));
     getCoinState(hackSlot, this.props.rootChainContract).then(response =>
       this.setState({ isHackSlotExiting: response == "EXITING" })
     );
