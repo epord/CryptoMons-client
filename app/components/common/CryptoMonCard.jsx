@@ -16,6 +16,7 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import {getCryptomon, getPlasmaCoinId, getPokemonData} from '../../../services/ethService';
 
 import {getTypeData} from '../../../utils/pokeUtils';
+import { toReadableAddress, toAddressColor } from '../../../utils/utils';
 
 class CryptoMonCard extends InitComponent {
 
@@ -41,7 +42,7 @@ class CryptoMonCard extends InitComponent {
 	}
 
 	render = () => {
-		const { token, plasmaToken, exiting, exited, challengeable, challenged,
+		const { token, plasmaToken, exiting, exited, challengeable, challenged, owner,
 			// TODO: migrate all these clicks to actions
 			onDepositClicked, onTransferClicked,
 			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
@@ -75,9 +76,16 @@ class CryptoMonCard extends InitComponent {
 						</Grid>
 					)}
 					{plasmaToken && (
-						<Grid item xs={12}>
-							<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>ID: {plasmaToken}</Typography>
-						</Grid>
+						<React.Fragment>
+							<Grid item xs={12}>
+								<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>ID: {plasmaToken}</Typography>
+							</Grid>
+							{owner && (
+								<Grid item xs={12}>
+									<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>Owner: <span style={{ color: toAddressColor(owner)}}>{toReadableAddress(owner)}</span></Typography>
+								</Grid>
+							)}
+						</React.Fragment>
 					)}
 					{exiting && (
 						<Grid item xs={12}>

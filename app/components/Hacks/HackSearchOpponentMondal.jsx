@@ -37,9 +37,7 @@ class HackSearchOpponentModal extends InitComponent {
   onOpponentChange = event => {
     let { cryptoMonsContract } = this.props;
     let opponent = event.target.value;
-    //TODO WHY CANT I USE THE THING ON THE PROPS
     getOwnedTokens(opponent, 'deposited').then(p => {
-      console.log(p);
       this.setState({opponent, plasmaTokens: p})
     });
   };
@@ -106,9 +104,7 @@ const mapStateToProps = state => ({
 	rootChainContract: state.rootChainContract
 });
 
-const mapDispatchToProps = dispatch => ({
-  getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
-});
+const mapDispatchToProps = dispatch => ({});
 
 
 export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(HackSearchOpponentModal)));

@@ -16,10 +16,10 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
 
-import CompareArrowsIcon from '@material-ui/icons/CompareArrows';
-
+import DoubleCryptoMonCard from './common/DoubleCryptoMonCard.jsx';
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
+import { toReadableAddress, toAddressColor } from '../../utils/utils';
 import {createAtomicSwap, getSwapData} from '../../services/plasmaServices'
 import {getSwappingRequests, getSwappingTokens, revealSecret} from '../redux/actions';
 
@@ -126,10 +126,11 @@ class Swap extends InitComponent {
 			<Dialog onClose={this.closeAcceptSwapModal} open={acceptSwapModalOpen} classes={{ paper: classes.dialogPaper }}>
 				<DialogTitle>Do you want to accept this swap request?</DialogTitle>
 				<Grid container style={{ padding: '1em' }}>
-					<Grid item xs={12} style={{ display: 'flex', alignItems: 'center',  }}>
-						<CryptoMonCard plasmaToken={transactionToAccept.slot} />
-						<CompareArrowsIcon fontSize="large" />
-						<CryptoMonCard plasmaToken={transactionToAccept.swappingSlot}/>
+					<Grid item xs={12}>
+						<DoubleCryptoMonCard
+							token1={transactionToAccept.slot}
+							token2={transactionToAccept.swappingSlot}
+						/>
 					</Grid>
 				</Grid>
 				{secret && (
@@ -169,7 +170,7 @@ class Swap extends InitComponent {
 	}
 
   renderSwappingRequestsSection = () => {
-		const { swappingRequests } = this.props;
+		const { swappingRequests, ethAccount } = this.props;
 
     if (swappingRequests.length == 0){
       return <Typography style={{ margin: 'auto' }}  variant="body1">There are no swapping requests for now</Typography>
@@ -183,12 +184,17 @@ class Swap extends InitComponent {
 							<Paper style={{ padding: '1em' }}>
 								<Grid container spacing={3} direction="column" alignItems="center">
 									<Grid item xs={12}>
-										<Typography variant="body1" style={{ maxWidth: '25em', textAlign: 'center' }}>{transaction.owner} wants to swap with you!</Typography>
+										<Typography variant="body1" style={{ maxWidth: '25em', textAlign: 'center' }}>
+											<span style={{ color: toAddressColor(transaction.owner)}}>{toReadableAddress(transaction.owner)}</span> wants to swap with you!
+										</Typography>
 									</Grid>
 									<Grid item xs={12} style={{ display: 'flex', alignItems: 'center',  }}>
-										<CryptoMonCard plasmaToken={transaction.slot} />
-										<CompareArrowsIcon fontSize="large" />
-										<CryptoMonCard plasmaToken={transaction.swappingSlot}/>
+										<DoubleCryptoMonCard
+											token1={transaction.slot}
+											owner1={ethAccount}
+											token2={transaction.swappingSlot}
+											owner2={transaction.owner}
+										/>
 									</Grid>
 									<Grid item xs={8}>
 										<Button variant="contained" size="large" color="primary" fullWidth onClick={this.openAcceptSwapModal(transaction)}>View</Button>
@@ -237,6 +243,7 @@ class Swap extends InitComponent {
 }
 
 const mapStateToProps = state => ({
+  ethAccount: state.ethAccount,
   swappingTokens: state.swappingTokens,
   swappingRequests: state.swappingRequests,
   rootChainContract: state.rootChainContract,

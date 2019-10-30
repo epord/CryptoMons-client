@@ -1,31 +1,22 @@
 import React from 'react';
-import {connect} from "react-redux";
+
+import { connect } from "react-redux";
 import io from 'socket.io-client';
-import {
-  addNextMove,
-  CMBmover,
-  getInitialCMBState,
-  readyForBattleCalculation,
-  shouldIAddMove,
-  toCMBBytes,
-  transitionCMBState
-} from "../../../utils/CryptoMonsBattles"
-import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
+
 import InitComponent from '../common/InitComponent.jsx';
-import {
-  battleForceMove,
-  battleRespondWithMove,
-  concludeBattle,
-  fundBattle,
-  getBattleTokens,
-  getCryptomon,
-  getPlasmaCoinId,
-  initiateBattle
-} from '../../../services/ethService';
-import {getBattlesFrom} from '../../redux/actions';
-import {Moves} from "../../../utils/BattleDamageCalculator";
+import BattleOverview from './BattleOverview.jsx';
 import CurrentBattle from './CurrentBattle.jsx';
-import {getExitData} from "../../../services/plasmaServices";
+
+import {
+  addNextMove, CMBmover, getInitialCMBState, readyForBattleCalculation, shouldIAddMove, toCMBBytes, transitionCMBState
+} from "../../../utils/CryptoMonsBattles"
+import { getExitDataToBattleRLPData, hashChannelState, sign } from "../../../utils/cryptoUtils";
+
+import {
+  battleForceMove, battleRespondWithMove, concludeBattle, fundBattle, getBattleTokens, getCryptomon, getPlasmaCoinId,
+} from '../../../services/ethService';
+import { getBattlesFrom } from '../../redux/actions';
+import { getExitData } from "../../../services/plasmaServices";
 
 class Battles extends InitComponent {
 
@@ -86,10 +77,10 @@ class Battles extends InitComponent {
       })
     });
 
-    this.socket.on("authenticated", () => console.log("authenticated"));
+    this.socket.on("authenticated", () => this.setState({ authenticated: true }));
   };
 
-  battleRequest = channelId => {
+  battleRequest = channelId => () => {
     this.socket.emit("battleRequest", { channelId });
   };
 
@@ -122,25 +113,7 @@ class Battles extends InitComponent {
     return currentState;
   };
 
-  initiateBattle = async () => {
-    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
-    const { tokenPL, tokenOP } = this.state;
-    const opponent = ethAccount == '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d' ? '0x4f821cfb4c995b5d50208b22963698ce06a07bc9' : '0x2bd8f0178cd41fb953fa26d4a8b372d98d5c864d'
-
-    const tokenPLID = await getPlasmaCoinId(tokenPL, rootChainContract);
-    const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);
-    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract);
-    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract);
-    const exitData = await getExitData(tokenPL);
-    const exitRLPData = getExitDataToBattleRLPData(0, exitData);
-
-    const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
-    initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toCMBBytes(initialState), exitRLPData);
-  }
-
   fundBattle = async (channelId, stake) => {
-    //TODO decode this from the event
-    //GetPastEvent filtering by channelId, get Tokens and retrieve data
     const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
 
     const participantsTokens = await getBattleTokens(channelId, plasmaTurnGameContract);
@@ -185,40 +158,22 @@ class Battles extends InitComponent {
     return CMBmover(channel.forceMoveChallenge.state).toLowerCase() === ethAccount
   }
 
-  debugBattles = () => {
-    this.socket.emit("debugBattles");
-  };
-
   render = () => {
-    const { loading, currentState } = this.state;
+    const { loading, currentState, authenticated } = this.state;
     const { battles, ethAccount } = this.props;
-  const { opened, toFund, ongoing } = battles;
+    const { opened, toFund, ongoing } = battles;
+
+    console.log(opened)
+    console.log(toFund)
+    console.log(ongoing)
 
     if(loading) return <div>Loading...</div>
 
     return (
       <React.Fragment>
         <div>Battles</div>
-        <button onClick={this.initiateBattle}>Initiate Battle</button>
-        <input
-          placeholder="token player"
-          value={this.state.tokenPL}
-          onChange={e => this.setState({ tokenPL: e.target.value })}
-        />
-        <input
-          placeholder="token opponent"
-          value={this.state.tokenOP}
-          onChange={e => this.setState({ tokenOP: e.target.value })}
-        />
 
         <button onClick={this.initSocket}>Connect</button>
-        <button onClick={this.debugBattles}>Debug</button>
-
-        <button onClick={() => this.play(Moves.ATK1)}>ATTACK</button>
-        <button onClick={() => this.play(Moves.PROTECT)}>PROTECT</button>
-        <button onClick={() => this.play(Moves.STATUS1)}>STATUS</button>
-        <button onClick={() => this.play(Moves.RECHARGE)}>RECHARGE</button>
-
 
         {opened && opened.map(c =>
           <React.Fragment key={c.channelId}>
@@ -235,20 +190,28 @@ class Battles extends InitComponent {
         )}
 
         {ongoing && ongoing.map(c =>
-          <React.Fragment key={c.channelId}>
-            <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
-            <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
-            { currentState &&  !this.hasForceMove(c) && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}
-            {currentState && this.hasForceMove(c) && !this.isMyTurn(c) && (
-              <div>
-                //TODO add others
-                <button onClick={() => this.respondForceMove(c.channelId, 0)}>Respond Force Move (Rock)</button>
-              </div>
-            )}
+          <BattleOverview
+            key={c.channelId}
+            channel={c}
+            actions={[{
+              title: 'Select',
+              func: this.battleRequest(c.channelId),
+            }]}
+          />
+          // <React.Fragment key={c.channelId}>
+          //   <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
+          //   <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
+          //   { currentState &&  !this.hasForceMove(c) && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}
+          //   {currentState && this.hasForceMove(c) && !this.isMyTurn(c) && (
+          //     <div>
+          //       //TODO add others
+          //       <button onClick={() => this.respondForceMove(c.channelId, 0)}>Respond Force Move (Rock)</button>
+          //     </div>
+          //   )}
 
-            {currentState && this.hasForceMove(c) && this.isMyTurn(c) && c.forceMoveChallenge.expirationTime < Date.now() &&
-              <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>}
-          </React.Fragment>
+          //   {currentState && this.hasForceMove(c) && this.isMyTurn(c) && c.forceMoveChallenge.expirationTime < Date.now() &&
+          //     <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>}
+          // </React.Fragment>
         )}
         {currentState && (
           <div style={{ padding: '1em' }}>
