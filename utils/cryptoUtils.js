@@ -1,4 +1,5 @@
 import {toCMBBytes} from "./CryptoMonsBattles";
+
 const EthUtils	= require('ethereumjs-util');
 const BN = require('bn.js');
 const RLP = require('rlp');

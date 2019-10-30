@@ -1,8 +1,8 @@
 import React from 'react';
 import InitComponent from './common/InitComponent.jsx';
 
-import { connect } from "react-redux";
-import { withStyles } from '@material-ui/core/styles';
+import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
 
 import Typography from '@material-ui/core/Typography';
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
@@ -20,8 +20,8 @@ import CompareArrowsIcon from '@material-ui/icons/CompareArrows';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import { getSwapData, createAtomicSwap } from '../../services/plasmaServices'
-import { getSwappingTokens, getSwappingRequests, revealSecret } from '../redux/actions';
+import {createAtomicSwap, getSwapData} from '../../services/plasmaServices'
+import {getSwappingRequests, getSwappingTokens, revealSecret} from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {

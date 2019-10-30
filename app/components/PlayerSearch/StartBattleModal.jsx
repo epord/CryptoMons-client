@@ -1,23 +1,22 @@
 import React from 'react';
 
-import { connect } from "react-redux";
-import { withStyles } from '@material-ui/core/styles';
-import { withRouter } from 'react-router-dom';
+import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
+import {withRouter} from 'react-router-dom';
 
 import InitComponent from '../common/InitComponent.jsx';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import Grid from '@material-ui/core/Grid';
 
 import CryptoMonCard from '../common/CryptoMonCard.jsx';
 
-import { getOwnedTokens } from '../../redux/actions';
+import {getOwnedTokens} from '../../redux/actions';
 
-import { getInitialCMBState, toCMBBytes } from "../../../utils/CryptoMonsBattles"
-import { initiateBattle, getCryptomon, getPlasmaCoinId } from '../../../services/ethService';
-import { getExitData } from "../../../services/plasmaServices";
-import { getExitDataToBattleRLPData } from "../../../utils/cryptoUtils";
+import {getInitialCMBState, toCMBBytes} from "../../../utils/CryptoMonsBattles"
+import {getCryptomon, getPlasmaCoinId, initiateBattle} from '../../../services/ethService';
+import {getExitData} from "../../../services/plasmaServices";
+import {getExitDataToBattleRLPData} from "../../../utils/cryptoUtils";
 
 const styles = theme => ({
 	dialogPaper: {

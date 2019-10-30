@@ -1,8 +1,8 @@
 import React from 'react';
 import InitComponent from './common/InitComponent.jsx';
 
-import { connect } from "react-redux";
-import { withStyles } from '@material-ui/core/styles';
+import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
 
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
@@ -17,19 +17,23 @@ import _ from 'lodash';
 import async from 'async';
 
 import {
-	exitDepositToken,
-	exitToken,
-	finalizeExit,
-	challengeBefore,
-	challengeBetween,
-	challengeAfter,
-	withdraw,
-	getChallenge,
-	respondChallenge,
-	exitTokenWithData
+  challengeAfter,
+  challengeBefore,
+  challengeBetween,
+  exitTokenWithData,
+  finalizeExit,
+  getChallenge,
+  respondChallenge,
+  withdraw
 } from '../../services/ethService';
-import { transferInPlasma, getExitData, createAtomicSwap } from '../../services/plasmaServices';
-import { getChallengeableTokens, getExitingTokens, getExitedTokens, getOwnedTokens, getChallengedFrom } from '../redux/actions';
+import {createAtomicSwap, getExitData, transferInPlasma} from '../../services/plasmaServices';
+import {
+  getChallengeableTokens,
+  getChallengedFrom,
+  getExitedTokens,
+  getExitingTokens,
+  getOwnedTokens
+} from '../redux/actions';
 
 const styles = theme => ({
 	dialogPaper: {

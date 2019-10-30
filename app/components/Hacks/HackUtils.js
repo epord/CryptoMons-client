@@ -1,5 +1,4 @@
-import {generateTransactionHash, sign} from "./cryptoUtils";
-import {exitDepositToken, exitToken} from "../services/ethService";
+import {generateTransactionHash, sign} from "../../../utils/cryptoUtils";
 
 export const nonExistentTransactions = (token) => {
   return new Promise(async (resolve, reject) => {

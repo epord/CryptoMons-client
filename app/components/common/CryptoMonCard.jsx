@@ -1,7 +1,7 @@
 import React from 'react';
 import InitComponent from './InitComponent.jsx';
 
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 import Card from '@material-ui/core/Card';
 import CardActionArea from '@material-ui/core/CardActionArea';
@@ -13,9 +13,9 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
-import { getCryptomon, getPlasmaCoinId, getPokemonData } from '../../../services/ethService';
+import {getCryptomon, getPlasmaCoinId, getPokemonData} from '../../../services/ethService';
 
-import { getTypeData } from '../../../utils/pokeUtils';
+import {getTypeData} from '../../../utils/pokeUtils';
 
 class CryptoMonCard extends InitComponent {
 
@@ -51,7 +51,6 @@ class CryptoMonCard extends InitComponent {
 			actions
 		} = this.props;
 		const { img, type1, type2, isShiny } = this.state
-
 		return (
 			<Card style={{ maxWidth: '12em', boxShadow: isShiny ? '0 0 10px gold' : null}}>
 				<CardActionArea>
@@ -124,8 +123,8 @@ class CryptoMonCard extends InitComponent {
 				{onWithdrawClick && <Button fullWidth onClick={onWithdrawClick} variant="outlined" size="small">Withdraw</Button>}
 				{onRevealSecretClicked && <Button fullWidth onClick={onRevealSecretClicked} variant="outlined" size="small">Reveal Secret</Button>}
 				{onChallengeBeforeResponded && <Button fullWidth onClick={onChallengeBeforeResponded} variant="outlined" size="small">Respond Challenge</Button>}
-
-				{actions && actions.map(action => <Button key={action} disabled={action.disabled} fullWidth onClick={action.func} variant="outlined" size="small">{action.title}</Button>)}
+				{actions && actions.map(action =>
+					<Button key={action.title} disabled={action.disabled} fullWidth onClick={action.func} variant="outlined" size="small">{action.title}</Button>)}
 
 			</Card>
 		)

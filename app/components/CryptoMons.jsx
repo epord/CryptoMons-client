@@ -1,6 +1,6 @@
 import React from 'react';
 import InitComponent from "./common/InitComponent.jsx"
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
@@ -8,8 +8,8 @@ import Grid from '@material-ui/core/Grid';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import { depositToPlasma } from '../../services/ethService';
-import { getCryptoMonsFrom, buyCryptoMon } from '../redux/actions';
+import {depositToPlasma} from '../../services/ethService';
+import {buyCryptoMon, getCryptoMonsFrom} from '../redux/actions';
 
 
 class CryptoMons extends InitComponent {

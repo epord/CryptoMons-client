@@ -1,5 +1,5 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 import InitComponent from '../common/InitComponent.jsx';
 
@@ -12,7 +12,7 @@ import StartBattleModal from './StartBattleModal.jsx';
 
 import CryptoMonCard from '../common/CryptoMonCard.jsx';
 
-import { getOwnedTokens } from '../../../services/plasmaServices';
+import {getOwnedTokens} from '../../../services/plasmaServices';
 
 class PlayerSearch extends InitComponent {
 

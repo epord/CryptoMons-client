@@ -1,6 +1,6 @@
 import React from 'react';
 import InitComponent from './common/InitComponent.jsx'
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
@@ -14,9 +14,9 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import CryptoMons from '../components/CryptoMons.jsx';
 import PlasmaTokens from '../components/PlasmaTokens.jsx';
 
-import { getBalance, withdrawBonds } from '../../services/ethService';
+import {getBalance, withdrawBonds} from '../../services/ethService';
 
-import { buyCryptoMon, loadContracts } from '../redux/actions';
+import {buyCryptoMon, loadContracts} from '../redux/actions';
 
 class App extends InitComponent {
 

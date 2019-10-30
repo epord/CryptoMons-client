@@ -1,8 +1,8 @@
 import React from 'react';
 import PokemonStats from './PokemonStats.jsx';
-import { pokedex } from '../../../utils/pokedex';
-import { Type, getTypeData } from '../../../utils/pokeUtils';
-import { Moves } from "../../../utils/BattleDamageCalculator";
+import {pokedex} from '../../../utils/pokedex';
+import {getTypeData, Type} from '../../../utils/pokeUtils';
+import {Moves} from "../../../utils/BattleDamageCalculator";
 
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';

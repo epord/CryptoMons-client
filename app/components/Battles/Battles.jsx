@@ -1,18 +1,31 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 import io from 'socket.io-client';
 import {
-  transitionCMBState, getInitialCMBState, toCMBBytes, shouldIAddMove, readyForBattleCalculation,
-  addNextMove, CMBmover
+  addNextMove,
+  CMBmover,
+  getInitialCMBState,
+  readyForBattleCalculation,
+  shouldIAddMove,
+  toCMBBytes,
+  transitionCMBState
 } from "../../../utils/CryptoMonsBattles"
 import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
 import InitComponent from '../common/InitComponent.jsx';
-import { initiateBattle, fundBattle,
-  concludeBattle, battleForceMove, battleRespondWithMove, getCryptomon, getPlasmaCoinId, getBattleTokens } from '../../../services/ethService';
-import { getBattlesFrom } from '../../redux/actions';
-import { Moves } from "../../../utils/BattleDamageCalculator";
+import {
+  battleForceMove,
+  battleRespondWithMove,
+  concludeBattle,
+  fundBattle,
+  getBattleTokens,
+  getCryptomon,
+  getPlasmaCoinId,
+  initiateBattle
+} from '../../../services/ethService';
+import {getBattlesFrom} from '../../redux/actions';
+import {Moves} from "../../../utils/BattleDamageCalculator";
 import CurrentBattle from './CurrentBattle.jsx';
-import { getExitData } from "../../../services/plasmaServices";
+import {getExitData} from "../../../services/plasmaServices";
 
 class Battles extends InitComponent {
 

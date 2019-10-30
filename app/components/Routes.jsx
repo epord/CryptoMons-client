@@ -1,10 +1,10 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
-import { HashRouter as Router, Route, Link } from "react-router-dom";
+import {HashRouter as Router, Link, Route} from "react-router-dom";
 
 import App from './index.jsx';
-import Hack from './Hack.jsx';
+import Hack from './Hacks/Hack.jsx';
 import History from './History.jsx';
 import Swap from './Swap.jsx';
 import Battles from './Battles';
@@ -32,13 +32,35 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import {
-	subscribeToDeposits, subscribeToSubmittedBlocks, subscribeToStartedExit, subscribeToCoinReset, subscribeToChannelFunded,
-	subscribeToChallengeRespond, subscribeToFinalizedExit, subscribeToWithdrew, subscribeToFreeBond, subscribeToCMBRequested,
-	subscribeToSlashedBond, getChallengeable, subscribeToCryptoMonTransfer, subscribeToSubmittedSecretBlocks, setDefaultAccount
+	getChallengeable,
+	setDefaultAccount,
+	subscribeToChallengeRespond,
+	subscribeToChannelFunded,
+	subscribeToCMBRequested,
+	subscribeToCoinReset,
+	subscribeToCryptoMonTransfer,
+	subscribeToDeposits,
+	subscribeToFinalizedExit,
+	subscribeToFreeBond,
+	subscribeToSlashedBond,
+	subscribeToStartedExit,
+	subscribeToSubmittedBlocks,
+	subscribeToSubmittedSecretBlocks,
+	subscribeToWithdrew
 } from '../../services/ethService';
 
-import { getCryptoMonsFrom, getOwnedTokens, getExitingTokens, getExitedTokens, buyCryptoMon,
-	loadContracts, getSwappingTokens, getSwappingRequests, getEthAccount, getBattlesFrom } from '../redux/actions'
+import {
+	buyCryptoMon,
+	getBattlesFrom,
+	getCryptoMonsFrom,
+	getEthAccount,
+	getExitedTokens,
+	getExitingTokens,
+	getOwnedTokens,
+	getSwappingRequests,
+	getSwappingTokens,
+	loadContracts
+} from '../redux/actions'
 
 class Routes extends React.Component {
 	state = { drawerOpen: false }

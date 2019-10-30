@@ -1,9 +1,10 @@
-import { randomHex256 } from "./utils";
+import {randomHex256} from "./utils";
 import {keccak256} from "./cryptoUtils";
 import BN from "bn.js";
-const RLP = require('rlp');
 import * as EthUtils from 'ethereumjs-util';
-import {calculateBattle, someoneDied} from "./BattleDamageCalculator";
+import {calculateBattle} from "./BattleDamageCalculator";
+
+const RLP = require('rlp');
 const abi = require('ethereumjs-abi');
 
 export const shouldIAddMove = (me, state) => {

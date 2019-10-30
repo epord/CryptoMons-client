@@ -1,9 +1,9 @@
 import web3Utils from 'web3-utils';
 import async from 'async';
-import { zip, unique } from '../utils/utils';
+import {unique, zip} from '../utils/utils';
 
-import {getExitData, getOwnedTokens} from "./plasmaServices";
-import { isSwapBytes } from '../utils/cryptoUtils';
+import {getOwnedTokens} from "./plasmaServices";
+import {isSwapBytes} from '../utils/cryptoUtils';
 import {toCMBBytes} from "../utils/CryptoMonsBattles";
 
 const Web3 = require('web3');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 import Typography from '@material-ui/core/Typography';
 import TextField from '@material-ui/core/TextField';
@@ -7,17 +7,17 @@ import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
 
 import {checkEmptyBlock, checkInclusion, checkSecretsIncluded} from '../../services/ethService';
-import { getProofHistory } from '../../services/plasmaServices';
+import {getProofHistory} from '../../services/plasmaServices';
 import {
-  recover,
-  decodeTransactionBytes,
   decodeSwapTransactionBytes,
-  generateTransactionHash,
+  decodeTransactionBytes,
   generateSwapHash,
-  isSwapBytes, getHash
+  generateTransactionHash,
+  isSwapBytes,
+  recover
 } from '../../utils/cryptoUtils';
 
-import { loadContracts } from '../redux/actions'
+import {loadContracts} from '../redux/actions'
 
 import async from 'async';
 
