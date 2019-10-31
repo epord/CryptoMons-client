@@ -37,6 +37,7 @@ import {
   getOwnedTokens
 } from '../redux/actions';
 import SelectPlayerTokenModal from "./common/SelectPlayerTokenModal.jsx";
+import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 
 const styles = theme => ({
   dialogPaper: {
@@ -162,7 +163,15 @@ class PlasmaTokens extends InitComponent {
 
   closeBattleModal = () => this.setState({ battleModalOpen: false, tokenToBattle: undefined });
 
+  openValidateHistoryModal = (opponent, token) => this.setState({
+    validateHistoryOpen: true,
+    validatingToken: token,
+  });
+
+  closeValidateHistoryModal = () => this.setState({ validateHistoryOpen: false, validatingToken: undefined });
+
   openRespondChallengeModal = (challengedSlot, challengeHashes) => () => {
+    //TODO add disable to button so no multiple fetches are being done
     const { rootChainContract } = this.props;
     const getChallenges = challengeHashes.map(hash => async cb => {
       const ans = await getChallenge(challengedSlot, hash, rootChainContract)
@@ -254,37 +263,65 @@ class PlasmaTokens extends InitComponent {
   };
 
   renderSwapDialog = () => {
-    const { swapModalOpen, secret, swapping, tokenToSwap } = this.state;
+    const { swapModalOpen, secret, swapping, validateHistoryOpen, tokenToSwap } = this.state;
     return (
-      <SelectPlayerTokenModal
-        title={"Select a Cryptomon to Swap with"}
-        open={swapModalOpen}
-        handleClose={this.closeSwapModal}
-        actions = {[{
-          title: "Select",
-          disabled: swapping || Boolean(secret),
-          func: this.swapInPlasma(tokenToSwap)
-        }]}
-        appendix={this.secretDialog}
-      />
+      <React.Fragment>
+        <SelectPlayerTokenModal
+          title={"Select a Cryptomon to Swap with"}
+          open={swapModalOpen}
+          handleClose={this.closeSwapModal}
+          actions = {[{
+            title: "Select",
+            disabled: swapping || Boolean(secret),
+            func: this.swapInPlasma(tokenToSwap)
+          },{
+            title: "Validate History",
+            disabled: validateHistoryOpen,
+            func: this.openValidateHistoryModal
+          }]}
+          appendix={this.secretDialog}
+        />
+        {this.renderValidateHistoryDialog()}
+      </React.Fragment>
     )
   };
 
   renderBattleDialog = () => {
-    const { battleModalOpen, startingBattle, tokenToBattle } = this.state;
+    const { battleModalOpen, startingBattle, validateHistoryOpen, tokenToBattle } = this.state;
     return (
-      <SelectPlayerTokenModal
-        title={"Select a Cryptomon to Battle against"}
-        open={battleModalOpen}
-        handleClose={this.closeBattleModal}
-        actions = {[{
-          title: "Select",
-          disabled: startingBattle,
-          func: this.onBattleStart(tokenToBattle)
-        }]}
-      />
+      <React.Fragment>
+        <SelectPlayerTokenModal
+          title={"Select a Cryptomon to Battle against"}
+          open={battleModalOpen}
+          handleClose={this.closeBattleModal}
+          actions = {[{
+            title: "Select",
+            disabled: startingBattle,
+            func: this.onBattleStart(tokenToBattle)
+          },{
+            title: "Validate History",
+            disabled: validateHistoryOpen,
+            func: this.openValidateHistoryModal
+          }
+          ]}
+        />
+        {this.renderValidateHistoryDialog()}
+      </React.Fragment>
     )
   };
+
+  renderValidateHistoryDialog = () => {
+    const { validateHistoryOpen, validatingToken, } = this.state;
+    return (
+      (validateHistoryOpen &&
+        <ValidateHistoryModal
+          open={validateHistoryOpen}
+          handleClose={this.closeValidateHistoryModal}
+          token={validatingToken}
+        />)
+    )
+  };
+
 
   render = () => {
     const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens } = this.props;

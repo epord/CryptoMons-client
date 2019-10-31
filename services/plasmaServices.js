@@ -128,11 +128,11 @@ export const getExitData = token => {
 };
 
 export const getProofHistory = token => {
-  return basicGet(`${process.env.API_URL}/api/tokens/${token}/history-proof`);
+  return basicGet(`${process.env.API_URL}/api/tokens/${token}/history-proof`).then(r => r.history);;
 }
 
 export const getHistory = token => {
-  return basicGet(`${process.env.API_URL}/api/tokens/${token}/history`);
+  return basicGet(`${process.env.API_URL}/api/tokens/${token}/history`).then(r => r.history);
 }
 
 export const getLastTransaction = token => {

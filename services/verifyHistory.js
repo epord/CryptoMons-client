@@ -11,8 +11,14 @@ import {
 import async from "async";
 
 export const verifyToken = (token, rootChainContract) => {
+  return getProofHistory(token).then(h =>{
+    return verifyTokenWithHistory(token, rootChainContract, h)
+    }
+  )
+};
+
+export const verifyTokenWithHistory = (token, rootChainContract, history) => {
   return new Promise(async (resolve, reject) => {
-    const { history } = await getProofHistory(token);
     console.log(`validating ${Object.keys(history).length} blocks`);
 
     //Validate is included and not included on all blocks
