@@ -105,7 +105,7 @@ class Hack extends React.Component {
     );
   };
 
-  onBattleStart = (opponent, opponentToken) => async () => {
+  onBattleStart = async (opponent, opponentToken) => {
     await this.setState({ startingBattle: true });
 
     const { battleExitData, hackSlot } = this.state;

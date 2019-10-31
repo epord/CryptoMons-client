@@ -39,12 +39,19 @@ class SelectPlayerTokenModal extends InitComponent {
     });
   };
 
+  onSelectedToken = (token, action) => async () => {
+    const { player } = this.state;
+    await this.setState({selectedToken: token});
+    action(player, token);
+  };
+
   render = () => {
-    const { open, handleClose, classes, actions, title } = this.props;
-    const { plasmaTokens, player } = this.state;
+    const { open, handleClose, classes, actions, title, appendix } = this.props;
+    const { plasmaTokens, player, selectedToken } = this.state;
 
     return (
       <Dialog open={open} onClose={handleClose} classes={{ paper: classes.dialogPaper }}>
+        <React.Fragment>
         <TextField
           style={{ margin: '0 0.5em' }}
           value={player || ''}
@@ -57,12 +64,13 @@ class SelectPlayerTokenModal extends InitComponent {
               <div style={{ marginTop: '0.5em' }} key={token}>
                 <CryptoMonCard
                   plasmaToken={token}
-                  actions={actions.map(o => ({ ...o, func: o.func(player, token) }))}
+                  actions={actions.map(o => ({ ...o, func: this.onSelectedToken(token, o.func) }))}
                 />
               </div>
             ))}
+          {appendix && appendix(player, selectedToken)}
         </div>
-
+        </React.Fragment>
       </Dialog>
     )
   }
