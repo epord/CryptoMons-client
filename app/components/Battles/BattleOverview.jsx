@@ -1,13 +1,13 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 import Paper from "@material-ui/core/Paper";
 import Button from "@material-ui/core/Button";
 
 import DoubleCryptoMonCard from '../common/DoubleCryptoMonCard.jsx';
 
-import { getBattleTokens, getPlasmaCoinId, getCryptomon } from '../../../services/ethService';
-import { toReadableAddress, toAddressColor } from '../../../utils/utils';
+import {getBattleTokens} from '../../../services/ethService';
+import {toAddressColor, toReadableAddress} from '../../../utils/utils';
 
 class BattleOverview extends React.Component {
 

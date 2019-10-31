@@ -3,6 +3,7 @@ import InitComponent from './common/InitComponent.jsx';
 
 import {connect} from "react-redux";
 import {withStyles} from '@material-ui/core/styles';
+import {withRouter} from 'react-router-dom';
 
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
@@ -20,6 +21,7 @@ import {
   challengeAfter,
   challengeBefore,
   challengeBetween,
+  createBattle,
   exitTokenWithData,
   finalizeExit,
   getChallenge,
@@ -139,6 +141,14 @@ class PlasmaTokens extends InitComponent {
     respondChallenge(token, challengingBlock, hash, rootChainContract);
   };
 
+  onBattleStart = ownToken => async (opponent, opponentToken) => {
+    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract } = this.props;
+    await this.setState({ startingBattle: true });
+    await createBattle(ownToken, opponentToken, opponent, undefined,
+      rootChainContract, cryptoMonsContract, plasmaCMContract, plasmaTurnGameContract
+    );
+    this.props.history.push('/battles');
+  };
 
   openTransferModal = token => () => this.setState({ transferModalOpen: true, tokenToTransact: token });
 
@@ -147,6 +157,10 @@ class PlasmaTokens extends InitComponent {
   openSwapModal = token => () => this.setState({ swapModalOpen: true, tokenToSwap: token });
 
   closeSwapModal = () => this.setState({ swapModalOpen: false, tokenToSwap: undefined, secret: undefined });
+
+  openBattleModal = token => () => this.setState({ battleModalOpen: true, tokenToBattle: token });
+
+  closeBattleModal = () => this.setState({ battleModalOpen: false, tokenToBattle: undefined });
 
   openRespondChallengeModal = (challengedSlot, challengeHashes) => () => {
     const { rootChainContract } = this.props;
@@ -256,6 +270,22 @@ class PlasmaTokens extends InitComponent {
     )
   };
 
+  renderBattleDialog = () => {
+    const { battleModalOpen, startingBattle, tokenToBattle } = this.state;
+    return (
+      <SelectPlayerTokenModal
+        title={"Select a Cryptomon to Battle against"}
+        open={battleModalOpen}
+        handleClose={this.closeBattleModal}
+        actions = {[{
+          title: "Select",
+          disabled: startingBattle,
+          func: this.onBattleStart(tokenToBattle)
+        }]}
+      />
+    )
+  };
+
   render = () => {
     const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens } = this.props;
 
@@ -270,6 +300,7 @@ class PlasmaTokens extends InitComponent {
         {this.renderTransferDialog()}
         {this.renderSwapDialog()}
         {this.renderRespondChallengeDialog()}
+        {this.renderBattleDialog()}
         <Grid container spacing={3} alignContent="center" alignItems="start">
           {plasmaTokens.map(token => (
             <Grid item key={token}>
@@ -282,6 +313,9 @@ class PlasmaTokens extends InitComponent {
                   },{
                     title: "Swap",
                     func: this.openSwapModal(token)
+                  },{
+                    title: "Battle",
+                    func: this.openBattleModal(token)
                   },{
                     title: "Exit",
                     func: this.exitToken(token)
@@ -365,7 +399,10 @@ const mapStateToProps = state => ({
   exitedTokens: state.exitedTokens,
   challengedTokens: state.challengedTokens,
   rootChainContract: state.rootChainContract,
-  ethAccount: state.ethAccount
+  cryptoMonsContract: state.cryptoMonsContract,
+  ethAccount: state.ethAccount,
+  plasmaCMContract: state.plasmaCMContract,
+  plasmaTurnGameContract: state.plasmaTurnGameContract
 });
 
 const mapDispatchToProps = dispatch => ({
@@ -376,6 +413,4 @@ const mapDispatchToProps = dispatch => ({
   getChallengedFrom: (address, rootChainContract) => dispatch(getChallengedFrom(address, rootChainContract)),
 });
 
-const connectedPlasmaTokens = connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens);
-const styledPlasmaTokens = withStyles(styles)(connectedPlasmaTokens);
-export default styledPlasmaTokens;
+export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens)));

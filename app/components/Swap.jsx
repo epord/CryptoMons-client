@@ -19,7 +19,7 @@ import Paper from '@material-ui/core/Paper';
 import DoubleCryptoMonCard from './common/DoubleCryptoMonCard.jsx';
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import { toReadableAddress, toAddressColor } from '../../utils/utils';
+import {toAddressColor, toReadableAddress} from '../../utils/utils';
 import {createAtomicSwap, getSwapData} from '../../services/plasmaServices'
 import {getSwappingRequests, getSwappingTokens, revealSecret} from '../redux/actions';
 

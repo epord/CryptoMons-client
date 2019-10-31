@@ -16,7 +16,7 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import {getCryptomon, getPlasmaCoinId, getPokemonData} from '../../../services/ethService';
 
 import {getTypeData} from '../../../utils/pokeUtils';
-import { toReadableAddress, toAddressColor } from '../../../utils/utils';
+import {toAddressColor, toReadableAddress} from '../../../utils/utils';
 
 class CryptoMonCard extends InitComponent {
 

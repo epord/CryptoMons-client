@@ -5,8 +5,8 @@ import {
   challengeBeforeWithExitData,
   exitToken,
   exitTokenWithData,
-  getCoinState, getCryptomon,
-  getPlasmaCoinId, initiateBattle
+  getCoinState,
+  initiateBattle
 } from '../../../services/ethService';
 import {loadContracts} from '../../redux/actions';
 import Typography from "@material-ui/core/Typography";
@@ -17,8 +17,6 @@ import Button from "@material-ui/core/Button";
 import {doubleSpendTransactions, nonExistentTransactions} from "./HackUtils";
 import {toAddressColor, toReadableAddress} from "../../../utils/utils";
 import SelectPlayerTokenModal from "../common/SelectPlayerTokenModal.jsx"
-import {getExitDataToBattleRLPData} from "../../../utils/cryptoUtils";
-import {getInitialCMBState, toCMBBytes} from "../../../utils/CryptoMonsBattles";
 
 class Hack extends React.Component {
   constructor(props) {
@@ -110,15 +108,12 @@ class Hack extends React.Component {
 
     const { battleExitData, hackSlot } = this.state;
     const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract } = this.props;
-
-    const tokenPLID = await getPlasmaCoinId(hackSlot, rootChainContract);
-    const tokenOPID = await getPlasmaCoinId(opponentToken, rootChainContract);
-    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract);
-    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract);
-    const exitRLPData = getExitDataToBattleRLPData(0, battleExitData);
-
-    const initialState = getInitialCMBState(hackSlot, tokenPLInstance, opponentToken, tokenOPInstance);
-    await initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toCMBBytes(initialState), exitRLPData);
+    await createBattle(
+      hackSlot,
+      opponentToken,
+      opponent,
+      battleExitData,
+      rootChainContract, cryptoMonsContract, plasmaCMContract, plasmaTurnGameContract);
     this.props.history.push('/battles');
   };
 

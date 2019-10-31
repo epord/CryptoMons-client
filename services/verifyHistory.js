@@ -2,9 +2,11 @@ import {getProofHistory} from "./plasmaServices";
 import {checkEmptyBlock, checkInclusion, checkSecretsIncluded} from "./ethService";
 import {
   decodeSwapTransactionBytes,
-  decodeTransactionBytes, generateSwapHash,
+  decodeTransactionBytes,
+  generateSwapHash,
   generateTransactionHash,
-  isSwapBytes, recover
+  isSwapBytes,
+  recover
 } from "../utils/cryptoUtils";
 import async from "async";
 

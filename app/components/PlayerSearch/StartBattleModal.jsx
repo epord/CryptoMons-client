@@ -12,11 +12,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import CryptoMonCard from '../common/CryptoMonCard.jsx';
 
 import {getOwnedTokens} from '../../redux/actions';
-
-import {getInitialCMBState, toCMBBytes} from "../../../utils/CryptoMonsBattles"
-import {getCryptomon, getPlasmaCoinId, initiateBattle} from '../../../services/ethService';
-import {getExitData} from "../../../services/plasmaServices";
-import {getExitDataToBattleRLPData} from "../../../utils/cryptoUtils";
+import {createBattle, initiateBattle} from '../../../services/ethService';
 
 const styles = theme => ({
 	dialogPaper: {
@@ -30,24 +26,16 @@ class StartBattleModal extends InitComponent {
   init = () => {
     const { getOwnedTokens, ethAccount } = this.props;
 		getOwnedTokens(ethAccount, 'deposited');
-  }
+  };
 
   onBattleStart = ownToken => async () => {
     const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, opponentToken, opponentAddress } = this.props;
-
-    this.setState({ startingBattle: true })
-
-    const tokenPLID = await getPlasmaCoinId(ownToken, rootChainContract);
-    const tokenOPID = await getPlasmaCoinId(opponentToken, rootChainContract);
-    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract);
-    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract);
-    const exitData = await getExitData(ownToken);
-    const exitRLPData = getExitDataToBattleRLPData(0, exitData);
-
-    const initialState = getInitialCMBState(ownToken, tokenPLInstance, opponentToken, tokenOPInstance);
-    await initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponentAddress, 10, toCMBBytes(initialState), exitRLPData);
+    this.setState({ startingBattle: true });
+    await createBattle(ownToken, opponentToken, opponentAddress, undefined,
+      rootChainContract, cryptoMonsContract, plasmaCMContract, plasmaTurnGameContract
+    );
     this.props.history.push('/battles');
-  }
+  };
 
   render = () => {
     const { open, handleClose, plasmaTokens, classes, startingBattle } = this.props;

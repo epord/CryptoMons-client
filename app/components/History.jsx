@@ -7,8 +7,6 @@ import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
 
 import {loadContracts} from '../redux/actions'
-
-import async from 'async';
 import {verifyToken} from "../../services/verifyHistory";
 
 class History extends React.Component {

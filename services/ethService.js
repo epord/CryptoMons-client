@@ -2,9 +2,9 @@ import web3Utils from 'web3-utils';
 import async from 'async';
 import {unique, zip} from '../utils/utils';
 
-import {getOwnedTokens} from "./plasmaServices";
-import {isSwapBytes} from '../utils/cryptoUtils';
-import {toCMBBytes} from "../utils/CryptoMonsBattles";
+import {getExitData, getOwnedTokens} from "./plasmaServices";
+import {getExitDataToBattleRLPData, isSwapBytes} from '../utils/cryptoUtils';
+import {getInitialCMBState, toCMBBytes} from "../utils/CryptoMonsBattles";
 
 const Web3 = require('web3');
 const web3 = new Web3(Web3.givenProvider);
@@ -531,7 +531,22 @@ export const battleDeposit = (plasmaCM) => {
 	});
 }
 
-export const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGameAttributes, exitRLPData) => {
+export const createBattle = (tokenPL, tokenOP, opponentAddress, exitData, rootChain, cryptoMons, plasmaCM, plasmaTurnGame) => {
+	return new Promise(async (resolve, reject) => {
+		const tokenPLID = await getPlasmaCoinId(tokenPL, rootChain);
+		const tokenOPID = await getPlasmaCoinId(tokenOP, rootChain);
+		const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMons);
+		const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMons);
+		exitData = exitData || await getExitData(tokenPL);
+		const exitRLPData = getExitDataToBattleRLPData(0, exitData);
+
+		const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
+		await initiateBattle(plasmaCM, plasmaTurnGame.address, opponentAddress, 10, toCMBBytes(initialState), exitRLPData);
+		resolve();
+	});
+};
+
+const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGameAttributes, exitRLPData) => {
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
 			.initiateChannel(channelType, opponent, web3Utils.toWei(stake.toString(), 'ether'), initialGameAttributes, exitRLPData)
