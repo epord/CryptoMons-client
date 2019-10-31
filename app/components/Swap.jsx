@@ -163,7 +163,11 @@ class Swap extends InitComponent {
     return(
       <React.Fragment>
         {swappingTokens.map(token => (
-          <CryptoMonCard key={token} plasmaToken={token} onRevealSecretClicked={() => this.openRevealSecretModal(token)}/>
+        	//TODO Change this for a swap card
+          <CryptoMonCard
+						key={token}
+						plasmaToken={token}
+						onRevealSecretClicked={() => this.openRevealSecretModal(token)}/>
         ))}
       </React.Fragment>
     )

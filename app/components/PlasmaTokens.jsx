@@ -94,7 +94,7 @@ class PlasmaTokens extends InitComponent {
 		})
 	}
 
-	exitToken = async token => {
+	exitToken = token => async () => {
 		const { rootChainContract } = this.props;
 		const exitData = await getExitData(token);
 
@@ -103,31 +103,31 @@ class PlasmaTokens extends InitComponent {
 		);
 	};
 
-	finalizeExit = async token => {
+	finalizeExit = token => async () => {
 		const { rootChainContract } = this.props;
 		await finalizeExit(rootChainContract, token);
 		console.log("Finalized Exit successful");
 	};
 
-	challengeBefore = token => {
+	challengeBefore = token => () => {
 		const { rootChainContract } = this.props;
 		console.log(`Challenging Before: ${token}`);
 		challengeBefore(token, rootChainContract);
 	};
 
-	challengeBetween = token => {
+	challengeBetween = token => () => {
 		const { rootChainContract } = this.props;
 		console.log(`Challenging Between: ${token}`);
 		challengeBetween(token, rootChainContract);
 	};
 
-	challengeAfter = token => {
+	challengeAfter = token => () => {
 		const { rootChainContract } = this.props;
 		console.log(`Challenging After: ${token}`);
 		challengeAfter(token, rootChainContract);
 	};
 
-	withdraw = async token => {
+	withdraw = token => async () => {
 		const { rootChainContract } = this.props;
 		await withdraw(rootChainContract, token);
 		console.log("Withdrawn successful");
@@ -141,15 +141,15 @@ class PlasmaTokens extends InitComponent {
 	};
 
 
-	openTransferModal = token => this.setState({ transferModalOpen: true, tokenToTransact: token });
+	openTransferModal = token => () => this.setState({ transferModalOpen: true, tokenToTransact: token });
 
 	closeTransferModal= () => this.setState({ transferModalOpen: false });
 
-	openSwapModal = token => this.setState({ swapModalOpen: true, tokenToSwap: token });
+	openSwapModal = token => () => this.setState({ swapModalOpen: true, tokenToSwap: token });
 
 	closeSwapModal= () => this.setState({ swapModalOpen: false, secret: undefined });
 
-	openRespondChallengeModal = (challengedSlot, challengeHashes) => {
+	openRespondChallengeModal = (challengedSlot, challengeHashes) => () => {
 		const { rootChainContract } = this.props;
 		const getChallenges = challengeHashes.map(hash => async cb => {
 			const ans = await getChallenge(challengedSlot, hash, rootChainContract)
@@ -272,9 +272,19 @@ class PlasmaTokens extends InitComponent {
 						<Grid item key={token}>
 							<CryptoMonCard
 								plasmaToken={token}
-								onTransferClicked={() => this.openTransferModal(token)}
-								onSwapClicked={() => this.openSwapModal(token)}
-								onExitClicked={() => this.exitToken(token)} />
+								actions={[
+									{
+										title: "Transfer",
+										func: this.openTransferModal(token)
+									},{
+										title: "Swap",
+										func: this.openSwapModal(token)
+									},{
+										title: "Exit",
+										func: this.exitToken(token)
+									}
+								]}
+							/>
 						</Grid>
 					))}
 					{challengeableTokens.map(token => (
@@ -282,9 +292,19 @@ class PlasmaTokens extends InitComponent {
 							<CryptoMonCard
 								plasmaToken={token}
 								challengeable
-								onChallengeBeforeClick={() => this.challengeBefore(token)}
-								onChallengeBetweenClick={() => this.challengeBetween(token)}
-								onChallengeAfterClick={() => this.challengeAfter(token)} />
+								actions={[
+									{
+										title: "Challenge After",
+										func: this.challengeAfter(token)
+									},{
+										title: "Challenge Between",
+										func: this.challengeBetween(token)
+									},{
+										title: "Challenge Before",
+										func: this.challengeBefore(token)
+									},
+								]}
+							/>
 						</Grid>
 					))}
 					{_.difference(exitingTokens, challengedTokens.map(t=>t.slot)).map(token => (
@@ -292,7 +312,13 @@ class PlasmaTokens extends InitComponent {
 							<CryptoMonCard
 								plasmaToken={token}
 								exiting
-								onFinalizeExitClick={() => this.finalizeExit(token)} />
+								actions={[
+									{
+										title: "Finalize Exit",
+										disabled: false, //TODO have 2 arrays, one for exiting, another for readyToExit
+										func: this.finalizeExit(token)
+									}
+								]} />
 						</Grid>
 					))}
 					{challengedTokens.map(({ slot, txHash }) => (
@@ -300,7 +326,13 @@ class PlasmaTokens extends InitComponent {
 							<CryptoMonCard
 								plasmaToken={slot}
 								challenged
-								onChallengeBeforeResponded={() => this.openRespondChallengeModal(slot, txHash)} />
+								actions={[
+									{
+										title: "Respond Challenge",
+										func: this.openRespondChallengeModal(slot, txHash)
+									}
+								]}
+							/>
 						</Grid>
 					))}
 					{exitedTokens.map(token => (
@@ -308,7 +340,13 @@ class PlasmaTokens extends InitComponent {
 							<CryptoMonCard
 								plasmaToken={token}
 								exited
-								onWithdrawClick={() => this.withdraw(token)} />
+								actions={[
+									{
+										title: "Withdraw",
+										func: this.withdraw(token)
+									}
+								]}
+							/>
 						</Grid>
 					))}
 				</Grid>

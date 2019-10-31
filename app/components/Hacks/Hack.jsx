@@ -1,7 +1,13 @@
 import React from 'react';
 import {connect} from "react-redux";
 
-import {challengeBeforeWithExitData, exitToken, exitTokenWithData, getCoinState} from '../../../services/ethService';
+import {
+  challengeBeforeWithExitData,
+  exitToken,
+  exitTokenWithData,
+  getCoinState, getCryptomon,
+  getPlasmaCoinId, initiateBattle
+} from '../../../services/ethService';
 import {loadContracts} from '../../redux/actions';
 import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
@@ -10,7 +16,9 @@ import Paper from "@material-ui/core/Paper";
 import Button from "@material-ui/core/Button";
 import {doubleSpendTransactions, nonExistentTransactions} from "./HackUtils";
 import {toAddressColor, toReadableAddress} from "../../../utils/utils";
-import HackSearchOpponentModal from "./HackSearchOpponentMondal.jsx"
+import SelectPlayerTokenModal from "../common/SelectPlayerTokenModal.jsx"
+import {getExitDataToBattleRLPData} from "../../../utils/cryptoUtils";
+import {getInitialCMBState, toCMBBytes} from "../../../utils/CryptoMonsBattles";
 
 class Hack extends React.Component {
   constructor(props) {
@@ -97,21 +105,42 @@ class Hack extends React.Component {
     );
   };
 
+  onBattleStart = (opponent, opponentToken) => async () => {
+    await this.setState({ startingBattle: true });
+
+    const { battleExitData, hackSlot } = this.state;
+    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract } = this.props;
+
+    const tokenPLID = await getPlasmaCoinId(hackSlot, rootChainContract);
+    const tokenOPID = await getPlasmaCoinId(opponentToken, rootChainContract);
+    const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract);
+    const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract);
+    const exitRLPData = getExitDataToBattleRLPData(0, battleExitData);
+
+    const initialState = getInitialCMBState(hackSlot, tokenPLInstance, opponentToken, tokenOPInstance);
+    await initiateBattle(plasmaCMContract, plasmaTurnGameContract.address, opponent, 10, toCMBBytes(initialState), exitRLPData);
+    this.props.history.push('/battles');
+  };
+
   closeBattleModal = () => this.setState({ openBattleModal: false });
 
   render = () => {
     const { rootChainContract } = this.props;
-    const { hackSlot, history , isHackSlotExiting, openBattleModal, battleExitData } = this.state;
+    const { hackSlot, history , isHackSlotExiting, openBattleModal, startingBattle } = this.state;
 
     if (!rootChainContract) return <div>Loading...</div>
 
     return(
       <div style={{ padding: '1em' }}>
-        <HackSearchOpponentModal
+        <SelectPlayerTokenModal
+          title={"Select a Cryptomon to battle with"}
           open={openBattleModal}
-          hackedSlot={hackSlot}
-          exitData={battleExitData}
           handleClose={this.closeBattleModal}
+          actions = {[{
+            title: "Select",
+            disabled: startingBattle,
+            func: this.onBattleStart
+          }]}
         />
         <Typography variant="h5" gutterBottom>HACKS!</Typography>
         <Paper style={{ margin: '1em', padding: '1em', display: 'inline-block' }}>
@@ -189,6 +218,10 @@ class Hack extends React.Component {
 }
 
 const mapStateToProps = state => ({
+  ethAccount: state.ethAccount? state.ethAccount.toLowerCase() : undefined,
+  plasmaCMContract: state.plasmaCMContract,
+  plasmaTurnGameContract: state.plasmaTurnGameContract,
+  cryptoMonsContract: state.cryptoMonsContract,
   rootChainContract: state.rootChainContract
 })
 

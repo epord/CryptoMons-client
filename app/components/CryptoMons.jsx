@@ -24,7 +24,7 @@ class CryptoMons extends InitComponent {
 		buyCryptoMon(ethAccount, cryptoMonsContract)
 	};
 
-	depositToPlasma = async token => {
+	depositToPlasma = token => async () => {
 		const { rootChainContract, cryptoMonsContract } = this.props;
 		await depositToPlasma(token, cryptoMonsContract, rootChainContract)
 	};
@@ -52,7 +52,14 @@ class CryptoMons extends InitComponent {
 				<Grid container spacing={3}>
 					{myCryptoMons.map(token => (
 						<Grid item key={token}>
-							<CryptoMonCard token={token} onDepositClicked={() => this.depositToPlasma(token)} />
+							<CryptoMonCard
+								token={token}
+								 actions={[
+									 {
+									 	  title: "Deposit",
+										 	func: this.depositToPlasma(token)
+									 }
+								 ]} />
 						</Grid>
 					))}
 				</Grid>
