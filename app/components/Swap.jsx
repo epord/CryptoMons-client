@@ -22,6 +22,7 @@ import CryptoMonCard from './common/CryptoMonCard.jsx';
 import {toAddressColor, toReadableAddress} from '../../utils/utils';
 import {createAtomicSwap, getSwapData} from '../../services/plasmaServices'
 import {getSwappingRequests, getSwappingTokens, revealSecret} from '../redux/actions';
+import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 
 const styles = theme => ({
 	dialogPaper: {
@@ -66,7 +67,7 @@ class Swap extends InitComponent {
 		})
 	}
 
-	openRevealSecretModal = token => {
+	openRevealSecretModal = token => () => {
 		this.setState({ secretModalOpen: true, tokenToReveal: token, loadingSwapData: true });
 		getSwapData(token).then(swapData => {
 			const swappingTokenReveal = swapData.counterpart.data.slot;
@@ -82,6 +83,13 @@ class Swap extends InitComponent {
 	};
 
 	closeAcceptSwapModal= () => this.setState({ acceptSwapModalOpen: false });
+
+	openValidateHistoryModal = (token) => () => this.setState({
+		validateHistoryOpen: true,
+		validatingToken: token,
+	});
+
+	closeValidateHistoryModal = () => this.setState({ validateHistoryOpen: false, validatingToken: undefined });
 
 
 	handleChange = fieldName => event => {
@@ -155,6 +163,7 @@ class Swap extends InitComponent {
 
   renderSwappingTokensSection = () => {
 		const { swappingTokens } = this.props;
+		const { secretModalOpen, validateHistoryOpen } = this.state;
 
     if (swappingTokens.length == 0){
       return <Typography style={{ margin: 'auto' }}  variant="body1">There are no swaps to confirm</Typography>
@@ -167,11 +176,35 @@ class Swap extends InitComponent {
           <CryptoMonCard
 						key={token}
 						plasmaToken={token}
-						onRevealSecretClicked={() => this.openRevealSecretModal(token)}/>
+						actions = {[{
+							title: "Reveal Secret",
+							disabled: secretModalOpen,
+							func: this.openRevealSecretModal(token)
+						},
+							//TODO only add this button to the second cryptoMonCard
+							{
+								title: "Validate History",
+								disabled: validateHistoryOpen,
+								func: this.openValidateHistoryModal(token)
+							}
+						]}
+						/>
         ))}
       </React.Fragment>
     )
 	}
+
+	renderValidateHistoryDialog = () => {
+		const { validateHistoryOpen, validatingToken } = this.state;
+		return (
+			(validateHistoryOpen &&
+				<ValidateHistoryModal
+					open={validateHistoryOpen}
+					handleClose={this.closeValidateHistoryModal}
+					token={validatingToken}
+				/>)
+		)
+	};
 
   renderSwappingRequestsSection = () => {
 		const { swappingRequests, ethAccount } = this.props;
@@ -194,9 +227,9 @@ class Swap extends InitComponent {
 									</Grid>
 									<Grid item xs={12} style={{ display: 'flex', alignItems: 'center',  }}>
 										<DoubleCryptoMonCard
-											token1={transaction.slot}
+											token1={transaction.swappingSlot}
 											owner1={ethAccount}
-											token2={transaction.swappingSlot}
+											token2={transaction.slot}
 											owner2={transaction.owner}
 										/>
 									</Grid>
@@ -221,6 +254,7 @@ class Swap extends InitComponent {
 			<div style={{ padding: '1em' }}>
 				{this.renderRevealSecretDialog()}
 				{this.renderAcceptSwapDialog()}
+				{this.renderValidateHistoryDialog()}
 				<Typography variant="h5" gutterBottom>Swaps</Typography>
 				<ExpansionPanel defaultExpanded style={{ marginTop: '1em' }}>
 					<ExpansionPanelSummary

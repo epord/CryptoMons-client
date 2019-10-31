@@ -303,22 +303,31 @@ export const getBalance = (rootChain) => {
 	});
 }
 
-export const getBlockRoot = (blockNumber, rootChain) => {
+export const getBlock = (blockNumber, rootChain) => {
   return new Promise((resolve, reject) => {
-		ethContract(rootChain).getBlockRoot(blockNumber).call(async (err, res) => {
+		ethContract(rootChain).getBlock(blockNumber).call(async (err, res) => {
 			if (err) return reject(err);
-			resolve(res);
+			resolve({root: res[0], createdAt: res[1]});
+		});
+	});
+};
+
+export const getSecretBlock = (blockNumber, rootChain) => {
+	return new Promise((resolve, reject) => {
+		ethContract(rootChain).getSecretBlock(blockNumber).call(async (err, res) => {
+			if (err) return reject(err);
+			resolve({root: res[0], createdAt: res[1]});
 		});
 	});
 }
 
 export const checkEmptyBlock = (blockNumber, rootChain) => {
 	return new Promise((resolve, reject) => {
-		ethContract(rootChain).getBlockRoot(
+		ethContract(rootChain).getBlock(
 			blockNumber).call(
 			(err, res) => {
 			if (err) return reject(err);
-			resolve(res == "0x6f35419d1da1260bc0f33d52e8f6d73fc5d672c0dca13bb960b4ae1adec17937");
+			resolve(res[0] == "0x6f35419d1da1260bc0f33d52e8f6d73fc5d672c0dca13bb960b4ae1adec17937");
 		});
 	});
 };

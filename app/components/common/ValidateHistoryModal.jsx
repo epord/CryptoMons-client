@@ -11,7 +11,7 @@ import CryptoMonCard from './CryptoMonCard.jsx';
 
 import TextField from "@material-ui/core/TextField";
 import {getOwnedTokens, getProofHistory} from "../../../services/plasmaServices";
-import {verifyToken, verifyTokenWithHistory} from "../../../services/verifyHistory";
+import {HISTORY_VALIDITY, verifyToken, verifyTokenWithHistory} from "../../../services/verifyHistory";
 import { css } from '@emotion/core';
 import PacmanLoader from 'react-spinners/PacmanLoader';
 
@@ -42,32 +42,35 @@ class ValidateHistoryModal extends InitComponent {
         //TODO BS is not updating the title
         this.forceUpdate();
         verifyTokenWithHistory(token, rootChainContract, h).then(
-          ({lastOwner, transactionsHistory}) => {
+          ({validity, lastOwner, blockNumber, transactionsHistory, swappingOwner}) => {
             console.log(`Correct history! Last true owner: ${lastOwner}`);
-            this.setState({loading: false, historyValid: true, lastValidOwner: lastOwner});
+            console.log(transactionsHistory)
+            this.setState({loading: false, historyValid: validity, lastValidOwner: lastOwner, swappingOwner, lastValidBlock: blockNumber});
           }).catch(err => {
           console.log(`Error in history! ${err.error}. Last true owner: ${err.lastOwner} in block ${err.blockNumber}`);
           this.setState({
             loading: false,
-            historyValid: false,
+            historyValid: HISTORY_VALIDITY.INVALID,
             lastValidOwner: err.lastOwner,
             lastValidBlock: err.blockNumber
           })
         });
-      })
+      });
     });
   };
 
   render = () => {
-    const { loading, blocks, historyValid, lastValidOwner, lastValidBlock } = this.state;
+    const { loading, blocks, historyValid, lastValidOwner, lastValidBlock, swappingOwner } = this.state;
     const { open, token, classes, handleClose } = this.props;
 
     let result = <h1></h1>;
     if(!loading) {
-      if(historyValid) {
+      if(historyValid === HISTORY_VALIDITY.CORRECT) {
         result = <h1>History validated, true owner: {lastValidOwner}</h1>;
+      } else if(historyValid === HISTORY_VALIDITY.WAITING_FOR_SWAP) {
+        result = <h1>Waiting for swap on block {lastValidBlock}, last known owner: {lastValidOwner}, swappingOwner: {swappingOwner}</h1>;
       } else {
-        result = <h1>History can't be validated after block ${lastValidBlock}, last known owner: {lastValidOwner}</h1>;
+        result = <h1>History can't be validated after block {lastValidBlock}, last known owner: {lastValidOwner}</h1>;
       }
     }
     const override = css`

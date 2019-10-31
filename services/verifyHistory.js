@@ -1,5 +1,5 @@
 import {getProofHistory} from "./plasmaServices";
-import {checkEmptyBlock, checkInclusion, checkSecretsIncluded} from "./ethService";
+import {checkEmptyBlock, checkInclusion, checkSecretsIncluded, getBlock, getSecretBlock} from "./ethService";
 import {
   decodeSwapTransactionBytes,
   decodeTransactionBytes,
@@ -9,6 +9,13 @@ import {
   recover
 } from "../utils/cryptoUtils";
 import async from "async";
+import {zip} from "../utils/utils";
+
+export const HISTORY_VALIDITY = {
+  CORRECT: "Correct",
+  INVALID: "Invalid",
+  WAITING_FOR_SWAP: "Waiting for swap"
+};
 
 export const verifyToken = (token, rootChainContract) => {
   return getProofHistory(token).then(h =>{
@@ -51,6 +58,24 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
       if(item.blockNumber) result[item.blockNumber] = item.result;
       return result;
     }, {});
+
+    let yesterday = new Date(new Date().setDate(new Date().getDate()-1));
+    let isDue = Object.keys(swapped).filter(k => swapped[k] === false);
+    let swapBlocksP = Promise.all(isDue.map(k => getBlock(k, rootChainContract)));
+    let secretBlocksP = Promise.all(isDue.map(k => getSecretBlock(k, rootChainContract)));
+    let [swapBlocks, secretBlocks] = await Promise.all([swapBlocksP, secretBlocksP]);
+
+    swapBlocks = zip(isDue,swapBlocks).reduce(function(result, item) {
+      result[item[0]] = item[1];
+      return result;
+    }, {});
+
+    secretBlocks = zip(isDue,secretBlocks).reduce(function(result, item) {
+      result[item[0]] = item[1];
+      return result;
+    }, {});
+
+
 
     let failBlockNumber = undefined;
     let fail = included.indexOf(false);
@@ -95,6 +120,10 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
             const generatedHashA = generateSwapHash(slotA, blockSpentA, hashSecretA, B, slotB);
             const generatedHashB = generateSwapHash(slotB, blockSpentB, hashSecretB, A, slotA);
 
+            if(A.toLowerCase() != owner.toLowerCase()) {
+              return cb({error: "Owner does not match owner of Swap", blockNumber: blockNumber, lastOwner: owner})
+            }
+
             if (generatedHashA.toLowerCase() != hash.toLowerCase()) {
               return cb({error: "Hash does not match", blockNumber: blockNumber, lastOwner: owner})
             }
@@ -116,7 +145,11 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
             });
 
             if(!swapped[blockNumber]) {
-              return cb(null, A);
+              if(parseInt(swapBlocks[blockNumber].createdAt) < yesterday.getTime()/1000 || secretBlocks[blockNumber].createdAt !== "0") {
+                return cb(null, A);
+              } else {
+                return cb({inSwap: true, blockNumber: blockNumber, lastOwner: owner, swappingOwner: B.toLowerCase()})
+              }
             }
 
             return cb(null, B);
@@ -146,9 +179,12 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
         }
       })
     ], (err, lastOwner) => {
+      if(err && err.inSwap) return resolve({
+        validity: HISTORY_VALIDITY.WAITING_FOR_SWAP, blockNumber: err.blockNumber,
+        lastOwner: err.lastOwner, transactionsHistory, swappingOwner: err.swappingOwner})
       if (err) return reject(err);
-      if(failBlockNumber) return  reject({error: "Inclusion failed", blockNumber: failBlockNumber, lastOwner: lastOwner})
-      resolve({lastOwner, transactionsHistory});
+      if(failBlockNumber) return  reject({error: "Inclusion failed", blockNumber: failBlockNumber, lastOwner: lastOwner});
+      resolve({validity: HISTORY_VALIDITY.CORRECT, lastOwner, transactionsHistory});
     });
   });
 };
