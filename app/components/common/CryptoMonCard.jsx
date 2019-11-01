@@ -43,14 +43,7 @@ class CryptoMonCard extends InitComponent {
 
 	render = () => {
 		const { token, plasmaToken, exiting, exited, challengeable, challenged, owner,
-			// TODO: migrate all these clicks to actions
-			onDepositClicked, onTransferClicked,
-			onExitClicked, onFinalizeExitClick, onChallengeBeforeClick, onChallengeBetweenClick,
-			onChallengeAfterClick, onWithdrawClick, onSwapClicked, onRevealSecretClicked, onChallengeBeforeResponded,
-			onStartBattleClicked,
-			// END TODO
-			actions
-		} = this.props;
+			actions } = this.props;
 		const { img, type1, type2, isShiny } = this.state
 		return (
 			<Card style={{ maxWidth: '12em', boxShadow: isShiny ? '0 0 10px gold' : null}}>
@@ -120,20 +113,8 @@ class CryptoMonCard extends InitComponent {
 						</Grid>
 					)}
 				</Grid>
-				{onDepositClicked && <Button fullWidth size="small" variant="outlined" onClick={onDepositClicked}>Deposit to Plasma</Button>}
-				{onTransferClicked && <Button fullWidth onClick={onTransferClicked} variant="outlined" size="small">Transfer</Button>}
-				{onSwapClicked && <Button fullWidth onClick={onSwapClicked} variant="outlined" size="small">Swap</Button>}
-				{onExitClicked && <Button fullWidth onClick={onExitClicked} variant="outlined" size="small">Exit</Button>}
-				{onFinalizeExitClick && <Button fullWidth onClick={onFinalizeExitClick} variant="outlined" size="small">Finalize Exit</Button>}
-				{onChallengeBeforeClick && <Button fullWidth onClick={onChallengeBeforeClick} variant="outlined" size="small">Challenge Before</Button>}
-				{onChallengeBetweenClick && <Button fullWidth onClick={onChallengeBetweenClick} variant="outlined" size="small">Challenge Between</Button>}
-				{onChallengeAfterClick && <Button fullWidth onClick={onChallengeAfterClick} variant="outlined" size="small">Challenge After</Button>}
-				{onWithdrawClick && <Button fullWidth onClick={onWithdrawClick} variant="outlined" size="small">Withdraw</Button>}
-				{onRevealSecretClicked && <Button fullWidth onClick={onRevealSecretClicked} variant="outlined" size="small">Reveal Secret</Button>}
-				{onChallengeBeforeResponded && <Button fullWidth onClick={onChallengeBeforeResponded} variant="outlined" size="small">Respond Challenge</Button>}
 				{actions && actions.map(action =>
 					<Button key={action.title} disabled={action.disabled} fullWidth onClick={action.func} variant="outlined" size="small">{action.title}</Button>)}
-
 			</Card>
 		)
 	}

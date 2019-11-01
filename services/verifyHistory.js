@@ -97,14 +97,14 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
         const hash = generateTransactionHash(slot, blockSpent, recipient);
 
         if (await checkInclusion(transactionBytes, hash, depositBlock, token, proof, rootChainContract)) {
-          transactionsHistory.push({ depositBlock });
+          transactionsHistory.push({ depositBlock, to: recipient });
           return cb(null, recipient);
         } else {
           return cb({error: "Deposit Validation failed", blockNumber: blockSpent })
         }
       },
       // Other blocks
-      ...transactions.slice(1).map(blockNumber => async (owner, cb) => {
+      ...transactions.slice(1).map(blockNumber => (owner, cb) => {
 
         if(failBlockNumber && new BN(blockNumber).gte(new BN(failBlockNumber))) {
           return cb({error: "Inclusion failed", blockNumber: failBlockNumber, lastOwner: owner})
@@ -138,7 +138,7 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
 
             transactionsHistory.push({
               isSwap: true,
-              successfulSwap: swapped[blockNumber],
+              successfulSwap: !!swapped[blockNumber],
               from: A,
               to:  B,
               blockNumber

@@ -7,10 +7,8 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import {connect} from "react-redux";
 import {withStyles} from '@material-ui/core/styles';
 import {withRouter} from 'react-router-dom';
-import CryptoMonCard from './CryptoMonCard.jsx';
 
-import TextField from "@material-ui/core/TextField";
-import {getOwnedTokens, getProofHistory} from "../../../services/plasmaServices";
+import {getProofHistory} from "../../../services/plasmaServices";
 import {HISTORY_VALIDITY, verifyToken, verifyTokenWithHistory} from "../../../services/verifyHistory";
 import { css } from '@emotion/core';
 import PacmanLoader from 'react-spinners/PacmanLoader';
