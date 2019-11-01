@@ -417,32 +417,49 @@ export const getCryptoMonsFrom = (address, cryptoMons) => {
   });
 }
 
-export const getBattlesFrom = (address, plasmaTurnGame, plasmaCM) => {
+export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) => {
   return new Promise((resolve, reject) => {
-		baseEthContract(plasmaTurnGame).getPastEvents("CryptoMonBattleRequested", { filter: { player: address }, fromBlock: 0, toBlock: 'latest' },
+		baseEthContract(plasmaTurnGame).getPastEvents("CryptoMonBattleRequested",
+		 { filter: { CryptoMon: plasmaTokens }, fromBlock: 0, toBlock: 'latest' },
 			(err, games ) => {
 				if(err) return reject(err);
 				const battleIds = games.map(g => g.returnValues.gameId);
-				async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r)).catch(cb)),
+				const battles = games.reduce((result, g) => {
+					if(result[g.returnValues.gameId]) result[g.returnValues.gameId].push({player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon});
+					result[g.returnValues.gameId] = [{player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon}];
+					return result;
+				}, {});
+
+				async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r))),
 					(err, result) => {
 						if (err) return reject(err);
 						const games = {
 							opened: [],
 							toFund: [],
 							ongoing: [],
+							challengeables: []
 						};
 
 						result.forEach(c => {
 							if(c.state == 0) {
 								if(c.players[0].toLowerCase() == address.toLowerCase()) {
 									games.opened.push(c);
-								} else {
+								}
+
+								if(c.players[1].toLowerCase() == address.toLowerCase()){
 									games.toFund.push(c);
 								}
 							} else if(c.state == 1) {
-								games.ongoing.push(c);
+								let players = battles[c.channelId];
+								if( (players[0].player !== address.toLowerCase() && plasmaTokens.includes(players[0].cryptoMon))
+										|| (players.length > 1 && players[1].player !== address.toLowerCase() && plasmaTokens.includes(players[1].cryptoMon))) {
+									games.challengeables.push(c);
+								} else {
+									games.ongoing.push(c);
+								}
 							}
 						});
+
 						resolve(games);
 				});
 			})
@@ -686,7 +703,17 @@ export const getBattleTokens = (gameId, plasmaTurnGame) => {
 		baseEthContract(plasmaTurnGame).getPastEvents("CryptoMonBattleRequested",
 			{ filter: { gameId }, fromBlock: 0, toBlock: 'latest' }, async (err, result) => {
 			if(err) return reject(err);
-			resolve(Object.fromEntries(result.map(r => [r.returnValues.player.toLowerCase(), r.returnValues.CryptoMon] )))
+			if(result.length < 2) return reject("2 events should be found");
+			resolve({
+				player: {
+					address: result[0].returnValues.player.toLowerCase(),
+					cryptoMon: result[0].returnValues.CryptoMon
+				},
+				opponent: {
+					address: result[1].returnValues.player.toLowerCase(),
+					cryptoMon: result[1].returnValues.CryptoMon
+				}
+			})
 		});
 	});
 };

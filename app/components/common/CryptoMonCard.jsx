@@ -1,7 +1,8 @@
 import React from 'react';
-import InitComponent from './InitComponent.jsx';
-
 import {connect} from "react-redux";
+
+import InitComponent from './InitComponent.jsx';
+import withInitComponent from './withInitComponent.js';
 
 import Card from '@material-ui/core/Card';
 import CardActionArea from '@material-ui/core/CardActionArea';
@@ -131,4 +132,4 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
 })
 
-export default connect(mapStateToProps, mapDispatchToProps)(CryptoMonCard);
+export default connect(mapStateToProps, mapDispatchToProps)(withInitComponent(CryptoMonCard));

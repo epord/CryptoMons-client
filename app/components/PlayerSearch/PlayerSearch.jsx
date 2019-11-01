@@ -2,6 +2,7 @@ import React from 'react';
 import {connect} from "react-redux";
 
 import InitComponent from '../common/InitComponent.jsx';
+import withInitComponent from '../common/withInitComponent.js';
 
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
@@ -90,4 +91,4 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
 })
 
-export default connect(mapStateToProps, mapDispatchToProps)(PlayerSearch);
+export default connect(mapStateToProps, mapDispatchToProps)(withInitComponent(PlayerSearch));

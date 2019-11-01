@@ -5,6 +5,7 @@ import {withStyles} from '@material-ui/core/styles';
 import {withRouter} from 'react-router-dom';
 
 import InitComponent from '../common/InitComponent.jsx';
+import withInitComponent from '../common/withInitComponent.js';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -77,4 +78,4 @@ const mapDispatchToProps = dispatch => ({
 });
 
 
-export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(StartBattleModal)));
+export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(withInitComponent(StartBattleModal))));

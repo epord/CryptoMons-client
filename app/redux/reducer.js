@@ -24,22 +24,26 @@ const reducerMapper = {
 	},
 	[C.GOT_OWNED_TOKENS]: (state, action) => {
 		return Object.assign({}, state, {
-      plasmaTokens: action.payload
+      plasmaTokens: action.payload,
+			tokensLoaded: true,
     });
 	},
 	[C.GOT_CHALLENGEABLES]: (state, action) => {
 		return Object.assign({}, state, {
-			challengeableTokens: action.payload
+			challengeableTokens: action.payload,
+			challengeableTokensLoaded: true,
 		});
 	},
 	[C.GOT_EXITING_FROM]: (state, action) => {
 		return Object.assign({}, state, {
-      exitingTokens: action.payload
+      exitingTokens: action.payload,
+			exitingTokensLoaded: true,
     });
 	},
 	[C.GOT_EXITED]: (state, action) => {
 		return Object.assign({}, state, {
-      exitedTokens: action.payload
+      exitedTokens: action.payload,
+			exitedTokensLoaded: true,
     });
 	},
 	[C.GOT_SWAPPING]: (state, action) => {
@@ -54,7 +58,8 @@ const reducerMapper = {
 	},
 	[C.GOT_CHALLENGED_TOKENS]: (state, action) => {
 		return Object.assign({}, state, {
-      challengedTokens: action.payload
+      challengedTokens: action.payload,
+			challengedTokensLoaded: true,
     });
 	},
 	[C.GOT_BATTLES]: (state, action) => {

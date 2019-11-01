@@ -74,6 +74,26 @@ export const getExitingTokens = (address, rootChainContract) => (dispatch, getSt
     .then(tokens => dispatch(gotExitingFrom(tokens)));
 }
 
+const loadAllCryptoMons = (rootChain) => (dispatch, getState) => {
+  const ethAccount = getState().ethAccount;
+
+  dispatch(getOwnedTokens(ethAccount, 'deposited'))
+  dispatch(getChallengeableTokens(ethAccount, rootChain))
+  dispatch(getExitingTokens(ethAccount, rootChain))
+  dispatch(getExitedTokens(ethAccount, rootChain))
+  dispatch(getChallengedFrom(ethAccount, rootChain))
+}
+
+export const initApp = () => (dispatch, getState) => {
+	return new Promise((resolve, reject) => {
+    dispatch(loadContracts()).then(res => {
+      const rootChain = { ...res.RootChain, address: res.RootChain.networks['5777'].address };
+      dispatch(loadAllCryptoMons(rootChain))
+      resolve(res)
+    })
+  })
+}
+
 export const loadContracts = () => (dispatch, getState) => {
   return PlasmaService
     .loadContracts()
@@ -126,8 +146,9 @@ export const getChallengedFrom = (address, rootChainContract) => (dispatch, getS
 }
 
 export const getBattlesFrom = (address, plasmaTurnGameContract, plasmaCMContract) => (dispatch, getState) => {
+  const plasmaTokens = getState().plasmaTokens;
   return EthService
-    .getBattlesFrom(address, plasmaTurnGameContract, plasmaCMContract)
+    .getBattlesFrom(address, plasmaTokens, plasmaTurnGameContract, plasmaCMContract)
     .then(battles => {
       dispatch(gotBattles(battles))
     })

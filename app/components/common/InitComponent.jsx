@@ -1,6 +1,6 @@
 import React from "react";
 
-export default class InitComponent extends React.Component {
+class InitComponent extends React.Component {
   componentDidMount = () => {
 		if(this.props.rootChainContract || this.props.plasmaCMContract || this.props.cryptoMonsContract) {
 			this.init()
@@ -8,12 +8,19 @@ export default class InitComponent extends React.Component {
 	}
 
 	componentDidUpdate = (prevProps) => {
-		const { rootChainContract, plasmaCMContract, cryptoMonsContract } = this.props;
-		if (
-				(!prevProps.rootChainContract && rootChainContract)
-				|| (!prevProps.plasmaCMContract && plasmaCMContract)
-				|| (!prevProps.cryptoMonsContract && cryptoMonsContract)
-			) {
+		const { rootChainContract, plasmaCMContract, cryptoMonsContract,
+			tokensLoaded,
+			challengeableTokensLoaded,
+			exitingTokensLoaded,
+			exitedTokensLoaded,
+			challengedTokensLoaded } = this.props;
+
+			const contractsLoaded = rootChainContract && plasmaCMContract && cryptoMonsContract;
+			const plasmaTokensLoaded = tokensLoaded && challengeableTokensLoaded && exitingTokensLoaded && exitedTokensLoaded && challengedTokensLoaded;
+			const prevPlasmaTokensLoaded = prevProps.tokensLoaded && prevProps.challengeableTokensLoaded
+				&& prevProps.exitingTokensLoaded && prevProps.exitedTokensLoaded && prevProps.challengedTokensLoaded;
+
+		if (contractsLoaded && plasmaTokensLoaded && !prevPlasmaTokensLoaded) {
 			this.init()
 		}
   }
@@ -21,3 +28,5 @@ export default class InitComponent extends React.Component {
   init = () => {}
 
 }
+
+export default (InitComponent);

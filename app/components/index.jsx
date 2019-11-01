@@ -1,6 +1,8 @@
 import React from 'react';
-import InitComponent from './common/InitComponent.jsx'
 import {connect} from "react-redux";
+
+import InitComponent from './common/InitComponent.jsx'
+import withInitComponent from './common/withInitComponent.js'
 
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
@@ -122,4 +124,4 @@ const mapDispatchToProps = dispatch => ({
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(App);
+export default connect(mapStateToProps, mapDispatchToProps)(withInitComponent(App));

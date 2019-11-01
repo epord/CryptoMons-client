@@ -4,6 +4,8 @@ import {connect} from "react-redux";
 import io from 'socket.io-client';
 
 import InitComponent from '../common/InitComponent.jsx';
+import withInitComponent from '../common/withInitComponent.js';
+
 import BattleOverview from './BattleOverview.jsx';
 import CurrentBattle from './CurrentBattle.jsx';
 
@@ -27,14 +29,16 @@ import {
   getCryptomon,
   getPlasmaCoinId,
 } from '../../../services/ethService';
-import {getBattlesFrom} from '../../redux/actions';
-import {getExitData} from "../../../services/plasmaServices";
+import { getBattlesFrom } from '../../redux/actions';
+import { getExitData } from "../../../services/plasmaServices";
+import { Typography } from '@material-ui/core';
+import { battleChallengeAfter } from '../../../services/battleChallenges.js';
 
 class Battles extends InitComponent {
 
   state = { loading: true }
 
-  init = () => {
+  init = async () => {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
@@ -128,9 +132,9 @@ class Battles extends InitComponent {
   fundBattle = async (channelId, stake) => {
     const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
 
-    const participantsTokens = await getBattleTokens(channelId, plasmaTurnGameContract);
-    const tokenOP = participantsTokens[ethAccount];
-    const tokenPL = Object.values(participantsTokens).find(t => t != tokenPL);
+    const {player, opponent} = await getBattleTokens(channelId, plasmaTurnGameContract);
+    const tokenOP = opponent.cryptoMon;
+    const tokenPL = player.cryptoMon;
 
     const tokenPLID = await getPlasmaCoinId(tokenPL, rootChainContract);
     const tokenOPID = await getPlasmaCoinId(tokenOP, rootChainContract);
@@ -173,11 +177,9 @@ class Battles extends InitComponent {
   render = () => {
     const { loading, currentState, authenticated } = this.state;
     const { battles, ethAccount } = this.props;
-    const { opened, toFund, ongoing } = battles;
+    const { opened, toFund, ongoing, challengeables } = battles;
 
-    console.log(opened)
-    console.log(toFund)
-    console.log(ongoing)
+    console.log(battles)
 
     if(loading) return <div>Loading...</div>
 
@@ -201,15 +203,29 @@ class Battles extends InitComponent {
           </React.Fragment>
         )}
 
+        {challengeables && challengeables.map(c =>
+          <React.Fragment key={c.channelId}>
+            <Typography>Challengeables</Typography>
+            <BattleOverview
+              key={c.channelId}
+              channel={c}
+            />
+          </React.Fragment>
+        )}
+
         {ongoing && ongoing.map(c =>
-          <BattleOverview
-            key={c.channelId}
-            channel={c}
-            actions={[{
-              title: 'Select',
-              func: this.battleRequest(c.channelId),
-            }]}
-          />
+          <React.Fragment key={c.channelId}>
+            <Typography>Ongoing</Typography>
+            <BattleOverview
+              key={c.channelId}
+              channel={c}
+              actions={[{
+                title: 'Select',
+                func: this.battleRequest(c.channelId),
+              }]}
+            />
+          </React.Fragment>
+
           // <React.Fragment key={c.channelId}>
           //   <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
           //   <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
@@ -225,6 +241,8 @@ class Battles extends InitComponent {
           //     <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>}
           // </React.Fragment>
         )}
+
+        {/* TODO: show in modal */}
         {currentState && (
           <div style={{ padding: '1em' }}>
             <CurrentBattle
@@ -254,4 +272,4 @@ const mapDispatchToProps = dispatch => ({
   getBattlesFrom: (ethAccount, plasmaTurnGameContract, plasmaCMContract) => dispatch(getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract))
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(Battles);
+export default connect(mapStateToProps, mapDispatchToProps)(withInitComponent(Battles));

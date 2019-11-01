@@ -1,6 +1,7 @@
 import React from 'react';
 
 import InitComponent from './InitComponent.jsx';
+import withInitComponent from './withInitComponent.js';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -83,4 +84,4 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
 });
 
-export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(SelectPlayerTokenModal)));
+export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(withInitComponent(SelectPlayerTokenModal))));

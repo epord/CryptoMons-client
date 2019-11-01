@@ -6,7 +6,7 @@ import {
   exitToken,
   exitTokenWithData,
   getCoinState,
-  initiateBattle
+  createBattle
 } from '../../../services/ethService';
 import {loadContracts} from '../../redux/actions';
 import Typography from "@material-ui/core/Typography";
@@ -28,7 +28,7 @@ class Hack extends React.Component {
     let hackSlot = event.target.value;
     this.setState({ hackSlot: hackSlot });
 
-    getHistory(hackSlot).then(res => this.setState({ history: res.history }));
+    getHistory(hackSlot).then(res => this.setState({ history: res }));
     getCoinState(hackSlot, this.props.rootChainContract).then(response =>
       this.setState({ isHackSlotExiting: response == "EXITING" })
     );
@@ -36,19 +36,15 @@ class Hack extends React.Component {
 
   forceOldExit = exitData => () => {
     const { rootChainContract } = this.props;
+    console.log(exitData);
     exitTokenWithData(rootChainContract, exitData).then(() => console.log("Exit successful"));
   };
 
   useOldExitAndBattle = exitData => () => {
-    const { rootChainContract } = this.props;
-    exitTokenWithData(rootChainContract, exitData).then(
-      d => {
-        this.setState({
-          battleExitData: d,
-          openBattleModal: true
-        })
-      }
-    );
+    this.setState({
+      battleExitData: exitData,
+      openBattleModal: true
+    });
   };
 
   nonExistentTransactionsAndExit = () => {

@@ -48,6 +48,7 @@ import {
 	subscribeToSubmittedSecretBlocks,
 	subscribeToWithdrew
 } from '../../services/ethService';
+import {setDefaultBattleAccount} from '../../services/battleChallenges';
 
 import {
 	buyCryptoMon,
@@ -59,7 +60,10 @@ import {
 	getOwnedTokens,
 	getSwappingRequests,
 	getSwappingTokens,
-	loadContracts
+	loadContracts,
+	initApp,
+	getChallengeableTokens,
+	getChallengedFrom,
 } from '../redux/actions'
 
 class Routes extends React.Component {
@@ -78,10 +82,28 @@ class Routes extends React.Component {
 
 	init = () => {
 		this.loadContracts().then(() => {
+			const {
+				ethAccount,
+				getChallengeableTokens,
+				getExitingTokens,
+				getExitedTokens,
+				getOwnedTokens,
+				getChallengedFrom
+			} = this.props;
+
+		const { rootChain } = this.state;
+
+			getOwnedTokens(ethAccount, 'deposited');
+			getChallengeableTokens(ethAccount, rootChain);
+			getExitingTokens(ethAccount, rootChain);
+			getExitedTokens(ethAccount, rootChain);
+			getChallengedFrom(ethAccount, rootChain);
+
 			this.subscribeToEvents(this.props.ethAccount);
 		});
 
 		setDefaultAccount(this.props.ethAccount);
+		setDefaultBattleAccount(this.props.ethAccount);
 	}
 
 	loadContracts = async () => {
@@ -279,7 +301,7 @@ const mapStateToProps = state => ({
  });
 
 const mapDispatchToProps = dispatch => ({
-	loadContracts: () => dispatch(loadContracts()),
+	loadContracts: () => dispatch(initApp()),
 	buyCryptoMon: (address, cryptoMonsContract) => dispatch(buyCryptoMon(address, cryptoMonsContract)),
 	getOwnedTokens: (address, state) => dispatch(getOwnedTokens(address, state)),
 	getSwappingTokens: (address) => dispatch(getSwappingTokens(address)),
@@ -287,8 +309,10 @@ const mapDispatchToProps = dispatch => ({
 	getCryptoMonsFrom: (address, cryptoMonsContract) => dispatch(getCryptoMonsFrom(address, cryptoMonsContract)),
 	getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
 	getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
+  getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract)),
 	getEthAccount: () => dispatch(getEthAccount()),
 	getBattlesFrom: (address, plasmaTurnGame, plasmaCM) => dispatch(getBattlesFrom(address, plasmaTurnGame, plasmaCM)),
+  getChallengedFrom: (address, rootChainContract) => dispatch(getChallengedFrom(address, rootChainContract)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Routes);

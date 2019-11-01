@@ -1,5 +1,4 @@
 import React from 'react';
-import InitComponent from './common/InitComponent.jsx';
 
 import {connect} from "react-redux";
 import {withStyles} from '@material-ui/core/styles';
@@ -29,13 +28,6 @@ import {
   withdraw
 } from '../../services/ethService';
 import {createAtomicSwap, getExitData, transferInPlasma} from '../../services/plasmaServices';
-import {
-  getChallengeableTokens,
-  getChallengedFrom,
-  getExitedTokens,
-  getExitingTokens,
-  getOwnedTokens
-} from '../redux/actions';
 import SelectPlayerTokenModal from "./common/SelectPlayerTokenModal.jsx";
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 
@@ -46,7 +38,7 @@ const styles = theme => ({
   },
 });
 
-class PlasmaTokens extends InitComponent {
+class PlasmaTokens extends React.Component {
 
   constructor(props) {
     super(props);
@@ -55,24 +47,6 @@ class PlasmaTokens extends InitComponent {
       swapModalOpen: false,
       onSwapClicked: false,
     }
-  }
-
-  init = () => {
-    const {
-      ethAccount,
-      getChallengeableTokens,
-      rootChainContract,
-      getExitingTokens,
-      getExitedTokens,
-      getOwnedTokens,
-      getChallengedFrom
-    } = this.props;
-
-    getOwnedTokens(ethAccount, 'deposited');
-    getChallengeableTokens(ethAccount, rootChainContract);
-    getExitingTokens(ethAccount, rootChainContract);
-    getExitedTokens(ethAccount, rootChainContract);
-    getChallengedFrom(ethAccount, rootChainContract);
   }
 
   transferInPlasma = async token => {
@@ -442,12 +416,6 @@ const mapStateToProps = state => ({
   plasmaTurnGameContract: state.plasmaTurnGameContract
 });
 
-const mapDispatchToProps = dispatch => ({
-  getOwnedTokens: (address, state) => dispatch(getOwnedTokens(address, state)),
-  getChallengeableTokens: (address, rootChainContract) => dispatch(getChallengeableTokens(address, rootChainContract)),
-  getExitingTokens: (address, rootChainContract) => dispatch(getExitingTokens(address, rootChainContract)),
-  getExitedTokens: (address, rootChainContract) => dispatch(getExitedTokens(address, rootChainContract)),
-  getChallengedFrom: (address, rootChainContract) => dispatch(getChallengedFrom(address, rootChainContract)),
-});
+const mapDispatchToProps = dispatch => ({ });
 
 export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens)));

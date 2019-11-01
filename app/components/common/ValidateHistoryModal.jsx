@@ -1,6 +1,7 @@
 import React from 'react';
 
 import InitComponent from './InitComponent.jsx';
+import withInitComponent from './withInitComponent.js';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -37,7 +38,6 @@ class ValidateHistoryModal extends InitComponent {
     const { rootChainContract } = this.props;
     getProofHistory(token).then(h => {
       this.setState({blocks: Object.keys(h).length}, () => {
-        //TODO BS is not updating the title
         this.forceUpdate();
         verifyTokenWithHistory(token, rootChainContract, h).then(
           ({validity, lastOwner, blockNumber, transactionsHistory, swappingOwner}) => {
@@ -101,4 +101,4 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
 });
 
-export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ValidateHistoryModal)));
+export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(withInitComponent(ValidateHistoryModal))));

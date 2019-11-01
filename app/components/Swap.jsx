@@ -1,5 +1,7 @@
 import React from 'react';
+
 import InitComponent from './common/InitComponent.jsx';
+import withInitComponent from './common/withInitComponent.js';
 
 import {connect} from "react-redux";
 import {withStyles} from '@material-ui/core/styles';
@@ -293,6 +295,7 @@ const mapDispatchToProps = dispatch => ({
 	revealSecret: (token, secret) => dispatch(revealSecret(token, secret)),
 })
 
-const connectedSwap = connect(mapStateToProps, mapDispatchToProps)(Swap);
+const withInitSwap = withInitComponent(Swap);
+const connectedSwap = connect(mapStateToProps, mapDispatchToProps)(withInitSwap);
 const styledSwap = withStyles(styles)(connectedSwap);
 export default styledSwap;
