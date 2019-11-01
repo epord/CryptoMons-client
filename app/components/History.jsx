@@ -10,6 +10,8 @@ import {loadContracts} from '../redux/actions'
 import {HISTORY_VALIDITY, verifyToken} from "../../services/verifyHistory";
 import { css } from '@emotion/core';
 import PacmanLoader from 'react-spinners/PacmanLoader';
+import { toAddressColor, toReadableAddress } from '../../utils/utils';
+
 
 class History extends React.Component {
 
@@ -91,13 +93,18 @@ class History extends React.Component {
           loading={loading}
         />
 
-        { transactionsHistory.map(t => {
-          console.log(t);
-            if(t.depositBlock) return <span>DEPOSIT IN {t.depositBlock} to {t.to}</span>
-            if(t.isSwap) return <span>SWAP IN {t.blockNumber} between {t.from} and {t.to} suceesful? {t.successfulSwap.toString()}</span>
-            if(!t.isSwap) return <span>Transder IN {t.blockNumber} from {t.from} to {t.to}</span>
-          })
-        }
+        <Paper style={{ margin: '1em', padding: '1em', display: loading || transactionsHistory.length === 0 ? 'none' : 'table' }}>
+          {transactionsHistory.map(t => {
+              if(t.depositBlock) return <Typography key={t.from + t.blockNumber}><b>Deposit</b> in block {t.depositBlock} to <span style={{ color: toAddressColor(t.to) }}>{toReadableAddress(t.to)}</span></Typography>
+              if(t.isSwap) return (
+                <Typography key={t.from + t.blockNumber}>
+                  <b>Swap</b> in block {t.blockNumber} between <span style={{ color: toAddressColor(t.from) }}>{toReadableAddress(t.from)}</span> and <span style={{ color: toAddressColor(t.to) }}>{toReadableAddress(t.to)}</span> suceesful? {t.successfulSwap.toString()}
+                </Typography>
+              )
+              if(!t.isSwap) return <Typography key={t.from + t.blockNumber}><b>Transfer</b> in block {t.blockNumber} from <span style={{ color: toAddressColor(t.from) }}>{toReadableAddress(t.from)}</span> to <span style={{ color: toAddressColor(t.to) }}>{toReadableAddress(t.to)}</span></Typography>
+            })
+          }
+        </Paper>
       </React.Fragment>
     );
   }
