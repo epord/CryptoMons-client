@@ -312,7 +312,7 @@ class PlasmaTokens extends React.Component {
         {this.renderSwapDialog()}
         {this.renderRespondChallengeDialog()}
         {this.renderBattleDialog()}
-        <Grid container spacing={3} alignContent="center" alignItems="start">
+        <Grid container spacing={3} alignContent="center" alignItems="flex-start">
           {plasmaTokens.map(token => (
             <Grid item key={token}>
               <CryptoMonCard

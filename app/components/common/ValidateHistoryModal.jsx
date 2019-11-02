@@ -5,12 +5,18 @@ import withInitComponent from './withInitComponent.js';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import {connect} from "react-redux";
-import {withStyles} from '@material-ui/core/styles';
-import {withRouter} from 'react-router-dom';
+import Typography from '@material-ui/core/Typography';
 
-import {getProofHistory} from "../../../services/plasmaServices";
-import {HISTORY_VALIDITY, verifyToken, verifyTokenWithHistory} from "../../../services/verifyHistory";
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import HistoryIcon from '@material-ui/icons/History';
+import CancelIcon from '@material-ui/icons/Cancel';
+
+import { connect } from "react-redux";
+import { withStyles } from '@material-ui/core/styles';
+import { withRouter } from 'react-router-dom';
+
+import { getProofHistory } from "../../../services/plasmaServices";
+import { HISTORY_VALIDITY, verifyToken, verifyTokenWithHistory } from "../../../services/verifyHistory";
 import { css } from '@emotion/core';
 import PacmanLoader from 'react-spinners/PacmanLoader';
 
@@ -61,14 +67,34 @@ class ValidateHistoryModal extends InitComponent {
     const { loading, blocks, historyValid, lastValidOwner, lastValidBlock, swappingOwner } = this.state;
     const { open, token, classes, handleClose } = this.props;
 
-    let result = <h1></h1>;
+    let result = <h1 />;
+
+
+// import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+// import HistoryIcon from '@material-ui/icons/History';
+// import CancelIcon from '@material-ui/icons/Cancel';
     if(!loading) {
       if(historyValid === HISTORY_VALIDITY.CORRECT) {
-        result = <h1>History validated, true owner: {lastValidOwner}</h1>;
+        result = (
+          <div style={{ color: 'green', margin: '1em' }}>
+            <CheckCircleIcon />
+            <Typography style={{ display: 'contents' }}>History validated, true owner: {lastValidOwner}</Typography>
+          </div>
+        );
       } else if(historyValid === HISTORY_VALIDITY.WAITING_FOR_SWAP) {
-        result = <h1>Waiting for swap on block {lastValidBlock}, last known owner: {lastValidOwner}, swappingOwner: {swappingOwner}</h1>;
+        result = (
+          <div style={{ color: 'orange', margin: '1em' }}>
+            <HistoryIcon />
+            <Typography style={{ display: 'contents' }}>Waiting for swap on block {lastValidBlock}, last known owner: {lastValidOwner}, swappingOwner: {swappingOwner}</Typography>
+          </div>
+        );
       } else {
-        result = <h1>History can't be validated after block {lastValidBlock}, last known owner: {lastValidOwner}</h1>;
+        result = (
+          <div style={{ color: 'red', margin: '1em' }}>
+            <CancelIcon />
+            <Typography style={{ display: 'contents' }}>History can't be validated after block {lastValidBlock}, last known owner: {lastValidOwner}</Typography>
+          </div>
+        );
       }
     }
     const override = css`
