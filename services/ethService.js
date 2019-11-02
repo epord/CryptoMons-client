@@ -564,7 +564,7 @@ export const createBattle = (tokenPL, tokenOP, opponentAddress, exitData, rootCh
 		const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMons);
 		const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMons);
 		exitData = exitData || await getExitData(tokenPL);
-		const exitRLPData = getExitDataToBattleRLPData(0, exitData);
+		const exitRLPData = getExitDataToBattleRLPData(exitData);
 
 		const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
 		await initiateBattle(plasmaCM, plasmaTurnGame.address, opponentAddress, 10, toCMBBytes(initialState), exitRLPData);

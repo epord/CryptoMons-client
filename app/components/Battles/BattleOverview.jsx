@@ -24,22 +24,22 @@ class BattleOverview extends React.Component {
     const is2challengeable = participants[1] !== ethAccount && plasmaTokens.includes(tokens[1]);
 
     this.setState({ participants, tokens, is1challengeable, is2challengeable });
-  }
+  };
 
   challengeAfter = (channel, index) => () => {
     const {plasmaCMContract} = this.props;
     battleChallengeAfter(channel, index ,plasmaCMContract)
-  }
+  };
 
   challengeBetween = (channel, index) => () => {
     const {plasmaCMContract} = this.props;
     battleChallengeBetween(channel, index ,plasmaCMContract)
-  }
+  };
 
   challengeBefore = (channel, index) => () => {
     const {plasmaCMContract} = this.props;
     battleChallengeBefore(channel, index ,plasmaCMContract)
-  }
+  };
 
   getChallengeActionsFor = (channel, index) => {
     return [{

@@ -141,7 +141,7 @@ class Battles extends InitComponent {
     const tokenPLInstance = await getCryptomon(tokenPLID, cryptoMonsContract)
     const tokenOPInstance = await getCryptomon(tokenOPID, cryptoMonsContract)
     const exitData = await getExitData(tokenOP);
-    const exitRLPData = getExitDataToBattleRLPData(1, exitData);
+    const exitRLPData = getExitDataToBattleRLPData(exitData);
 
     const initialState = getInitialCMBState(tokenPL, tokenPLInstance, tokenOP, tokenOPInstance);
     fundBattle(plasmaCMContract, channelId, stake, toCMBBytes(initialState), exitRLPData);
@@ -169,7 +169,7 @@ class Battles extends InitComponent {
     return channel.forceMoveChallenge.state.channelId > 0;
   }
 
-  isMyTurn = (channel) => {
+  needsMyForceMoveResponse = (channel) => {
     const { ethAccount } = this.props;
     return CMBmover(channel.forceMoveChallenge.state).toLowerCase() === ethAccount
   }
@@ -230,7 +230,7 @@ class Battles extends InitComponent {
           //   <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
           //   <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
           //   { currentState &&  !this.hasForceMove(c) && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}
-          //   {currentState && this.hasForceMove(c) && !this.isMyTurn(c) && (
+          //   {currentState && this.hasForceMove(c) && !this.needsMyForceMoveResponse(c) && (
           //     <div>
           //       //TODO add others
           //       <button onClick={() => this.respondForceMove(c.channelId, 0)}>Respond Force Move (Rock)</button>

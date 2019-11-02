@@ -124,12 +124,11 @@ export const hashChannelState = (state) => {
 
 };
 
-export const getExitDataToBattleRLPData = (playerIndex, exitData) => {
+export const getExitDataToBattleRLPData = (exitData) => {
 	if(!exitData.prevBlock) {
-		return EthUtils.bufferToHex(RLP.encode([new BN(playerIndex).toArrayLike(Buffer)]));
+		return EthUtils.bufferToHex(RLP.encode([new BN(0).toArrayLike(Buffer)]));
 	} else {
 		let params = [
-			new BN(playerIndex).toArrayLike(Buffer),
 			new BN(exitData.slot).toArrayLike(Buffer),
 			new BN(exitData.prevBlock).toArrayLike(Buffer),
 			new BN(exitData.exitingBlock).toArrayLike(Buffer),

@@ -120,25 +120,27 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
             const generatedHashA = generateSwapHash(slotA, blockSpentA, hashSecretA, B, slotB);
             const generatedHashB = generateSwapHash(slotB, blockSpentB, hashSecretB, A, slotA);
 
+            let error = undefined;
             if(A.toLowerCase() != owner.toLowerCase()) {
-              return cb({error: "Owner does not match owner of Swap", blockNumber: blockNumber, lastOwner: owner})
+              error = "Owner does not match owner of Swap";
             }
 
-            if (generatedHashA.toLowerCase() != hash.toLowerCase()) {
-              return cb({error: "Hash does not match", blockNumber: blockNumber, lastOwner: owner})
+            if (!error && generatedHashA.toLowerCase() != hash.toLowerCase()) {
+              error = "Hash does not match";
             }
 
-            if (recover(hash, signature) != owner.toLowerCase()) {
-              return cb({error: "Not signed correctly", blockNumber: blockNumber, lastOwner: owner})
+            if (!error && recover(hash, signature) != owner.toLowerCase()) {
+              error = "Not signed correctly";
             }
 
-            if (recover(generatedHashB, signatureB) != B.toLowerCase()) {
-              return cb({error: "Not signed by counterpart correctly", blockNumber: blockNumber, lastOwner: owner})
+            if (!error && recover(generatedHashB, signatureB) != B.toLowerCase()) {
+              error = "Not signed by counterpart correctly";
             }
 
             transactionsHistory.push({
               isSwap: true,
-              successfulSwap: !!swapped[blockNumber],
+              successful: !!swapped[blockNumber] && !error,
+              error: !!swapped[blockNumber] ? "Secret hash not included": error,
               from: A,
               to:  B,
               blockNumber
@@ -152,29 +154,39 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
               }
             }
 
-            return cb(null, B);
+            if(error) {
+              return cb(null, A)
+            } else {
+              return cb(null, B);
+            }
 
           } else {
 
             const {slot, blockSpent, recipient} = decodeTransactionBytes(transactionBytes);
             const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
 
+            let error = undefined;
             if (generatedHash.toLowerCase() != hash.toLowerCase()) {
-              return cb({error: "Hash does not match", blockNumber: blockNumber, lastOwner: owner})
+              error = "Hash does not match";
             }
 
             if (recover(hash, signature) != owner.toLowerCase()) {
-              return cb({error: "Not signed correctly", blockNumber: blockNumber, lastOwner: owner})
+              error = "Not signed correctly";
             }
 
             transactionsHistory.push({
               isSwap: false,
+              successful: !error,
               from: owner.toLowerCase(),
-              to:  recipient,
+              to:  recipient.toLowerCase(),
               blockNumber
             });
 
-            return cb(null, recipient);
+            if(error) {
+              return cb(null, owner.toLowerCase())
+            } else {
+              return cb(null, recipient.toLowerCase());
+            }
           }
         }
       })
