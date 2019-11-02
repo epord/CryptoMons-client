@@ -105,7 +105,7 @@ class Swap extends InitComponent {
 		if (loadingSwapData) return <div>Loading...</div>
 
 		return (
-			<Dialog onClose={this.closeRevealSecretModal} open={secretModalOpen} classes={{ paper: classes.dialogPaper }}>
+			<Dialog onClose={this.closeRevealSecretModal} open={Boolean(secretModalOpen)} classes={{ paper: classes.dialogPaper }}>
 				<DialogTitle>Reveal secret</DialogTitle>
 				<Grid container style={{ padding: '1em' }}>
 					<Grid item xs={12}>
@@ -133,7 +133,7 @@ class Swap extends InitComponent {
 		if (!transactionToAccept) return null;
 
 		return (
-			<Dialog onClose={this.closeAcceptSwapModal} open={acceptSwapModalOpen} classes={{ paper: classes.dialogPaper }}>
+			<Dialog onClose={this.closeAcceptSwapModal} open={Boolean(acceptSwapModalOpen)} classes={{ paper: classes.dialogPaper }}>
 				<DialogTitle>Do you want to accept this swap request?</DialogTitle>
 				<Grid container style={{ padding: '1em' }}>
 					<Grid item xs={12}>

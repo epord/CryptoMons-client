@@ -51,7 +51,7 @@ class SelectPlayerTokenModal extends InitComponent {
     const { plasmaTokens, player, selectedToken } = this.state;
 
     return (
-      <Dialog open={open} onClose={handleClose} classes={{ paper: classes.dialogPaper }}>
+      <Dialog open={Boolean(open)} onClose={handleClose} classes={{ paper: classes.dialogPaper }}>
         <React.Fragment>
         <TextField
           style={{ margin: '0 0.5em' }}

@@ -103,7 +103,7 @@ class ValidateHistoryModal extends InitComponent {
       border-color: red;
     `;
 
-    return (<Dialog open={open} onClose={handleClose} classes={{ paper: classes.dialogPaper }}>
+    return (<Dialog open={Boolean(open)} onClose={handleClose} classes={{ paper: classes.dialogPaper }}>
       {!blocks &&  <DialogTitle>Fetching History</DialogTitle>}
       {blocks &&  <DialogTitle>Validating {blocks} blocks</DialogTitle>}
       <PacmanLoader

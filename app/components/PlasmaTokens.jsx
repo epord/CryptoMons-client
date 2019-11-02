@@ -182,7 +182,7 @@ class PlasmaTokens extends React.Component {
     const challengesCount = challengesToRespond ? challengesToRespond.length : 0;
 
     return (
-      <Dialog onClose={this.closeRespondChallengeModal} open={respondModalOpen} classes={{ paper: classes.dialogPaper }}>
+      <Dialog onClose={this.closeRespondChallengeModal} open={Boolean(respondModalOpen)} classes={{ paper: classes.dialogPaper }}>
         <DialogTitle>Respond to challenges</DialogTitle>
         <Typography gutterBottom style={{ textAlign: 'center' }} variant="body1">There {challengesCount > 1 ? 'are' : 'is'} active {challengesCount} challenge{challengesCount > 1 ? 's' : ''}</Typography>
         {(challengesToRespond || []).map(challenge => (
@@ -199,7 +199,7 @@ class PlasmaTokens extends React.Component {
     const { transferModalOpen, tokenToTransact } = this.state;
     const { classes } = this.props;
     return (
-      <Dialog onClose={this.closeTransferModal} open={transferModalOpen} classes={{ paper: classes.dialogPaper }}>
+      <Dialog onClose={this.closeTransferModal} open={Boolean(transferModalOpen)} classes={{ paper: classes.dialogPaper }}>
         <DialogTitle>Transfer token</DialogTitle>
         <Grid container style={{ padding: '1em' }}>
           <Grid item xs={12} style={{ padding: '1em' }}>
