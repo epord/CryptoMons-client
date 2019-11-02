@@ -164,33 +164,37 @@ class Swap extends InitComponent {
 	}
 
   renderSwappingTokensSection = () => {
-		const { swappingTokens } = this.props;
+		const { swappingTokens, ethAccount } = this.props;
 		const { secretModalOpen, validateHistoryOpen } = this.state;
 
     if (swappingTokens.length == 0){
       return <Typography style={{ margin: 'auto' }}  variant="body1">There are no swaps to confirm</Typography>
-    }
+		}
+
+		console.log('swappingTokens', swappingTokens)
 
     return(
       <React.Fragment>
-        {swappingTokens.map(token => (
-        	//TODO Change this for a swap card
-          <CryptoMonCard
-						key={token}
-						plasmaToken={token}
-						actions = {[{
-							title: "Reveal Secret",
-							disabled: secretModalOpen,
-							func: this.openRevealSecretModal(token)
-						},
-							//TODO only add this button to the second cryptoMonCard
-							{
+        {swappingTokens.map(transaction => (
+					<Paper>
+						<DoubleCryptoMonCard
+							token1={transaction.swappingSlot}
+							owner1={ethAccount}
+							actions1={[{
 								title: "Validate History",
 								disabled: validateHistoryOpen,
-								func: this.openValidateHistoryModal(token)
-							}
-						]}
+								func: this.openValidateHistoryModal(transaction.swappingSlot)
+							}]}
+							token2={transaction.slot}
+							owner2={transaction.owner}
+							actions2={[{
+								title: "Validate History",
+								disabled: validateHistoryOpen,
+								func: this.openValidateHistoryModal(transaction.slot)
+							}]}
 						/>
+						<Button fullWidth variant="outlined" color="primary" onClick={this.openRevealSecretModal(transaction.swappingSlot)}>Reveal Secret</Button>
+					</Paper>
         ))}
       </React.Fragment>
     )

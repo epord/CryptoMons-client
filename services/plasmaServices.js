@@ -116,7 +116,7 @@ export const getOwnedTokens = (address, state) => {
 };
 
 export const getSwappingTokens = (address) => {
-  return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}?state=swapping`);
+  return basicGet(`${process.env.API_URL}/api/tokens/swapping-tokens/${address}`);
 };
 
 export const getSwappingRequests = (address) => {
