@@ -8,6 +8,8 @@ import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 
+import './CurrentBattle.css';
+
 class CurrentBattle extends React.Component {
   getCryptoMonData = (
     cryptoMonInstance,
@@ -167,13 +169,13 @@ class CurrentBattle extends React.Component {
         <div style={{ display: 'flex' }}>
           <PokemonStats cryptoMon={opponent} />
           <img
-            style={{ height: '120px', imageRendering: 'pixelated', margin: '1em' }}
+            className="pokemonGif"
             src={`https://img.pokemondb.net/sprites/black-white/anim/${opponent.shiny ? 'shiny' : 'normal'}/${opponent.name}.gif`} alt={opponent.name}
           />
         </div>
         <div style={{ display: 'flex' }}>
           <img
-            style={{ height: '120px', imageRendering: 'pixelated', margin: '1em' }}
+            className="pokemonGif"
             src={`https://img.pokemondb.net/sprites/black-white/anim/${player.shiny ? 'back-shiny' : 'back-normal'}/${player.name}.gif`} alt={player.name}
           />
           <PokemonStats cryptoMon={player}/>
