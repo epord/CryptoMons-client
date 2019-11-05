@@ -37,6 +37,105 @@ class CurrentBattle extends React.Component {
     }
   }
 
+  renderAttacks = () => {
+    const { isPlayer1, game, play, turn } = this.props;
+    const {
+      cryptoMonPLInstance,
+      cryptoMonOPInstance,
+      cryptoMonPLData,
+      cryptoMonOPData,
+      HPOP,
+      HPPL,
+      status1OP,
+      status1PL,
+      status2OP,
+      status2PL,
+      chargePL,
+      chargeOP,
+      nextHashDecision,
+    } = game;
+
+    console.log('=======')
+    console.log(turn)
+    console.log(isPlayer1)
+
+    if ((isPlayer1 && turn % 2 === 0) || (!isPlayer1 && nextHashDecision)) {
+      return (
+        <Typography>Waiting for the other player...</Typography>
+      )
+    }
+
+
+    let player = this.getCryptoMonData(
+      cryptoMonPLInstance, cryptoMonPLData, cryptoMonOPData, HPPL, status1PL, status2PL, status1OP, status2OP, chargePL
+    );
+
+    let opponent = this.getCryptoMonData(
+      cryptoMonOPInstance, cryptoMonOPData, cryptoMonPLData, HPOP, status1OP, status2OP, status1PL, status2PL, chargeOP
+    );
+
+    if(!isPlayer1) {
+      [player, opponent] = [opponent, player];
+    }
+
+    const type1 = getTypeData(player.type1);
+    const type2 = getTypeData(player.type2);
+
+    return (
+      <React.Fragment>
+        <p>Charges: {player.charge}/3</p>
+        <Grid container style={{ margin: '0 0.5em' }} align="row" spacing={2}>
+          <Grid item>
+            <Button variant="outlined" disabled={player.charge === 3} onClick={() => play(Moves.RECHARGE)}>Recharge</Button>
+          </Grid>
+          <Grid item>
+            <Button variant="outlined" onClick={() => play(Moves.PROTECT)}>Protect</Button>
+          </Grid>
+          <Grid item>
+            <Button variant="outlined" onClick={() => play(Moves.CLEANSE)} disabled={player.charge === 0}>Cleanse</Button>
+          </Grid>
+          <Grid item>
+            <Button variant="outlined" onClick={() => play(Moves.SHIELD_BREAK)} disabled={player.charge === 0}>Shield Break</Button>
+          </Grid>
+        </Grid>
+
+        <Grid container style={{ margin: '0 0.5em' }} align="row" spacing={2}>
+          <Grid item style={{ width: '8.2em' }}>
+            <Typography style={{ textAlign: 'center' }}>{type1.name} attacks</Typography>
+            <img src={type1.image} alt={type1.name} style={{ display: 'block', margin: 'auto' }} />
+          </Grid>
+          <Grid item>
+            <Button variant="outlined" onClick={() => play(Moves.ATK1)} disabled={player.charge === 0}>Attack</Button>
+          </Grid>
+          <Grid item>
+            <Button variant="outlined" onClick={() => play(Moves.SPATK1)} disabled={player.charge === 0}>Special Attack</Button>
+          </Grid>
+          <Grid item>
+            <Button variant="outlined" onClick={() => play(Moves.STATUS1)} disabled={player.charge === 0}>Status</Button>
+          </Grid>
+        </Grid>
+
+        {player.type2 != Type.Unknown && (
+          <Grid container style={{ margin: '0 0.5em' }} align="row" spacing={2}>
+            <Grid item style={{ width: '8.2em' }}>
+              <Typography style={{ textAlign: 'center' }}>{type2.name} attacks</Typography>
+              <img src={type2.image} alt={type2.name} style={{ display: 'block', margin: 'auto' }} />
+            </Grid>
+            <Grid item>
+              <Button variant="outlined" onClick={() => play(Moves.ATK2)} disabled={player.charge === 0}>Attack</Button>
+            </Grid>
+            <Grid item>
+              <Button variant="outlined" onClick={() => play(Moves.SPATK2)} disabled={player.charge === 0}>Special Attack</Button>
+            </Grid>
+            <Grid item>
+              <Button variant="outlined" onClick={() => play(Moves.STATUS2)} disabled={player.charge === 0}>Status</Button>
+            </Grid>
+          </Grid>
+        )}
+      </React.Fragment>
+    )
+  }
+
   render = () => {
     const { isPlayer1, game, play } = this.props;
     const {
@@ -67,9 +166,6 @@ class CurrentBattle extends React.Component {
       [player, opponent] = [opponent, player];
     }
 
-    const type1 = getTypeData(player.type1);
-    const type2 = getTypeData(player.type2);
-
     return (
       <div style={{ borderStyle: 'double', borderWidth: 'thick', background: 'white', display: 'flex', flexDirection: 'column', padding: '1em' }}>
         <div style={{ display: 'flex' }}>
@@ -86,55 +182,7 @@ class CurrentBattle extends React.Component {
           />
           <PokemonStats cryptoMon={player}/>
         </div>
-        <p>Charges: {player.charge}/3</p>
-          <Grid container style={{ margin: '0 0.5em' }} align="row" spacing={2}>
-            <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.RECHARGE)}>Recharge</Button>
-            </Grid>
-            <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.PROTECT)}>Protect</Button>
-            </Grid>
-            <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.CLEANSE)} disabled={player.charge === 0}>Cleanse</Button>
-            </Grid>
-            <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.SHIELD_BREAK)} disabled={player.charge === 0}>Shield Break</Button>
-            </Grid>
-          </Grid>
-
-          <Grid container style={{ margin: '0 0.5em' }} align="row" spacing={2}>
-            <Grid item style={{ width: '8.2em' }}>
-              <Typography style={{ textAlign: 'center' }}>{type1.name} attacks</Typography>
-              <img src={type1.image} alt={type1.name} style={{ display: 'block', margin: 'auto' }} />
-            </Grid>
-            <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.ATK1)} disabled={player.charge === 0}>Attack</Button>
-            </Grid>
-            <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.SPATK1)} disabled={player.charge === 0}>Special Attack</Button>
-            </Grid>
-            <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.STATUS1)} disabled={player.charge === 0}>Status</Button>
-            </Grid>
-          </Grid>
-
-          {player.type2 != Type.Unknown && (
-            <Grid container style={{ margin: '0 0.5em' }} align="row" spacing={2}>
-              <Grid item style={{ width: '8.2em' }}>
-                <Typography style={{ textAlign: 'center' }}>{type2.name} attacks</Typography>
-                <img src={type2.image} alt={type2.name} style={{ display: 'block', margin: 'auto' }} />
-              </Grid>
-              <Grid item>
-                <Button variant="outlined" onClick={() => play(Moves.ATK2)} disabled={player.charge === 0}>Attack</Button>
-              </Grid>
-              <Grid item>
-                <Button variant="outlined" onClick={() => play(Moves.SPATK2)} disabled={player.charge === 0}>Special Attack</Button>
-              </Grid>
-              <Grid item>
-                <Button variant="outlined" onClick={() => play(Moves.STATUS2)} disabled={player.charge === 0}>Status</Button>
-              </Grid>
-            </Grid>
-          )}
+        {this.renderAttacks()}
       </div>
     )
   }

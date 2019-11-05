@@ -1,7 +1,15 @@
 import React from 'react';
 
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 import io from 'socket.io-client';
+
+import Button from "@material-ui/core/Button";
+import Grid from "@material-ui/core/Grid";
+import Dialog from "@material-ui/core/Dialog";
+import ExpansionPanel from '@material-ui/core/ExpansionPanel';
+import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
+import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 import InitComponent from '../common/InitComponent.jsx';
 import withInitComponent from '../common/withInitComponent.js';
@@ -96,8 +104,13 @@ class Battles extends InitComponent {
     this.socket.on("authenticated", () => this.setState({ authenticated: true }));
   };
 
+  openBattleDialog = () => this.setState({ battleOpen: true })
+
+  closeBattleDialog = () => this.setState({ battleOpen: false })
+
   battleRequest = channelId => () => {
     this.socket.emit("battleRequest", { channelId });
+    this.openBattleDialog();
   };
 
   play = async (move) => {
@@ -174,12 +187,29 @@ class Battles extends InitComponent {
     return CMBmover(channel.forceMoveChallenge.state).toLowerCase() === ethAccount
   }
 
+  renderDialogBattle = () => {
+    const { ethAccount } = this.props;
+    const { currentState, battleOpen } = this.state;
+
+    return (
+      <Dialog open={Boolean(battleOpen)} onClose={this.closeBattleDialog}>
+        <div style={{ padding: '1em' }}>
+          <CurrentBattle
+            play={this.play}
+            isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
+            game={currentState.game}
+            turn={currentState.turnNum}
+          />
+        </div>
+      </Dialog>
+    )
+
+  }
+
   render = () => {
     const { loading, currentState, authenticated } = this.state;
-    const { battles, ethAccount } = this.props;
+    const { battles } = this.props;
     const { opened, toFund, ongoing, challengeables } = battles;
-
-    console.log(battles)
 
     if(loading) return <div>Loading...</div>
 
@@ -213,45 +243,42 @@ class Battles extends InitComponent {
           </React.Fragment>
         )}
 
-        {ongoing && ongoing.map(c =>
-          <React.Fragment key={c.channelId}>
-            <Typography>Ongoing</Typography>
-            <BattleOverview
-              key={c.channelId}
-              channel={c}
-              actions={[{
-                title: 'Select',
-                func: this.battleRequest(c.channelId),
-              }]}
-            />
-          </React.Fragment>
+				<ExpansionPanel defaultExpanded style={{ marginTop: '1em' }}>
+					<ExpansionPanelSummary
+						expandIcon={<ExpandMoreIcon />}>
+						<Typography>Ongoing battles</Typography>
+					</ExpansionPanelSummary>
+					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
+            {!authenticated && (
 
-          // <React.Fragment key={c.channelId}>
-          //   <div>{c.channelId} - {c.players[0]} vs {c.players[1]}</div>
-          //   <button onClick={() => this.battleRequest(c.channelId)}>Select</button>
-          //   { currentState &&  !this.hasForceMove(c) && <button onClick={() => this.forceMove(c.channelId)}>Force Move</button>}
-          //   {currentState && this.hasForceMove(c) && !this.needsMyForceMoveResponse(c) && (
-          //     <div>
-          //       //TODO add others
-          //       <button onClick={() => this.respondForceMove(c.channelId, 0)}>Respond Force Move (Rock)</button>
-          //     </div>
-          //   )}
-
-          //   {currentState && this.hasForceMove(c) && this.isMyTurn(c) && c.forceMoveChallenge.expirationTime < Date.now() &&
-          //     <button onClick={this.concludeBattle}>CHECKOUT BATTLE</button>}
-          // </React.Fragment>
-        )}
+              <React.Fragment>
+                <Grid container direction="column" style={{ margin: 'auto' }} alignItems="center">
+                  <Grid item>
+                    <Typography variant="body1">Connect to see all your battles</Typography>
+                  </Grid>
+                  <Grid item>
+                    <Button onClick={this.initSocket} style={{ marginBottom: '1em' }} variant="outlined" size="small">Connect</Button>
+                  </Grid>
+                </Grid>
+              </React.Fragment>
+            )}
+            {authenticated && ongoing && ongoing.map(c =>
+              <React.Fragment key={c.channelId}>
+                  <BattleOverview
+                    key={c.channelId}
+                    channel={c}
+                    actions={[{
+                      title: 'Select',
+                      func: this.battleRequest(c.channelId),
+                    }]}
+                  />
+                </React.Fragment>
+              )}
+					</ExpansionPanelDetails>
+				</ExpansionPanel>
 
         {/* TODO: show in modal */}
-        {currentState && (
-          <div style={{ padding: '1em' }}>
-            <CurrentBattle
-              play={this.play}
-              isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
-              game={currentState.game}
-            />
-          </div>
-        )}
+        {currentState && this.renderDialogBattle()}
 
       </React.Fragment>
     )
