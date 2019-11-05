@@ -55,10 +55,6 @@ class CurrentBattle extends React.Component {
       nextHashDecision,
     } = game;
 
-    console.log('=======')
-    console.log(turn)
-    console.log(isPlayer1)
-
     if ((isPlayer1 && turn % 2 === 0) || (!isPlayer1 && nextHashDecision)) {
       return (
         <Typography>Waiting for the other player...</Typography>
