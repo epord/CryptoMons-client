@@ -1,5 +1,7 @@
 import React from 'react';
-import {connect} from "react-redux";
+import { connect } from "react-redux";
+
+import { withSnackbar } from 'notistack';
 
 import InitComponent from "./common/InitComponent.jsx"
 import withInitComponent from "./common/withInitComponent.js"
@@ -10,25 +12,31 @@ import Grid from '@material-ui/core/Grid';
 
 import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import {depositToPlasma} from '../../services/ethService';
-import {buyCryptoMon, getCryptoMonsFrom} from '../redux/actions';
+import { depositToPlasma } from '../../services/ethService';
+import { buyCryptoMon, getCryptoMonsFrom } from '../redux/actions';
 
 
 class CryptoMons extends InitComponent {
+
+	state = {}
 
 	init = () => {
 		const { cryptoMonsContract, ethAccount, getCryptoMonsFrom } = this.props;
 		getCryptoMonsFrom(ethAccount, cryptoMonsContract);
 	}
 
-	buyCryptoMon = async () => {
-		const { cryptoMonsContract, ethAccount, buyCryptoMon } = this.props;
-		buyCryptoMon(ethAccount, cryptoMonsContract)
+	buyCryptoMon = () => {
+		const { cryptoMonsContract, ethAccount, buyCryptoMon, enqueueSnackbar } = this.props;
+		buyCryptoMon(ethAccount, cryptoMonsContract).then(() => {
+			enqueueSnackbar('Cryptomon successfully bought!', { variant: 'success' })
+		})
 	};
 
-	depositToPlasma = token => async () => {
-		const { rootChainContract, cryptoMonsContract } = this.props;
-		await depositToPlasma(token, cryptoMonsContract, rootChainContract)
+	depositToPlasma = token => () => {
+		const { rootChainContract, cryptoMonsContract, enqueueSnackbar } = this.props;
+		depositToPlasma(token, cryptoMonsContract, rootChainContract).then(() => {
+			enqueueSnackbar('Deposit successful', { variant: 'success' })
+		})
 	};
 
 	render = () => {
@@ -86,4 +94,4 @@ const mapDispatchToProps = dispatch => {
 	};
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(withInitComponent(CryptoMons));
+export default connect(mapStateToProps, mapDispatchToProps)(withSnackbar(withInitComponent(CryptoMons)));

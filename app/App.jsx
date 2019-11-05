@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import {Provider} from "react-redux";
+import { Provider } from "react-redux";
+import { SnackbarProvider } from 'notistack';
 import store from "./redux/store";
 
 import Routes from './components/Routes.jsx';
@@ -14,9 +15,11 @@ class App extends React.Component {
 
 	render() {
 		return (
-			<Provider store={store}>
-				<Routes />
-			</Provider>
+			<SnackbarProvider>
+				<Provider store={store}>
+					<Routes />
+				</Provider>
+			</SnackbarProvider>
 		);
 	}
 }

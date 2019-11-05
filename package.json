@@ -20,6 +20,7 @@
     "dotenv": "^8.1.0",
     "ethereumjs-abi": "^0.6.8",
     "ethereumjs-util": "^6.1.0",
+    "notistack": "^0.9.5",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
     "react-redux": "^7.1.1",

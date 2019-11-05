@@ -1,7 +1,9 @@
 import React from 'react';
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 
-import {HashRouter as Router, Link, Route} from "react-router-dom";
+import { withSnackbar } from 'notistack';
+
+import { HashRouter as Router, Link, Route } from "react-router-dom";
 
 import App from './index.jsx';
 import Hack from './Hacks/Hack.jsx';
@@ -158,7 +160,8 @@ class Routes extends React.Component {
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
 			console.log("Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
-			const { getOwnedTokens, getSwappingTokens, getSwappingRequests } = this.props;
+			const { getOwnedTokens, getSwappingTokens, getSwappingRequests, enqueueSnackbar } = this.props;
+			enqueueSnackbar(`New block mined #${r.returnValues.blockNumber}`, { variant: 'info' })
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address);
 			getSwappingRequests(address);
@@ -315,4 +318,4 @@ const mapDispatchToProps = dispatch => ({
   getChallengedFrom: (address, rootChainContract) => dispatch(getChallengedFrom(address, rootChainContract)),
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(Routes);
+export default connect(mapStateToProps, mapDispatchToProps)(withSnackbar(Routes));
