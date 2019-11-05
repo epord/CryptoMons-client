@@ -1,14 +1,14 @@
 import React from 'react';
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 
 import Paper from "@material-ui/core/Paper";
 import Button from "@material-ui/core/Button";
 
 import DoubleCryptoMonCard from '../common/DoubleCryptoMonCard.jsx';
 
-import {getBattleTokens} from '../../../services/ethService';
-import {battleChallengeAfter, battleChallengeBetween, battleChallengeBefore} from '../../../services/battleChallenges';
-import {toAddressColor, toReadableAddress} from '../../../utils/utils';
+import { getBattleTokens } from '../../../services/ethService';
+import { battleChallengeAfter, battleChallengeBetween, battleChallengeBefore } from '../../../services/battleChallenges';
+import { toAddressColor, toReadableAddress } from '../../../utils/utils';
 
 class BattleOverview extends React.Component {
 

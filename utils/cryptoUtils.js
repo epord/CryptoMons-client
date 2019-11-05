@@ -1,4 +1,4 @@
-import {toCMBBytes} from "./CryptoMonsBattles";
+import { toCMBBytes } from "./CryptoMonsBattles";
 
 const EthUtils	= require('ethereumjs-util');
 const BN = require('bn.js');

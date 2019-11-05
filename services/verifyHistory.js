@@ -1,5 +1,5 @@
-import {getProofHistory} from "./plasmaServices";
-import {checkEmptyBlock, checkInclusion, checkSecretsIncluded, getBlock, getSecretBlock} from "./ethService";
+import { getProofHistory } from "./plasmaServices";
+import { checkEmptyBlock, checkInclusion, checkSecretsIncluded, getBlock, getSecretBlock } from "./ethService";
 import {
   decodeSwapTransactionBytes,
   decodeTransactionBytes,
@@ -9,7 +9,7 @@ import {
   recover
 } from "../utils/cryptoUtils";
 import async from "async";
-import {zip} from "../utils/utils";
+import { zip } from "../utils/utils";
 
 export const HISTORY_VALIDITY = {
   CORRECT: "Correct",

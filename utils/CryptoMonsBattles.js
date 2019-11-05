@@ -2,7 +2,7 @@ import {randomHex256} from "./utils";
 import {keccak256} from "./cryptoUtils";
 import BN from "bn.js";
 import * as EthUtils from 'ethereumjs-util';
-import {calculateBattle} from "./BattleDamageCalculator";
+import { calculateBattle } from "./BattleDamageCalculator";
 
 const RLP = require('rlp');
 const abi = require('ethereumjs-abi');

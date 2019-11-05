@@ -1,7 +1,7 @@
 import React from 'react';
 import Typography from '@material-ui/core/Typography';
 import LinearProgress from '@material-ui/core/LinearProgress';
-import {Status} from '../../../utils/pokeUtils';
+import { Status } from '../../../utils/pokeUtils';
 
 class PokemonStats extends React.Component {
 

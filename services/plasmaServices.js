@@ -1,5 +1,5 @@
-import {generateSwapHash, generateTransactionHash, sign} from "../utils/cryptoUtils";
-import {keccak256, randomHex256} from "../utils/utils";
+import { generateSwapHash, generateTransactionHash, sign } from "../utils/cryptoUtils";
+import { keccak256, randomHex256 } from "../utils/utils";
 
 const BN = require('bn.js');
 

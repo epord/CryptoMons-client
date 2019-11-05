@@ -1,5 +1,5 @@
 import React from 'react';
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 
 import InitComponent from './InitComponent.jsx';
 import withInitComponent from './withInitComponent.js';
@@ -16,8 +16,8 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
 import {getCryptomon, getPlasmaCoinId, getPokemonData} from '../../../services/ethService';
 
-import {getTypeData} from '../../../utils/pokeUtils';
-import {toAddressColor, toReadableAddress} from '../../../utils/utils';
+import { getTypeData } from '../../../utils/pokeUtils';
+import { toAddressColor, toReadableAddress } from '../../../utils/utils';
 
 class CryptoMonCard extends InitComponent {
 

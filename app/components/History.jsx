@@ -1,13 +1,13 @@
 import React from 'react';
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 
 import Typography from '@material-ui/core/Typography';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
 
-import {loadContracts} from '../redux/actions'
-import {HISTORY_VALIDITY, verifyToken} from "../../services/verifyHistory";
+import { loadContracts } from '../redux/actions'
+import { HISTORY_VALIDITY, verifyToken } from "../../services/verifyHistory";
 import { css } from '@emotion/core';
 import PacmanLoader from 'react-spinners/PacmanLoader';
 import { toAddressColor, toReadableAddress } from '../../utils/utils';

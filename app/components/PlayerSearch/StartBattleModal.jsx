@@ -1,8 +1,8 @@
 import React from 'react';
 
-import {connect} from "react-redux";
-import {withStyles} from '@material-ui/core/styles';
-import {withRouter} from 'react-router-dom';
+import { connect } from "react-redux";
+import { withStyles } from '@material-ui/core/styles';
+import { withRouter } from 'react-router-dom';
 
 import InitComponent from '../common/InitComponent.jsx';
 import withInitComponent from '../common/withInitComponent.js';
@@ -12,8 +12,8 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 
 import CryptoMonCard from '../common/CryptoMonCard.jsx';
 
-import {getOwnedTokens} from '../../redux/actions';
-import {createBattle, initiateBattle} from '../../../services/ethService';
+import { getOwnedTokens } from '../../redux/actions';
+import { createBattle } from '../../../services/ethService';
 
 const styles = theme => ({
 	dialogPaper: {

@@ -1,10 +1,11 @@
 import React from 'react';
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 
 import InitComponent from '../common/InitComponent.jsx';
 import withInitComponent from '../common/withInitComponent.js';
 
 import Paper from '@material-ui/core/Paper';
+import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
@@ -13,7 +14,7 @@ import StartBattleModal from './StartBattleModal.jsx';
 
 import CryptoMonCard from '../common/CryptoMonCard.jsx';
 
-import {getOwnedTokens} from '../../../services/plasmaServices';
+import { getOwnedTokens } from '../../../services/plasmaServices';
 
 class PlayerSearch extends InitComponent {
 
@@ -65,8 +66,9 @@ class PlayerSearch extends InitComponent {
             Search
           </Button>
         </Paper>
+        <Grid container spacing={4} direction="row">
         {cryptoMons.map(token =>
-          <div key={token}>
+          <Grid item key={token}>
             <CryptoMonCard
               plasmaToken={token}
               actions={[{
@@ -74,8 +76,9 @@ class PlayerSearch extends InitComponent {
                 func: this.openBattleModal(token)
               }]}
             />
-          </div>
+          </Grid>
         )}
+        </Grid>
       </React.Fragment>
     )
   }

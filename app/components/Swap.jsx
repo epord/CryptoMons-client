@@ -3,8 +3,8 @@ import React from 'react';
 import InitComponent from './common/InitComponent.jsx';
 import withInitComponent from './common/withInitComponent.js';
 
-import {connect} from "react-redux";
-import {withStyles} from '@material-ui/core/styles';
+import { connect } from "react-redux";
+import { withStyles } from '@material-ui/core/styles';
 
 import Typography from '@material-ui/core/Typography';
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
@@ -19,11 +19,10 @@ import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
 
 import DoubleCryptoMonCard from './common/DoubleCryptoMonCard.jsx';
-import CryptoMonCard from './common/CryptoMonCard.jsx';
 
-import {toAddressColor, toReadableAddress} from '../../utils/utils';
-import {createAtomicSwap, getSwapData} from '../../services/plasmaServices'
-import {getSwappingRequests, getSwappingTokens, revealSecret} from '../redux/actions';
+import { toAddressColor, toReadableAddress } from '../../utils/utils';
+import { createAtomicSwap, getSwapData } from '../../services/plasmaServices'
+import { getSwappingRequests, getSwappingTokens, revealSecret } from '../redux/actions';
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 
 const styles = theme => ({
