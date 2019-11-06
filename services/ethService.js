@@ -38,6 +38,16 @@ export const getPlasmaCoinId = (slot, rootChain) => {
 	});
 };
 
+export const getPlasmaCoinDepositOwner = (slot, rootChain) => {
+	const slotBN = (slot);
+	return new Promise((resolve, reject) => {
+		ethContract(rootChain).getPlasmaCoin(slotBN).call((err, res) => {
+			if (err) return reject(err);
+			resolve(res[2]);
+		});
+	});
+};
+
 const getStateTokens = (filter, rootChain, state) => {
 	return new Promise((resolve, reject) => {
 		const blockFilter = { fromBlock: 0, toBlock: 'latest' };
@@ -326,13 +336,13 @@ export const checkEmptyBlock = (blockNumber, rootChain) => {
 		ethContract(rootChain).getBlock(
 			blockNumber).call(
 			(err, res) => {
-			if (err) return reject(err);
+			if (err) return resolve(false);
 			resolve(res[0] == "0x6f35419d1da1260bc0f33d52e8f6d73fc5d672c0dca13bb960b4ae1adec17937");
 		});
 	});
 };
 
-export const checkSecretsIncluded = (blockNumber, data, rootChain) => {
+export const checkTXValid = (blockNumber, data, rootChain) => {
   const { transactionBytes, proof } = data;
 
 	return new Promise((resolve, reject) => {
@@ -347,7 +357,7 @@ export const checkSecretsIncluded = (blockNumber, data, rootChain) => {
 	});
 };
 
-const checkBasicInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
+export const checkBasicInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
   return new Promise((resolve, reject) => {
 		ethContract(rootChain).checkInclusion(
 			txHash || web3Utils.soliditySha3(0),
@@ -355,29 +365,11 @@ const checkBasicInclusion = (txHash, blockNumber, slot, proof, rootChain) => {
 			slot,
 			proof).call(
 			(err, res) => {
-			if (err) return reject(err);
+			if (err) return resolve(false);
 			resolve(res); // true or false
 		});
 	});
-}
-
-export const checkInclusion = (transactionBytes, txHash, blockNumber, slot, proof, rootChain) => {
-	if(isSwapBytes(transactionBytes)) {
-		console.log("SWAP IN ", blockNumber)
-		return Promise.resolve(true);
-	} else {
-		return checkBasicInclusion(txHash, blockNumber, slot, proof, rootChain)
-	}
-}
-
-export const withdrawBonds = (rootChain) => {
-  return new Promise((resolve, reject) => {
-		ethContract(rootChain).withdrawBonds().send({from: web3.eth.defaultAccount},async (err, res) => {
-			if (err) return reject(err);
-			resolve(res);
-		});
-	});
-}
+};
 
 export const challengeBeforeWithExitData = (exitData, rootChain) => {
 	const { slot, challengingTransaction, proof, challengingBlockNumber } = exitData;

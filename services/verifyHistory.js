@@ -1,5 +1,12 @@
 import { getProofHistory } from "./plasmaServices";
-import { checkEmptyBlock, checkInclusion, checkSecretsIncluded, getBlock, getSecretBlock } from "./ethService";
+import {
+  checkEmptyBlock,
+  checkBasicInclusion,
+  checkTXValid,
+  getBlock,
+  getSecretBlock,
+  getPlasmaCoinDepositOwner
+} from "./ethService";
 import {
   decodeSwapTransactionBytes,
   decodeTransactionBytes,
@@ -10,6 +17,9 @@ import {
 } from "../utils/cryptoUtils";
 import async from "async";
 import { zip } from "../utils/utils";
+const EthUtils	= require('ethereumjs-util');
+const BN = require('bn.js');
+const RLP = require('rlp');
 
 export const HISTORY_VALIDITY = {
   CORRECT: "Correct",
@@ -19,63 +29,185 @@ export const HISTORY_VALIDITY = {
 
 export const verifyToken = (token, rootChainContract) => {
   return getProofHistory(token).then(h =>{
-    return verifyTokenWithHistory(token, rootChainContract, h)
+    return verifyTokenWithHistory(token, h, rootChainContract)
     }
   )
 };
 
-export const verifyTokenWithHistory = (token, rootChainContract, history) => {
+const getInclusionArray = (token, history, rootChainContract) => {
+  return Promise.all(
+    Object.keys(history).map(blockNumber => {
+      let { transactionBytes, hash, proof } = history[blockNumber];
+      if (!transactionBytes && proof == "0x0000000000000000") {
+        return checkEmptyBlock(blockNumber, rootChainContract);
+      } else {
+        if(isSwapBytes(transactionBytes)) {
+          proof = EthUtils.bufferToHex(RLP.decode(proof)[0]);
+        }
+        return checkBasicInclusion(hash, blockNumber, token, proof, rootChainContract);
+      }
+    })
+  );
+};
+
+const getSwapsValidatedArray = (history, rootChainContract) => {
+  return  Promise.all(
+    Object.keys(history).map(async blockNumber => {
+      const { transactionBytes } = history[blockNumber];
+      if(transactionBytes && isSwapBytes(transactionBytes)) {
+        return checkTXValid(blockNumber, history[blockNumber], rootChainContract).then(result => [blockNumber, result]);
+      } else {
+        return Promise.resolve([]);
+      }
+    })
+  );
+};
+
+//ValidationData
+const depositValidation = (validationData) => async (cb) => {
+  const {history, failBlockNumber, transactionsHistory, rootChainContract} = validationData;
+  const depositBlock = Object.keys(history)[0];
+
+  if(failBlockNumber && new BN(depositBlock).gte(new BN(failBlockNumber))) {
+    return cb({error: "Deposit Inclusion failed", blockNumber: failBlockNumber, lastOwner: "0x0000000000000000000000000000"})
+  }
+
+  // Deposit
+  const { transactionBytes, hash } = history[depositBlock];
+  let { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
+  recipient = recipient.toLowerCase();
+
+  const calculatedHash = generateTransactionHash(slot, blockSpent, recipient);
+
+  if(calculatedHash !== hash) {
+    return cb({error: "Deposit Validation failed, invalid hash", blockNumber: depositBlock, lastOwner: "0x0000000000000000000000000000" })
+  }
+
+  let depositOwner = await getPlasmaCoinDepositOwner(slot, rootChainContract);
+  if(depositOwner.toLowerCase() !== recipient) {
+    return cb({error: "Deposit Validation failed, not deposit owner", blockNumber: depositBlock, lastOwner: "0x0000000000000000000000000000" })
+  }
+
+  transactionsHistory.push({ depositBlock, to: recipient});
+
+  return cb(null, {owner: recipient, prevBlock: depositBlock});
+};
+
+const swapValidation = (owner, prevBlock, blockNumber, validationData, cb) => {
+  const {history, swapsValidated, swapInvalidBlocks, swapInvalidSecretBlocks, transactionsHistory} = validationData;
+  const { transactionBytes, signature, hash, hashSecretA, hashSecretB } = history[blockNumber];
+
+  const { slotA, blockSpentA, B, slotB, blockSpentB, A, signatureB } = decodeSwapTransactionBytes(transactionBytes);
+
+  const generatedHashA = generateSwapHash(slotA, blockSpentA, hashSecretA, B, slotB);
+  const generatedHashB = generateSwapHash(slotB, blockSpentB, hashSecretB, A, slotA);
+
+  let error = undefined;
+  if(A.toLowerCase() !== owner.toLowerCase())                             error = "Owner does not match owner of Swap";
+  if(!error && blockSpentA !== prevBlock)                                 error = "BlockSpent is incorrect";
+  if (!error && generatedHashA.toLowerCase() !== hash.toLowerCase())      error = "Hash does not match";
+  if (!error && recover(hash, signature) !== owner.toLowerCase())         error = "Not signed correctly";
+  if (!error && recover(generatedHashB, signatureB) !== B.toLowerCase())  error = "Not signed by counterpart correctly";
+
+  let event = {
+    isSwap: true,
+    successful: !!swapsValidated[blockNumber] && !error,
+    error: error,
+    from: A,
+    to:  B,
+    blockNumber
+  };
+
+  if(!swapsValidated[blockNumber]) {
+    if(!error) event.error = "Secret inclusion proof failed";
+    transactionsHistory.push(event);
+    let yesterday = new Date(new Date().setDate(new Date().getDate()-1));
+
+    if( parseInt(swapInvalidBlocks[blockNumber].createdAt) < yesterday.getTime()/1000
+        || swapInvalidSecretBlocks[blockNumber].createdAt !== "0") {
+      return cb(null, {prevBlock: blockNumber, owner: A});
+    } else {
+      return cb({inSwap: true, blockNumber: blockNumber, lastOwner: owner, swappingOwner: B.toLowerCase()})
+    }
+  }
+
+  transactionsHistory.push(event);
+
+  if(error) {
+    return cb(null, {prevBlock: blockNumber, owner: A.toLowerCase()})
+  } else {
+    return cb(null, {prevBlock: blockNumber, owner: B.toLowerCase()});
+  }
+};
+
+const basicValidation = (owner, prevBlock, blockNumber, validationData, cb) => {
+  const {history, transactionsHistory} = validationData;
+  const { transactionBytes, signature, hash } = history[blockNumber];
+  let {slot, blockSpent, recipient} = decodeTransactionBytes(transactionBytes);
+  recipient = recipient.toLowerCase();
+
+  const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
+
+  let error = undefined;
+  if (generatedHash.toLowerCase() !== hash.toLowerCase())  error = "Hash does not match";
+  if (prevBlock !== blockSpent)                            error = "BlockSpent is incorrect";
+  if (recover(hash, signature).toLowerCase() !== owner)    error = "Not signed correctly";
+
+  transactionsHistory.push({
+    isSwap: false,
+    successful: !error,
+    error: error,
+    from: owner,
+    to:  recipient,
+    blockNumber
+  });
+
+  if(error) {
+    return cb(null, {prevBlock: blockNumber, owner: owner})
+  } else {
+    return cb(null,  {prevBlock: blockNumber, owner: recipient});
+  }
+};
+
+const blockValidation = (validationData) => {
+  return (blockNumber) => ({owner, prevBlock}, cb) => {
+    const {failBlockNumber, history} = validationData;
+
+    if (failBlockNumber && new BN(blockNumber).gte(new BN(failBlockNumber))) {
+      return cb({error: "Inclusion failed", blockNumber: failBlockNumber, lastOwner: owner})
+    }
+
+    const {transactionBytes} = history[blockNumber];
+    if (isSwapBytes(transactionBytes)) {
+      swapValidation(owner, prevBlock, blockNumber, validationData, cb);
+    } else {
+      basicValidation(owner, prevBlock, blockNumber, validationData, cb);
+    }
+  }
+};
+
+export const verifyTokenWithHistory = (token, history, rootChainContract) => {
   return new Promise(async (resolve, reject) => {
     console.log(`validating ${Object.keys(history).length} blocks`);
 
-    //Validate is included and not included on all blocks
-    let includedP = Promise.all(
-      Object.keys(history).map(blockNumber => {
-        const { transactionBytes, hash, proof } = history[blockNumber];
-        if (!transactionBytes && proof == "0x0000000000000000") {
-          return checkEmptyBlock(blockNumber, rootChainContract);
-        } else {
-          return checkInclusion(transactionBytes, hash, blockNumber, token, proof, rootChainContract)
-        }
-      })
-    );
+    //Validate all hashes are included and proofs are valid
+    let includedP = getInclusionArray(token, history, rootChainContract);
 
     //Validate secrets are revealed
-    let swappedP = Promise.all(
-      Object.keys(history).map(async blockNumber => {
-        const { transactionBytes } = history[blockNumber];
-        if(transactionBytes && isSwapBytes(transactionBytes)) {
-          const result = await checkSecretsIncluded(blockNumber, history[blockNumber], rootChainContract);
-          return {blockNumber, result}
-        } else {
-          return {}
-        }
-      })
-    );
+    let swapsValidatedP = getSwapsValidatedArray(history, rootChainContract);
 
-    let [included, swapped] = await Promise.all([includedP, swappedP]);
-    swapped = swapped.reduce(function(result, item) {
-      if(item.blockNumber) result[item.blockNumber] = item.result;
-      return result;
-    }, {});
+    let [included, swapsValidatedArr] = await Promise.all([includedP, swapsValidatedP]);
+    let swapsValidated = Object.fromEntries(swapsValidatedArr) || {};
 
-    let yesterday = new Date(new Date().setDate(new Date().getDate()-1));
-    let isDue = Object.keys(swapped).filter(k => swapped[k] === false);
-    let swapBlocksP = Promise.all(isDue.map(k => getBlock(k, rootChainContract)));
-    let secretBlocksP = Promise.all(isDue.map(k => getSecretBlock(k, rootChainContract)));
-    let [swapBlocks, secretBlocks] = await Promise.all([swapBlocksP, secretBlocksP]);
+    //Get all blockNumbers whose secret was not revealed
+    let swapsInvalidBlNumber = Object.keys(swapsValidated).filter(k => swapsValidated[k] === false);
 
-    swapBlocks = zip(isDue,swapBlocks).reduce(function(result, item) {
-      result[item[0]] = item[1];
-      return result;
-    }, {});
+    let swapInvalidBlocksP = Promise.all(swapsInvalidBlNumber.map(k => getBlock(k, rootChainContract)));
+    let swapInvalidSecretBlocksP = Promise.all(swapsInvalidBlNumber.map(k => getSecretBlock(k, rootChainContract)));
 
-    secretBlocks = zip(isDue,secretBlocks).reduce(function(result, item) {
-      result[item[0]] = item[1];
-      return result;
-    }, {});
-
-
+    let [swapInvalidBlocks, swapInvalidSecretBlocks] = await Promise.all([swapInvalidBlocksP, swapInvalidSecretBlocksP]);
+    swapInvalidBlocks = Object.fromEntries(zip(swapsInvalidBlNumber, swapInvalidBlocks));
+    swapInvalidSecretBlocks = Object.fromEntries(zip(swapsInvalidBlNumber, swapInvalidSecretBlocks));
 
     let failBlockNumber = undefined;
     let fail = included.indexOf(false);
@@ -88,115 +220,30 @@ export const verifyTokenWithHistory = (token, rootChainContract, history) => {
     let transactions = Object.keys(history).filter(blockNumber => history[blockNumber].transactionBytes);
     let transactionsHistory = [];
 
-    async.waterfall([
-      async cb => {
-        // Deposit
-        const depositBlock = Object.keys(history)[0];
-        const { transactionBytes, proof } = history[depositBlock];
-        const { slot, blockSpent, recipient } = decodeTransactionBytes(transactionBytes);
-        const hash = generateTransactionHash(slot, blockSpent, recipient);
+    const validationData = {history, failBlockNumber, transactionsHistory, rootChainContract, swapsValidated, swapInvalidBlocks, swapInvalidSecretBlocks};
 
-        if (await checkInclusion(transactionBytes, hash, depositBlock, token, proof, rootChainContract)) {
-          transactionsHistory.push({ depositBlock, to: recipient });
-          return cb(null, recipient);
-        } else {
-          return cb({error: "Deposit Validation failed", blockNumber: blockSpent })
-        }
-      },
+    await async.waterfall([
+      depositValidation(validationData),
       // Other blocks
-      ...transactions.slice(1).map(blockNumber => (owner, cb) => {
+      ...transactions.slice(1).map(blockValidation(validationData))
+    ], (err, res) => {
 
-        if(failBlockNumber && new BN(blockNumber).gte(new BN(failBlockNumber))) {
-          return cb({error: "Inclusion failed", blockNumber: failBlockNumber, lastOwner: owner})
-        }
+      if (err && err.inSwap) return resolve({
+        validity: HISTORY_VALIDITY.WAITING_FOR_SWAP,
+        blockNumber: err.blockNumber,
+        lastOwner: err.lastOwner,
+        transactionsHistory: validationData.transactionsHistory,
+        swappingOwner: err.swappingOwner
+      });
 
-        const { transactionBytes, signature, hash, hashSecretA, hashSecretB } = history[blockNumber];
-
-        if (transactionBytes) {
-          if(isSwapBytes(transactionBytes)) {
-            const { slotA, blockSpentA, B, slotB, blockSpentB, A, signatureB } =
-              decodeSwapTransactionBytes(transactionBytes);
-
-            const generatedHashA = generateSwapHash(slotA, blockSpentA, hashSecretA, B, slotB);
-            const generatedHashB = generateSwapHash(slotB, blockSpentB, hashSecretB, A, slotA);
-
-            let error = undefined;
-            if(A.toLowerCase() != owner.toLowerCase()) {
-              error = "Owner does not match owner of Swap";
-            }
-
-            if (!error && generatedHashA.toLowerCase() != hash.toLowerCase()) {
-              error = "Hash does not match";
-            }
-
-            if (!error && recover(hash, signature) != owner.toLowerCase()) {
-              error = "Not signed correctly";
-            }
-
-            if (!error && recover(generatedHashB, signatureB) != B.toLowerCase()) {
-              error = "Not signed by counterpart correctly";
-            }
-
-            transactionsHistory.push({
-              isSwap: true,
-              successful: !!swapped[blockNumber] && !error,
-              error: !!swapped[blockNumber] ? "Secret hash not included": error,
-              from: A,
-              to:  B,
-              blockNumber
-            });
-
-            if(!swapped[blockNumber]) {
-              if(parseInt(swapBlocks[blockNumber].createdAt) < yesterday.getTime()/1000 || secretBlocks[blockNumber].createdAt !== "0") {
-                return cb(null, A);
-              } else {
-                return cb({inSwap: true, blockNumber: blockNumber, lastOwner: owner, swappingOwner: B.toLowerCase()})
-              }
-            }
-
-            if(error) {
-              return cb(null, A)
-            } else {
-              return cb(null, B);
-            }
-
-          } else {
-
-            const {slot, blockSpent, recipient} = decodeTransactionBytes(transactionBytes);
-            const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
-
-            let error = undefined;
-            if (generatedHash.toLowerCase() != hash.toLowerCase()) {
-              error = "Hash does not match";
-            }
-
-            if (recover(hash, signature) != owner.toLowerCase()) {
-              error = "Not signed correctly";
-            }
-
-            transactionsHistory.push({
-              isSwap: false,
-              successful: !error,
-              from: owner.toLowerCase(),
-              to:  recipient.toLowerCase(),
-              blockNumber
-            });
-
-            if(error) {
-              return cb(null, owner.toLowerCase())
-            } else {
-              return cb(null, recipient.toLowerCase());
-            }
-          }
-        }
-      })
-    ], (err, lastOwner) => {
-      if(err && err.inSwap) return resolve({
-        validity: HISTORY_VALIDITY.WAITING_FOR_SWAP, blockNumber: err.blockNumber,
-        lastOwner: err.lastOwner, transactionsHistory, swappingOwner: err.swappingOwner})
       if (err) return reject(err);
-      if(failBlockNumber) return  reject({error: "Inclusion failed", blockNumber: failBlockNumber, lastOwner: lastOwner});
-      resolve({validity: HISTORY_VALIDITY.CORRECT, lastOwner, transactionsHistory});
+      if (failBlockNumber) return reject({
+        error: "Inclusion failed",
+        blockNumber: failBlockNumber,
+        lastOwner: res.owner
+      });
+
+      resolve({validity: HISTORY_VALIDITY.CORRECT, lastOwner: res.owner, transactionsHistory: validationData.transactionsHistory});
     });
   });
 };

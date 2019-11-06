@@ -45,7 +45,7 @@ class ValidateHistoryModal extends InitComponent {
     getProofHistory(token).then(h => {
       this.setState({blocks: Object.keys(h).length}, () => {
         this.forceUpdate();
-        verifyTokenWithHistory(token, rootChainContract, h).then(
+        verifyTokenWithHistory(token, h, rootChainContract).then(
           ({validity, lastOwner, blockNumber, transactionsHistory, swappingOwner}) => {
             console.log(`Correct history! Last true owner: ${lastOwner}`);
             console.log(transactionsHistory)
