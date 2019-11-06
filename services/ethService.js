@@ -336,7 +336,7 @@ export const checkSecretsIncluded = (blockNumber, data, rootChain) => {
   const { transactionBytes, proof } = data;
 
 	return new Promise((resolve, reject) => {
-		ethContract(rootChain).checkValidationAndInclusion(
+		ethContract(rootChain).checkTX(
       transactionBytes,
       proof,
 			blockNumber).call(
