@@ -7,6 +7,11 @@ import { calculateBattle } from "./BattleDamageCalculator";
 const RLP = require('rlp');
 const abi = require('ethereumjs-abi');
 
+export const shouldIMove = (me, state) => {
+  const isPlayer = me.toLowerCase() == state.participants[0].toLowerCase();
+  return (isPlayer && state.turnNum % 2 === 1) || (!isPlayer && state.turnNum % 2 === 0);
+}
+
 export const shouldIAddMove = (me, state) => {
   return state.turnNum % 2 != 0 && state.turnNum > 1 && me.toLowerCase() == state.participants[1].toLowerCase()
 }
@@ -40,9 +45,9 @@ const initialTransition = (game, move) => {
   return game;
 };
 
-const transtionEvenToOdd = (game) => {
-  const oldSalt = localStorage.getItem('salt');
-  const oldMove = localStorage.getItem('move');
+const gameToState = (game, move, salt) => {
+  const oldSalt = salt || localStorage.getItem('salt');
+  const oldMove = move || localStorage.getItem('move');
   game.saltOP = oldSalt;
   game.decisionOP = parseInt(oldMove);
 
@@ -68,8 +73,12 @@ const transtionEvenToOdd = (game) => {
     random: abi.soliditySHA3(['bytes32', 'bytes32'], [game.saltPL, game.saltOP]),
   };
 
+  return state;
+}
+
+export const transtionEvenToOdd = (game, move, salt) => {
+  const state = gameToState(game, move, salt);
   const [nextState, events] = calculateBattle(state);
-  console.log("EVENTS", events);
 
   const oddState = {
     cryptoMonPL: game.cryptoMonPL,
@@ -90,14 +99,14 @@ const transtionEvenToOdd = (game) => {
     decisionPL: game.decisionPL,
     saltPL: game.saltPL,
     decisionOP: game.decisionOP,
-    saltOP: game.saltOP
+    saltOP: game.saltOP,
+    events
   };
 
   return oddState;
 };
 
 export const addNextMove = (state, move) => {
-  console.log('add next move')
   const newSalt = randomHex256();
   localStorage.setItem('salt', newSalt)
   localStorage.setItem('move', move)
@@ -125,7 +134,7 @@ export const CMBmover = (state) => {
   return state.turnNum%2 === 0 ? state.participants[0]: state.participants[1];
 }
 
-const transitionOddToEven = (game, move, isFirst) => {
+export const transitionOddToEven = (game, move, isFirst) => {
   game.decisionPL = move;
   if(!isFirst) {
     game.hashDecision = game.nextHashDecision;
@@ -134,6 +143,7 @@ const transitionOddToEven = (game, move, isFirst) => {
   game.decisionOP = undefined;
   game.saltOP = undefined;
   game.nextHashDecision = undefined;
+
   return game;
 };
 

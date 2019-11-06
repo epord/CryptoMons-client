@@ -23,10 +23,13 @@ import {
   getInitialCMBState,
   readyForBattleCalculation,
   shouldIAddMove,
+  shouldIMove,
   toCMBBytes,
-  transitionCMBState
+  transitionCMBState,
+  transitionOddToEven,
+  transtionEvenToOdd,
 } from "../../../utils/CryptoMonsBattles"
-import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
+import { getExitDataToBattleRLPData, hashChannelState, sign } from "../../../utils/cryptoUtils";
 
 import {
   battleForceMove,
@@ -40,7 +43,6 @@ import {
 import { getBattlesFrom } from '../../redux/actions';
 import { getExitData } from "../../../services/plasmaServices";
 import { Typography } from '@material-ui/core';
-import { battleChallengeAfter } from '../../../services/battleChallenges.js';
 
 class Battles extends InitComponent {
 
@@ -54,15 +56,37 @@ class Battles extends InitComponent {
   }
 
   stateUpdate = (prevState, currentState) => {
+    const { ethAccount } = this.props;
+
+    console.log("MY TURN?,", shouldIMove(ethAccount, currentState));
+    console.log(currentState.turnNum)
+    if(shouldIMove(ethAccount, currentState)) {
+      this.validateTransition(prevState, currentState);
+    }
+    //if(valid) {}
     if(currentState) this.setState({ currentState, prevState }, async () => {
       const { ethAccount } = this.props;
       if(currentState && readyForBattleCalculation(ethAccount, currentState)) {
         prevState = currentState;
         currentState = await this.transitionState(undefined);
         this.setState({ currentState: currentState, prevState: prevState });
-        console.log('transition before move')
       }
     });
+    //Else INVALID STATE RECEIVED FORCE MOVE!
+  }
+
+  validateTransition = (prevState, currentState) => {
+    if(currentState.turnNum == 0) {
+      //Validate initial conditions
+    } else if(prevState.turnNum == 0) {
+      //validate first move
+    }else if(prevState.turnNum%2 == 0) {
+      let calculatedState = transtionEvenToOdd(prevState.game, currentState.game.decisionOP, currentState.game.saltOP);
+      console.log('EVENTS1:', calculatedState.events);
+    } else {
+      let calculatedState = transitionOddToEven(prevState.game, currentState.game.decisionPL, prevState.turNum == 1);
+      //Validate initial conditions
+    }
   }
 
   initSocket = () => {
@@ -132,7 +156,9 @@ class Battles extends InitComponent {
     const { currentState } = this.state;
     const { ethAccount } = this.props;
 
-    currentState.game = transitionCMBState(currentState.game, currentState.turnNum, move);
+    const calculatedState = transitionCMBState(currentState.game, currentState.turnNum, move);
+    console.log('EVENTS2:', calculatedState.events);
+    currentState.game = calculatedState;
     currentState.turnNum = currentState.turnNum + 1;
 
     if(!shouldIAddMove(ethAccount, currentState)) {

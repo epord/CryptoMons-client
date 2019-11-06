@@ -536,7 +536,6 @@ function getCriticalHitThreshold(state, otherState) {
   if(T > 0xFF) {
     return 0xFF;
   }
-  console.log("CRITICAL THRESHOLD" , T);
   return T;
 }
 // ------------------------------------------------------------
