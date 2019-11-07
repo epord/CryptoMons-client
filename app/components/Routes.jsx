@@ -34,9 +34,10 @@ import SearchIcon from '@material-ui/icons/Search';
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
+import _ from 'lodash';
+
 import {
-	getChallengeable,
-	setDefaultAccount,
+	setDefaultAccount, subscribeToChallenged,
 	subscribeToChallengeRespond,
 	subscribeToChannelFunded,
 	subscribeToCMBRequested,
@@ -63,25 +64,36 @@ import {
 	getOwnedTokens,
 	getSwappingRequests,
 	getSwappingTokens,
-	loadContracts,
-	initApp,
 	getChallengeableTokens,
 	getChallengedFrom,
+	initApp,
+	getBalance,
 } from '../redux/actions'
 
 class Routes extends React.Component {
-	state = { drawerOpen: false }
+	state = { drawerOpen: false, subscribed: false }
 
 	componentDidMount = () => {
 		this.props.getEthAccount();
 	};
 
 	componentDidUpdate = (prevProps) => {
-		const { ethAccount } = this.props;
+		const { ethAccount, watchableTokens } = this.props;
+		const { rootChain, subscribed } = this.state;
+
 		if (!prevProps.ethAccount && ethAccount) {
 			this.init()
 		}
-  }
+
+		if(ethAccount && rootChain) {
+			if(!subscribed || _.xor(prevProps.watchableTokens, watchableTokens).length > 0) {
+			  console.log(watchableTokens);
+        this.setState({subscribed: true});
+				this.subscribeToEvents(ethAccount, watchableTokens);
+			}
+		}
+
+  };
 
 	init = () => {
 		this.loadContracts().then(() => {
@@ -91,7 +103,8 @@ class Routes extends React.Component {
 				getExitingTokens,
 				getExitedTokens,
 				getOwnedTokens,
-				getChallengedFrom
+				getChallengedFrom,
+				getBalance
 			} = this.props;
 
 		const { rootChain } = this.state;
@@ -101,8 +114,7 @@ class Routes extends React.Component {
 			getExitingTokens(ethAccount, rootChain);
 			getExitedTokens(ethAccount, rootChain);
 			getChallengedFrom(ethAccount, rootChain);
-
-			this.subscribeToEvents(this.props.ethAccount);
+			getBalance(rootChain);
 		});
 
 		setDefaultAccount(this.props.ethAccount);
@@ -120,7 +132,7 @@ class Routes extends React.Component {
 		});
 	};
 
-	subscribeToEvents = address => {
+	subscribeToEvents = (address, plasmaTokens) => {
 		const { rootChain, cryptoMons, plasmaCM, plasmaTurnGame } = this.state;
 
 		subscribeToCryptoMonTransfer(cryptoMons, address, (r => {
@@ -136,33 +148,36 @@ class Routes extends React.Component {
 			getOwnedTokens(address, 'deposited');
 		}));
 
-		subscribeToCoinReset(rootChain, address,(r => {
+		subscribeToCoinReset(rootChain, address, plasmaTokens,(r => {
 			console.log("Coin Reset - Slot: " + r.returnValues.slot)
-			const { getOwnedTokens, getExitingTokens } = this.props;
+			const { getOwnedTokens, getExitingTokens, getChallengedFrom, getChallengeableTokens } = this.props;
 			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
-			getChallengeable(this.props.ethAccount, rootChain);
-			this.getChallengedFrom(this.props.ethAccount);
+      getChallengedFrom(address, rootChain);
+      getChallengeableTokens(address, rootChain);
 		}));
 
-		subscribeToFinalizedExit(rootChain, address,(r => {
-			console.log("Finalized Exit - Slot: " + r.returnValues.slot)
-			const { getExitingTokens } = this.props;
+		subscribeToFinalizedExit(rootChain, address, plasmaTokens,(r => {
+      console.log("Finalized Exit - Slot: " + r.returnValues.slot)
+			const { getExitingTokens, getExitedTokens } = this.props;
 			getExitingTokens(address, rootChain);
 			getExitedTokens(address, rootChain);
 		}));
 
-		subscribeToStartedExit(rootChain, address,(r => {
+		subscribeToStartedExit(rootChain, address, plasmaTokens,(r => {
 			console.log("Started Exit - Slot: " + r.returnValues.slot)
-			const { getOwnedTokens, getExitingTokens } = this.props;
+			const { getOwnedTokens, getExitingTokens, getChallengedFrom, getChallengeableTokens, enqueueSnackbar } = this.props;
+			enqueueSnackbar(`Exit started for token #${r.returnValues.slot}`, { variant: 'info' })
 			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
+      getChallengedFrom(address, rootChain);
+      getChallengeableTokens(address, rootChain);
 		}));
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
 			console.log("Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
 			const { getOwnedTokens, getSwappingTokens, getSwappingRequests, enqueueSnackbar } = this.props;
-			enqueueSnackbar(`New block mined #${r.returnValues.blockNumber}`, { variant: 'info' })
+			enqueueSnackbar(`New block mined #${r.returnValues.blockNumber}`, { variant: 'default' })
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address);
 			getSwappingRequests(address);
@@ -170,12 +185,13 @@ class Routes extends React.Component {
 
 		subscribeToSubmittedSecretBlocks(rootChain,(r => {
 			console.log("Secret Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
-			const { getOwnedTokens, getSwappingTokens } = this.props;
+			const { getOwnedTokens, getSwappingTokens, enqueueSnackbar } = this.props;
+			enqueueSnackbar(`New Secret block mined #${r.returnValues.blockNumber}`, { variant: 'default' })
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address)
 		}));
 
-		subscribeToWithdrew(rootChain, address,(r => {
+		subscribeToWithdrew(rootChain, address, plasmaTokens,(r => {
 			console.log("Withdrawal - Slot: " + r.returnValues.slot)
 			const { getCryptoMonsFrom, getExitedTokens } = this.props;
 			getCryptoMonsFrom(address, cryptoMons);
@@ -183,26 +199,37 @@ class Routes extends React.Component {
 		}));
 
 		subscribeToFreeBond(rootChain, address, (r => {
-			console.log('Free Bond event');
-			this.getBalance()
-		}))
+			const { getBalance } = this.props;
+      console.log('Free Bond event');
+			getBalance(rootChain)
+		}));
 
 		subscribeToSlashedBond(rootChain, address, (r => {
+			const { getBalance } = this.props;
 			console.log('Slashed Bond event');
-			this.getBalance()
-		}))
+			getBalance(rootChain)
+		}));
 
-		subscribeToChallengeRespond(rootChain, address, (r => {
-			getChallengeable(this.props.ethAccount, rootChain);
-			this.getChallengedFrom(this.props.ethAccount);
-			this.getBalance();
+		subscribeToChallenged(rootChain, address, plasmaTokens, (r => {
+			const { getChallengedFrom, getChallengeableTokens, enqueueSnackbar } = this.props;
+			getChallengeableTokens(address, rootChain);
+			getChallengedFrom(address, rootChain);
+			enqueueSnackbar(`Token being challenged`, { variant: 'warning' })
+			console.log('ChallengedExit event');
+		}));
+
+		subscribeToChallengeRespond(rootChain, address, plasmaTokens, (r => {
+      const { getChallengedFrom, getChallengeableTokens, getBalance } = this.props;
+      getChallengeableTokens(address, rootChain);
+			getChallengedFrom(address, rootChain);
+			getBalance(rootChain);
 			console.log('RespondedExitChallenge event');
-		}))
+		}));
 
 		subscribeToCMBRequested(plasmaTurnGame, address, (r => {
 			console.log('CMBRequested event');
 			this.props.getBattlesFrom(address, plasmaTurnGame, plasmaCM)
-		}))
+		}));
 
 		subscribeToChannelFunded(plasmaCM, address, (r => {
 			console.log('ChannelFunded event');
@@ -310,7 +337,8 @@ class Routes extends React.Component {
 
 
 const mapStateToProps = state => ({
-	ethAccount: state.ethAccount
+	ethAccount: state.ethAccount,
+	watchableTokens: state.watchableTokens
  });
 
 const mapDispatchToProps = dispatch => ({
@@ -326,6 +354,7 @@ const mapDispatchToProps = dispatch => ({
 	getEthAccount: () => dispatch(getEthAccount()),
 	getBattlesFrom: (address, plasmaTurnGame, plasmaCM) => dispatch(getBattlesFrom(address, plasmaTurnGame, plasmaCM)),
   getChallengedFrom: (address, rootChainContract) => dispatch(getChallengedFrom(address, rootChainContract)),
+	getBalance: (address, rootChainContract) => dispatch(getBalance(address, rootChainContract)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(withSnackbar(Routes));

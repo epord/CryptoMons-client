@@ -38,7 +38,7 @@ export const battleChallengeBetween = (channel, index, plasmaCM) => {
 			if (err) return reject(err);
 			const parentBlock = exit.prevBlock;
 			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${exit.slot}&exitBlock=${parentBlock}`);
-			if(response.status >=400) return reject("Challenge After could not be completed");
+			if(response.status >=400) return reject("Challenge Between could not be completed");
 
 			const exitData = await response.json();
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;

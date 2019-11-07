@@ -28,7 +28,6 @@ class App extends InitComponent {
 		super(props)
 		this.state = {
 			loading: !props.rootChainContract,
-			withdrawableAmount: '0'
 		}
 	}
 
@@ -38,7 +37,7 @@ class App extends InitComponent {
 	}
 
 	getBalance = () => {
-		const { rootChainContract } = this.props;
+		const { rootChainContract, withdrawableAmount } = this.props;
 		return getBalance(rootChainContract).then(async withdrawable => {
 			await this.setState({ withdrawableAmount: withdrawable });
 			return withdrawable;
@@ -46,8 +45,7 @@ class App extends InitComponent {
 	}
 
 	withdrawBonds = () => {
-		const { rootChainContract } = this.props;
-		const { withdrawableAmount } = this.state;
+		const { rootChainContract, withdrawableAmount } = this.props;
 		withdrawBonds(rootChainContract).then(() => {
 			console.log(`You have withdrew ${withdrawableAmount} wei.`);
 			this.setState({ withdrawableAmount: 0 });
@@ -62,8 +60,8 @@ class App extends InitComponent {
 	};
 
 	render() {
-		const { cryptoMonsContract, rootChainContract, vmcContract, ethAccount } = this.props;
-		const { loading, withdrawableAmount } = this.state;
+		const { cryptoMonsContract, rootChainContract, vmcContract, ethAccount, withdrawableAmount} = this.props;
+		const { loading } = this.state;
 
 		if (loading) return (<div>Loading...</div>)
 
@@ -120,7 +118,8 @@ const mapStateToProps = state => ({
 	vmcContract: state.vmcContract,
 	cryptoMonsContract: state.cryptoMonsContract,
 	rootChainContract: state.rootChainContract,
-	ethAccount: state.ethAccount
+	ethAccount: state.ethAccount,
+	withdrawableAmount: state.withdrawableAmount
  });
 
 const mapDispatchToProps = dispatch => ({

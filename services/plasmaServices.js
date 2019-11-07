@@ -155,3 +155,13 @@ export const getSwapData = token => {
     })
   })
 }
+
+export const fastForwardBlockChain =(seg) => {
+  return fetch(`http://localhost:7545`, {
+    method: 'POST',
+    body: `{"id":1337,"jsonrpc":"2.0","method":"evm_increaseTime","params":[${seg}]}`,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+};

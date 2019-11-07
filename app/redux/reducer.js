@@ -1,6 +1,8 @@
 import * as C from "./constants";
+import {unique} from "../../utils/utils";
 
 const initialState = {
+	watchableTokens: [],
 	myCryptoMons: [],
 	plasmaTokens: [],
 	exitingTokens: [],
@@ -9,6 +11,21 @@ const initialState = {
 	swappingTokens: [],
 	swappingRequests: [],
 	challengedTokens: [],
+  withdrawableAmount: '0',
+};
+
+const updatingWatchable = (state) => {
+	state.watchableTokens = unique(
+		[
+		...state.plasmaTokens,
+		...state.exitingTokens,
+		...state.exitedTokens,
+		...state.challengeableTokens,
+		...state.challengedTokens.map(t => t.slot)
+		]
+	);
+
+	return state;
 };
 
 const reducerMapper = {
@@ -23,28 +40,28 @@ const reducerMapper = {
     });
 	},
 	[C.GOT_OWNED_TOKENS]: (state, action) => {
-		return Object.assign({}, state, {
+		return updatingWatchable(Object.assign({}, state, {
       plasmaTokens: action.payload,
 			tokensLoaded: true,
-    });
+    }));
 	},
 	[C.GOT_CHALLENGEABLES]: (state, action) => {
-		return Object.assign({}, state, {
+		return updatingWatchable(Object.assign({}, state, {
 			challengeableTokens: action.payload,
 			challengeableTokensLoaded: true,
-		});
+		}));
 	},
 	[C.GOT_EXITING_FROM]: (state, action) => {
-		return Object.assign({}, state, {
+		return updatingWatchable(Object.assign({}, state, {
       exitingTokens: action.payload,
 			exitingTokensLoaded: true,
-    });
+    }));
 	},
 	[C.GOT_EXITED]: (state, action) => {
-		return Object.assign({}, state, {
+		return updatingWatchable(Object.assign({}, state, {
       exitedTokens: action.payload,
 			exitedTokensLoaded: true,
-    });
+    }));
 	},
 	[C.GOT_SWAPPING]: (state, action) => {
 		return Object.assign({}, state, {
@@ -57,16 +74,21 @@ const reducerMapper = {
     });
 	},
 	[C.GOT_CHALLENGED_TOKENS]: (state, action) => {
-		return Object.assign({}, state, {
+		return updatingWatchable(Object.assign({}, state, {
       challengedTokens: action.payload,
 			challengedTokensLoaded: true,
-    });
+    }));
 	},
 	[C.GOT_BATTLES]: (state, action) => {
 		return Object.assign({}, state, {
       battles: action.payload
     });
 	},
+  [C.GOT_BALANCE]: (state, action) => {
+    return Object.assign({}, state, {
+      withdrawableAmount: action.payload
+    });
+  },
 	[C.GOT_CONTRACTS]: (state, action) => {
 		return Object.assign({}, state, {
 			rootChainContract: { ...action.payload.RootChain, address: action.payload.RootChain.networks['5777'].address },

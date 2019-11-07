@@ -50,13 +50,11 @@ export const getPlasmaCoinDepositOwner = (slot, rootChain) => {
 
 const getStateTokens = (filter, rootChain, state) => {
 	return new Promise((resolve, reject) => {
-		const blockFilter = { fromBlock: 0, toBlock: 'latest' };
-
-		//TODO: if the coin is exiting, another call to getExit to check the owner coincides should be made
 		baseEthContract(rootChain).getPastEvents("StartedExit",
 			{ filter: filter, fromBlock: 0, toBlock: 'latest' }, async (err, result) => {
 			if(err) return reject(err);
-			const callBacks = result.map((s) => getCoinState(s.returnValues.slot, rootChain));
+			const uniques = _.uniqBy(result.reverse(), s => s.returnValues.slot);
+			const callBacks = uniques.map((s) => getCoinState(s.returnValues.slot, rootChain));
 			const exitingBool = await Promise.all(callBacks);
 			resolve(zip(result, exitingBool).filter(e => e[1] == state).map(e => e[0]));
 		});
@@ -80,15 +78,32 @@ export const depositToPlasma = (token, cryptoMons, rootChain) => {
 };
 
 let alreadyLogged = {};
-const subscribeToEvent = (event, filter, data, cb) => {
-	baseEthContract(data).events[event]({ filter: filter}, (err, res) => {
-		if(err) return console.error(err);
-		let key = res.transactionHash + res.logIndex;
-		if(!alreadyLogged[key]) {
-		  alreadyLogged[key] = true;
-      cb(res)
-    }
-	})
+let subscriptions = {};
+let subscribed = {};
+
+const subscribeToEvent = (event, volatile, filter, data, cb) => {
+	let sub = async () => {
+		if (!volatile && subscribed[event]) return;
+		subscribed[event] = true;
+		if (volatile && subscriptions[event]) {
+			await subscriptions[event].unsubscribe();
+		}
+
+		let subscription = baseEthContract(data).events[event]({filter: filter}, (err, res) => {
+			if (err) return console.error(err);
+			let key = res.transactionHash + res.logIndex;
+			if (!alreadyLogged[key]) {
+				alreadyLogged[key] = true;
+				cb(res)
+			}
+		});
+
+		if (volatile) {
+			subscriptions[event] = subscription;
+		}
+	}
+
+	sub();
 };
 
 export const getCryptomon = (slot, cryptoMons) => {
@@ -110,57 +125,67 @@ export const getPokemonData = (id, cryptoMons) => {
 }
 
 export const subscribeToCryptoMonTransfer = (cryptoMon, address, cb) => {
-	subscribeToEvent("Transfer", {to: address}, cryptoMon, cb)
+	subscribeToEvent("Transfer", false, {to: address}, cryptoMon, cb)
 };
 
 export const subscribeToDeposits = (rootChain, address, cb) => {
-	subscribeToEvent("Deposit", {from: address}, rootChain, cb)
+	subscribeToEvent("Deposit", false, {from: address}, rootChain, cb)
 };
 
 export const subscribeToSubmittedBlocks = (rootChain, cb) => {
-	subscribeToEvent("SubmittedBlock", {}, rootChain, cb)
+	subscribeToEvent("SubmittedBlock",false, {}, rootChain, cb)
 };
 
 export const subscribeToSubmittedSecretBlocks = (rootChain, cb) => {
-	subscribeToEvent("SubmittedSecretBlock", {}, rootChain, cb)
+	subscribeToEvent("SubmittedSecretBlock",false, {}, rootChain, cb)
 };
 
-export const subscribeToStartedExit = (rootChain, address, cb) => {
-	subscribeToEvent("StartedExit", {owner: address}, rootChain, cb)
+export const subscribeToStartedExit = (rootChain, address, plasmaTokens, cb) => {
+	subscribeToEvent("StartedExit",true, {slot: plasmaTokens}, rootChain, cb)
+	subscribeToEvent("StartedExit",false, {owner: address}, rootChain, cb)
 };
 
-export const subscribeToCoinReset = (rootChain, address, cb) => {
-	subscribeToEvent("CoinReset", {owner: address}, rootChain, cb)
+export const subscribeToCoinReset = (rootChain, address, plasmaTokens, cb) => {
+	subscribeToEvent("CoinReset",true, {slot: plasmaTokens}, rootChain, cb)
+	subscribeToEvent("CoinReset",false, {owner: address}, rootChain, cb)
 };
 
-export const subscribeToFinalizedExit = (rootChain, address, cb) => {
-	subscribeToEvent("FinalizedExit", {owner: address}, rootChain, cb)
+export const subscribeToFinalizedExit = (rootChain, address, plasmaTokens, cb) => {
+	subscribeToEvent("FinalizedExit",true, {slot: plasmaTokens}, rootChain, cb)
+	subscribeToEvent("FinalizedExit",false, {owner: address}, rootChain, cb)
 };
 
-export const subscribeToWithdrew = (rootChain, address, cb) => {
-	subscribeToEvent("Withdrew", {owner: address}, rootChain, cb)
+export const subscribeToWithdrew = (rootChain, address, plasmaTokens, cb) => {
+	subscribeToEvent("Withdrew",true, {slot: plasmaTokens}, rootChain, cb)
+	subscribeToEvent("Withdrew",false, {owner: address}, rootChain, cb)
 };
 
 export const subscribeToFreeBond = (rootChain, address, cb) => {
-	subscribeToEvent("FreedBond", {from: address}, rootChain, cb);
+	subscribeToEvent("FreedBond",false, {from: address}, rootChain, cb);
 }
 
 export const subscribeToSlashedBond = (rootChain, address, cb) => {
-	subscribeToEvent("SlashedBond", {from: address}, rootChain, cb);
+	subscribeToEvent("SlashedBond",false, {from: address}, rootChain, cb);
 }
 
-export const subscribeToChallengeRespond = (rootChain, address, cb) => {
-	//TODO add filter?
-	subscribeToEvent("RespondedExitChallenge", {}, rootChain, cb);
+export const subscribeToChallenged = (rootChain, address, plasmaTokens, cb) => {
+	subscribeToEvent("ChallengedExit",true, {slot: plasmaTokens}, rootChain, cb);
+	subscribeToEvent("ChallengedExit",false, {owner: address}, rootChain, cb);
+}
+
+export const subscribeToChallengeRespond = (rootChain, address, plasmaTokens, cb) => {
+	subscribeToEvent("RespondedExitChallenge",true, {slot: plasmaTokens}, rootChain, cb);
+	subscribeToEvent("RespondedExitChallenge",false, {owner: address}, rootChain, cb);
+	subscribeToEvent("RespondedExitChallenge",false, {challenger: address}, rootChain, cb);
 }
 
 export const subscribeToCMBRequested = (plasmaCM, address, cb) => {
-	subscribeToEvent("CryptoMonBattleRequested", {player: address}, plasmaCM, cb);
+	subscribeToEvent("CryptoMonBattleRequested",false, {player: address}, plasmaCM, cb);
 }
 
 export const subscribeToChannelFunded = (plasmaCM, address, cb) => {
-	subscribeToEvent("ChannelFunded", {creator: address}, plasmaCM, cb);
-	subscribeToEvent("ChannelFunded", {opponent: address}, plasmaCM, cb);
+	subscribeToEvent("ChannelFunded",false, {creator: address}, plasmaCM, cb);
+	subscribeToEvent("ChannelFunded",false, {opponent: address}, plasmaCM, cb);
 }
 
 export const getChallengeable = (address, rootChain) => {
@@ -202,14 +227,19 @@ export const withdrawBonds = (rootChain) => {
  });
 }
 
-/// TODO: Shouldn't return all exits, but should return multiple times the same slot if there are multiple challengeBefore going on
 export const getChallengedFrom = (address, rootChain) => {
 	return new Promise(async (resolve, reject) => {
 		const exiting = await getExitingFrom(address, rootChain);
 		const slotFilter = { slot: exiting };
-		const filteredTokens = unique((await getExitingTokens(slotFilter, rootChain)).map(t => t.returnValues.slot));
-		const challenges = await Promise.all(filteredTokens.map(s => getChallenges(s, rootChain)));
-		const result = zip(filteredTokens, challenges).filter(e=> e[1].length > 0).map(e => ({ slot: e[0], txHash: e[1] }));
+		const [exitingEvents, ownedTokens] = await Promise.all([
+			getExitingTokens(slotFilter, rootChain),
+			getOwnedTokens(address, "EXITING")
+		]);
+		const tokens = unique([...exitingEvents.map(e => e.returnValues.slot), ...ownedTokens]);
+
+		const challenges = await Promise.all(tokens.map(s => getChallenges(s, rootChain)));
+		const result = zip(tokens, challenges.map(c => c.filter(p => p !== "0x0000000000000000000000000000000000000000000000000000000000000000")))
+			.filter(e=> e[1].length > 0).map(e => ({ slot: e[0], txHash: e[1] }));
 		const filtered = unique(result, (s1) => (s2) => s1.slot == s2.slot);
 		resolve(filtered)
 	});
@@ -281,6 +311,8 @@ export const respondChallenge = (slot, challengingBlock, challengingTxHash,  roo
 
   return new Promise(async (resolve, reject) => {
 		const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${challengingBlock}`);
+		if(response.status >=400) return reject("Challenge response could not be completed");
+
 		const challengeData = await response.json();
 
 		const { challengingBlockNumber: respondingBlockNumber, challengingTransaction: respondingTransaction, proof, signature} = challengeData;

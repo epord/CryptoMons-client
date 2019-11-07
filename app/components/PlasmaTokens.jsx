@@ -30,6 +30,8 @@ import {
 import {createAtomicSwap, getExitData, transferInPlasma} from '../../services/plasmaServices';
 import SelectPlayerTokenModal from "./common/SelectPlayerTokenModal.jsx";
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
+import {withSnackbar} from "notistack";
+import {toAddressColor, toReadableAddress} from "../../utils/utils";
 
 const styles = theme => ({
   dialogPaper: {
@@ -51,10 +53,12 @@ class PlasmaTokens extends React.Component {
 
   transferInPlasma = async token => {
     const { transferAddress } = this.state;
+    const { enqueueSnackbar } = this.props;
     console.log(`Transfering ${token} to ${transferAddress}`);
 
     transferInPlasma(token, transferAddress).then(() =>{
       console.log("Successful Submission, wait for mining");
+      enqueueSnackbar(`Transfer submitted, wait for mining`, { variant: 'warning' })
       this.closeTransferModal();
     })
   };
@@ -80,27 +84,34 @@ class PlasmaTokens extends React.Component {
   };
 
   finalizeExit = token => async () => {
-    const { rootChainContract } = this.props;
-    await finalizeExit(rootChainContract, token);
-    console.log("Finalized Exit successful");
+    const { rootChainContract, enqueueSnackbar } = this.props;
+    finalizeExit(rootChainContract, token)
+      .then(r => enqueueSnackbar(`Token #${token} exit finalized successfully`, { variant: 'success' }))
+      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Finalize Exit failed", { variant: 'error' }));
   };
 
-  challengeBefore = token => () => {
-    const { rootChainContract } = this.props;
+  challengeBefore = token => async () => {
+    const { rootChainContract, enqueueSnackbar } = this.props;
     console.log(`Challenging Before: ${token}`);
-    challengeBefore(token, rootChainContract);
+    challengeBefore(token, rootChainContract)
+      .then(r => enqueueSnackbar(`Token #${token} challenged successfully`, { variant: 'success' }))
+      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge Before failed", { variant: 'error' }));
   };
 
   challengeBetween = token => () => {
-    const { rootChainContract } = this.props;
+    const { rootChainContract, enqueueSnackbar } = this.props;
     console.log(`Challenging Between: ${token}`);
-    challengeBetween(token, rootChainContract);
+    challengeBetween(token, rootChainContract)
+      .then(r => enqueueSnackbar(`Token #${token} challenged successfully`, { variant: 'success' }))
+      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge Between failed", { variant: 'error' }));
   };
 
   challengeAfter = token => () => {
-    const { rootChainContract } = this.props;
+    const { rootChainContract, enqueueSnackbar } = this.props;
     console.log(`Challenging After: ${token}`);
-    challengeAfter(token, rootChainContract);
+    challengeAfter(token, rootChainContract)
+      .then(r => enqueueSnackbar(`Token #${token} challenged successfully`, { variant: 'success' }))
+      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge After failed", { variant: 'error' }));
   };
 
   withdraw = token => async () => {
@@ -110,10 +121,13 @@ class PlasmaTokens extends React.Component {
   };
 
   respondChallenge = async (token, hash) => {
-    const { rootChainContract } = this.props;
+    const { rootChainContract, enqueueSnackbar } = this.props;
     const challenge = await getChallenge(token, hash, rootChainContract);
     const challengingBlock = challenge[3];
-    respondChallenge(token, challengingBlock, hash, rootChainContract);
+    await respondChallenge(token, challengingBlock, hash, rootChainContract)
+      .then(r => enqueueSnackbar(`Token #${token} challenged responded successfully`, { variant: 'success' }))
+      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge response failed", { variant: 'error' }));
+    this.closeRespondChallengeModal()
   };
 
   onBattleStart = ownToken => async (opponent, opponentToken) => {
@@ -182,15 +196,30 @@ class PlasmaTokens extends React.Component {
     const challengesCount = challengesToRespond ? challengesToRespond.length : 0;
 
     return (
-      <Dialog onClose={this.closeRespondChallengeModal} open={Boolean(respondModalOpen)} classes={{ paper: classes.dialogPaper }}>
+      <Dialog
+        onClose={this.closeRespondChallengeModal}
+        open={Boolean(respondModalOpen)} classes={{ paper: classes.dialogPaper }}>
         <DialogTitle>Respond to challenges</DialogTitle>
-        <Typography gutterBottom style={{ textAlign: 'center' }} variant="body1">There {challengesCount > 1 ? 'are' : 'is'} active {challengesCount} challenge{challengesCount > 1 ? 's' : ''}</Typography>
+        <Grid style={{ padding: '1em', paddingTop: "0"}}>
         {(challengesToRespond || []).map(challenge => (
-          <React.Fragment>
-            <Typography>{challenge.owner} challenged you in block number ${challenge.blockNumber}</Typography>
+          <div
+            key={challenge.txHash}
+            style={{
+            border: "2px solid black",
+            borderRadius: "5px",
+            margin: "0.5em",
+            padding: "0.5em",
+            display: "flex",
+            flexDirection: "column"
+          }}>
+
+            <Typography style={{textAlign: "center", fontWeight: "bold"}}>
+              <span style={{color: toAddressColor(challenge.owner)}}>{toReadableAddress(challenge.owner)} </span>
+              challenged this Token in block {challenge.blockNumber}</Typography>
             <Button variant="contained" color="primary" onClick={() => this.respondChallenge(challengedSlot, challenge.txHash)}>Respond Challenge</Button>
-          </React.Fragment>
+          </div>
         ))}
+        </Grid>
       </Dialog>
     )
   }
@@ -335,7 +364,7 @@ class PlasmaTokens extends React.Component {
               />
             </Grid>
           ))}
-          {challengeableTokens.map(token => (
+          {_.differenceWith(challengeableTokens, challengedTokens, (c1,c2) => c1 === c2.slot).map(token => (
             <Grid item key={token}>
               <CryptoMonCard
                 plasmaToken={token}
@@ -378,6 +407,9 @@ class PlasmaTokens extends React.Component {
                   {
                     title: "Respond Challenge",
                     func: this.openRespondChallengeModal(slot, txHash)
+                  },{
+                    title: "Finalize Exit",
+                    func: this.finalizeExit(slot)
                   }
                 ]}
               />
@@ -418,4 +450,4 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => ({ });
 
-export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(PlasmaTokens)));
+export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(withSnackbar(PlasmaTokens))));

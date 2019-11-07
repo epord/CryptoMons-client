@@ -46,9 +46,9 @@ const gotBattles = battles => {
   return { type: C.GOT_BATTLES, payload: battles };
 }
 
-
-
-
+const gotBalance = balance => {
+  return { type: C.GOT_BALANCE, payload: balance };
+}
 
 export const getEthAccount = () => (dispatch, getState) => {
   return window.ethereum.enable().then((account) =>{
@@ -65,7 +65,11 @@ export const getCryptoMonsFrom = (address, cryptoMonsContract) => (dispatch, get
 export const getOwnedTokens = (address, state) => (dispatch, getState) => {
   return PlasmaService
     .getOwnedTokens(address, state)
-    .then(tokens => dispatch(gotOwnedTokens(tokens)));
+    .then(tokens => {
+      dispatch(gotOwnedTokens(tokens));
+      return tokens;
+      }
+    );
 }
 
 export const getExitingTokens = (address, rootChainContract) => (dispatch, getState) => {
@@ -152,4 +156,10 @@ export const getBattlesFrom = (address, plasmaTurnGameContract, plasmaCMContract
     .then(battles => {
       dispatch(gotBattles(battles))
     })
+}
+
+export const getBalance = (rootChainContract) => (dispatch, getState) => {
+  return EthService
+    .getBalance(rootChainContract)
+    .then(balance => dispatch(gotBalance(balance)));
 }

@@ -24,6 +24,7 @@ import { toAddressColor, toReadableAddress } from '../../utils/utils';
 import { createAtomicSwap, getSwapData } from '../../services/plasmaServices'
 import { getSwappingRequests, getSwappingTokens, revealSecret } from '../redux/actions';
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
+import {withSnackbar} from "notistack";
 
 const styles = theme => ({
 	dialogPaper: {
@@ -46,14 +47,16 @@ class Swap extends InitComponent {
 
 	revealSecret = async () => {
 		const { tokenToReveal, secretToReveal } = this.state;
-		const { revealSecret } = this.props;
+		const { revealSecret, enqueueSnackbar } = this.props;
 
 		this.setState({ revealingSecret: true });
 		revealSecret(tokenToReveal, secretToReveal)
 			.then(() => {
+				enqueueSnackbar(`Secret revealed successfully, wait for all secrets to be revealed`, { variant: 'warning' })
 				this.setState({ revealingSecret: false })
 				this.closeRevealSecretModal();
 			})
+			.catch(e => enqueueSnackbar(`Revealing secret failed`, { variant: 'error' }))
 	}
 
 	swapInPlasma = async (tokenToSwap, swapToken) => {
@@ -154,7 +157,7 @@ class Swap extends InitComponent {
 					color="primary"
 					fullWidth
 					onClick={() => this.swapInPlasma(transactionToAccept.swappingSlot, transactionToAccept.slot)}
-					disabled={swapping || secret}
+					disabled={Boolean(swapping || secret)}
 				>
 					Accept
 				</Button>
@@ -173,9 +176,9 @@ class Swap extends InitComponent {
 		console.log('swappingTokens', swappingTokens)
 
     return(
-      <React.Fragment>
-        {swappingTokens.map(transaction => (
-					<Paper>
+      <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
+        {_.times(10,() => swappingTokens[0]).map(transaction => (
+					<Paper key={transaction.hash} style={{margin: "1em"}}>
 						<DoubleCryptoMonCard
 							token1={transaction.swappingSlot}
 							owner1={ethAccount}
@@ -195,7 +198,7 @@ class Swap extends InitComponent {
 						<Button fullWidth variant="outlined" color="primary" onClick={this.openRevealSecretModal(transaction.swappingSlot)}>Reveal Secret</Button>
 					</Paper>
         ))}
-      </React.Fragment>
+      </div>
     )
 	}
 
@@ -299,6 +302,6 @@ const mapDispatchToProps = dispatch => ({
 })
 
 const withInitSwap = withInitComponent(Swap);
-const connectedSwap = connect(mapStateToProps, mapDispatchToProps)(withInitSwap);
+const connectedSwap = connect(mapStateToProps, mapDispatchToProps)(withSnackbar(withInitSwap));
 const styledSwap = withStyles(styles)(connectedSwap);
 export default styledSwap;

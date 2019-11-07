@@ -8,28 +8,37 @@ import {
   getCoinState,
   createBattle
 } from '../../../services/ethService';
-import { loadContracts } from '../../redux/actions';
 import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
-import { getHistory } from "../../../services/plasmaServices";
+import {fastForwardBlockChain, getHistory} from "../../../services/plasmaServices";
 import Paper from "@material-ui/core/Paper";
 import Button from "@material-ui/core/Button";
 import { doubleSpendTransactions, nonExistentTransactions } from "./HackUtils";
 import { toAddressColor, toReadableAddress } from "../../../utils/utils";
 import SelectPlayerTokenModal from "../common/SelectPlayerTokenModal.jsx"
+import {withSnackbar} from "notistack";
+import InitComponent from "../common/InitComponent.jsx";
+import withInitComponent from "../common/withInitComponent";
 
-class Hack extends React.Component {
+class Hack extends InitComponent {
   constructor(props) {
     super(props);
-    this.state = { history: [], openBattleModal: false }
+    this.state = { history: [], loading: true, openBattleModal: false }
   }
 
+  init = () => {
+    console.log("INIT")
+    this.setState({loading: false});
+  };
+
   onSlotChanged = event => {
+    const { rootChainContract } = this.props;
+
     let hackSlot = event.target.value;
     this.setState({ hackSlot: hackSlot });
 
     getHistory(hackSlot).then(res => this.setState({ history: res }));
-    getCoinState(hackSlot, this.props.rootChainContract).then(response =>
+    getCoinState(hackSlot, rootChainContract).then(response =>
       this.setState({ isHackSlotExiting: response == "EXITING" })
     );
   };
@@ -82,14 +91,15 @@ class Hack extends React.Component {
   };
 
   doubleSpend = (token, transactionHash) => async() => {
-    //TODO change web3 for ethAccount
-    doubleSpendTransactions(token, web3.eth.defaultAccount, transactionHash)
-      .then(exitData => exitTokenWithData(this.state.rootChain, exitData)
+    const { ethAccount, rootChainContract } = this.props;
+    doubleSpendTransactions(token, ethAccount, transactionHash)
+      .then(exitData => exitTokenWithData(rootChainContract, exitData)
         .then(() => console.log("Exit successful")));
   };
 
   doubleSpendAndBattle = (token, transactionHash) => async() => {
-    doubleSpendTransactions(token, web3.eth.defaultAccount, transactionHash).then(
+    const { ethAccount, rootChainContract } = this.props;
+    doubleSpendTransactions(token, ethAccount, transactionHash).then(
       d => {
         this.setState({
           battleExitData: d,
@@ -115,11 +125,16 @@ class Hack extends React.Component {
 
   closeBattleModal = () => this.setState({ openBattleModal: false });
 
-  render = () => {
-    const { rootChainContract } = this.props;
-    const { hackSlot, history , isHackSlotExiting, openBattleModal, startingBattle } = this.state;
+  fastForwardTime = (seg) => () => {
+    const { enqueueSnackbar } = this.props;
+    fastForwardBlockChain(seg).then(
+      enqueueSnackbar(`Time Fastforward to ${seg/60/60/24} days`, { variant: 'info' })
+    )
+  };
 
-    if (!rootChainContract) return <div>Loading...</div>
+  render = () => {
+    const { loading, hackSlot, history, isHackSlotExiting, openBattleModal, startingBattle } = this.state;
+    if (loading) return (<div>Loading...</div>);
 
     return(
       <div style={{ padding: '1em' }}>
@@ -134,6 +149,14 @@ class Hack extends React.Component {
           }]}
         />
         <Typography variant="h5" gutterBottom>HACKS!</Typography>
+        <Button variant="contained" onClick={this.fastForwardTime(302400)}>
+          FastForward half a week
+        </Button>
+
+        <Button variant="contained" onClick={this.fastForwardTime(604800)}>
+          FastForward a week
+        </Button>
+
         <Paper style={{ margin: '1em', padding: '1em', display: 'inline-block' }}>
 
           <TextField
@@ -172,7 +195,7 @@ class Hack extends React.Component {
                     </div>
                   </div>
                 )
-              ).reverse()}
+              )}
             </div>
 
             <div style={{ padding: '2em'}}>
@@ -199,7 +222,7 @@ class Hack extends React.Component {
                   </div>
                 )
                 //TODO Challenge before a battle
-              ).reverse()}
+              )}
             </div>
           </div>
         )}
@@ -217,7 +240,6 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = dispatch => ({
-  loadContracts: () => dispatch(loadContracts())
 })
 
-export default connect(mapStateToProps, mapDispatchToProps)(Hack);
+export default connect(mapStateToProps, mapDispatchToProps)(withSnackbar(withInitComponent(Hack)));

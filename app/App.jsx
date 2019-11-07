@@ -15,7 +15,7 @@ class App extends React.Component {
 
 	render() {
 		return (
-			<SnackbarProvider>
+			<SnackbarProvider autoHideDuration={1000}>
 				<Provider store={store}>
 					<Routes />
 				</Provider>
