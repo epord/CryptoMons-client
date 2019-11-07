@@ -46,7 +46,7 @@ import { Typography } from '@material-ui/core';
 
 class Battles extends InitComponent {
 
-  state = { loading: true }
+  state = { loading: true, events: [] }
 
   init = async () => {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
@@ -82,6 +82,7 @@ class Battles extends InitComponent {
       //validate first move
     }else if(prevState.turnNum%2 == 0) {
       let calculatedState = transtionEvenToOdd(prevState.game, currentState.game.decisionOP, currentState.game.saltOP);
+      this.setState({ events: calculatedState.events });
       console.log('EVENTS1:', calculatedState.events);
     } else {
       let calculatedState = transitionOddToEven(prevState.game, currentState.game.decisionPL, prevState.turNum == 1);
@@ -157,6 +158,7 @@ class Battles extends InitComponent {
     const { ethAccount } = this.props;
 
     const calculatedState = transitionCMBState(currentState.game, currentState.turnNum, move);
+    this.setState({ events: calculatedState.events });
     console.log('EVENTS2:', calculatedState.events);
     currentState.game = calculatedState;
     currentState.turnNum = currentState.turnNum + 1;
@@ -215,7 +217,7 @@ class Battles extends InitComponent {
 
   renderDialogBattle = () => {
     const { ethAccount } = this.props;
-    const { currentState, battleOpen } = this.state;
+    const { currentState, battleOpen, events } = this.state;
 
     return (
       <Dialog open={Boolean(battleOpen)} onClose={this.closeBattleDialog}>
@@ -225,6 +227,7 @@ class Battles extends InitComponent {
             isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
             game={currentState.game}
             turn={currentState.turnNum}
+            events={events}
           />
         </div>
       </Dialog>

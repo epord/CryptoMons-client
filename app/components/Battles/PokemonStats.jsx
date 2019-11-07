@@ -54,7 +54,7 @@ class PokemonStats extends React.Component {
             }}
           >
             {effects.map(effect => <Typography key={effect.name} variant="body2" style={{ color: 'red'}}>{effect.name}</Typography>)}
-            {boosts.map(boost => <Typography key={effect.name} variant="body2" style={{ color: 'green'}}>{boost.name}</Typography>)}
+            {boosts.map(boost => <Typography key={boost.name} variant="body2" style={{ color: 'green'}}>{boost.name}</Typography>)}
 
           </div>
         )}

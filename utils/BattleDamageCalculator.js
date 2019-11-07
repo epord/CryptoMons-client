@@ -53,7 +53,7 @@ const Gender = {
   Female    : 1,
   Unknown   : 2,
 };
-const EventCode ={
+const EventCode = {
   Recharge:        "Recharge",
   Protect:         "Protect",
   Cleanse:         "Cleanse",
@@ -65,6 +65,15 @@ const EventCode ={
   EndTurnHealing:  "EndTurnHealing",
   ConfusedDMG:     "ConfusedDMG",
 };
+
+// effective = {
+//   0: "Not effective at all",
+//   1: "Not effective",
+//   2: "Not very effective",
+//   3: "Normal",
+//   4: "Super effective",
+//   5: "Mega effective"
+// }
 
 //Stuff to check outside
 //Status applied description

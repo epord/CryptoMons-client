@@ -1,5 +1,6 @@
 import React from 'react';
 import PokemonStats from './PokemonStats.jsx';
+import Events from './Events.jsx';
 import { pokedex } from '../../../utils/pokedex';
 import { getTypeData, Type } from '../../../utils/pokeUtils';
 import { Moves } from "../../../utils/BattleDamageCalculator";
@@ -150,7 +151,8 @@ class CurrentBattle extends React.Component {
       status2OP,
       status2PL,
       chargePL,
-      chargeOP
+      chargeOP,
+      events,
     } = game;
 
 
@@ -182,6 +184,7 @@ class CurrentBattle extends React.Component {
           />
           <PokemonStats cryptoMon={player}/>
         </div>
+        <Events events={events} />
         {this.renderAttacks()}
       </div>
     )
