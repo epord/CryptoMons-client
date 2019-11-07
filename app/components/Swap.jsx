@@ -21,8 +21,8 @@ import Paper from '@material-ui/core/Paper';
 import DoubleCryptoMonCard from './common/DoubleCryptoMonCard.jsx';
 
 import { toAddressColor, toReadableAddress } from '../../utils/utils';
-import { createAtomicSwap, getSwapData } from '../../services/plasmaServices'
-import { getSwappingRequests, getSwappingTokens, revealSecret } from '../redux/actions';
+import { createAtomicSwap, getSwapData} from '../../services/plasmaServices'
+import { getSwappingRequests, getSwappingTokens, revealSecret, cancelSecret } from '../redux/actions';
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 import {withSnackbar} from "notistack";
 
@@ -57,6 +57,20 @@ class Swap extends InitComponent {
 				this.closeRevealSecretModal();
 			})
 			.catch(e => enqueueSnackbar(`Revealing secret failed`, { variant: 'error' }))
+	}
+
+	cancelSecret = async () => {
+		const { tokenToReveal, secretToReveal } = this.state;
+		const { cancelSecret, enqueueSnackbar } = this.props;
+
+		this.setState({ revealingSecret: true });
+		cancelSecret(tokenToReveal, secretToReveal)
+			.then(() => {
+				enqueueSnackbar(`Secret Cancelled successfully`, { variant: 'success' })
+				this.setState({ revealingSecret: false })
+				this.closeRevealSecretModal();
+			})
+			.catch(e => enqueueSnackbar(`Canceling secret reveal failed`, { variant: 'error' }))
 	}
 
 	swapInPlasma = async (tokenToSwap, swapToken) => {
@@ -122,6 +136,7 @@ class Swap extends InitComponent {
 					</Grid>
 					<Grid item xs={12} style={{ padding: '1em' }}>
 						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.revealSecret(tokenToReveal)} variant="outlined" size="small">Reveal</Button>
+						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.cancelSecret(tokenToReveal)} variant="outlined" size="small">Cancel</Button>
 					</Grid>
 				</Grid>
 			</Dialog>
@@ -129,21 +144,32 @@ class Swap extends InitComponent {
 	}
 
 	renderAcceptSwapDialog = () => {
-		const { acceptSwapModalOpen, transactionToAccept, swapping, secret } = this.state;
-		const { classes } = this.props;
+		const { acceptSwapModalOpen, transactionToAccept, swapping, secret, validateHistoryOpen } = this.state;
+		const { classes, ethAccount } = this.props;
 
 		if (!transactionToAccept) return null;
 
 		return (
 			<Dialog onClose={this.closeAcceptSwapModal} open={Boolean(acceptSwapModalOpen)} classes={{ paper: classes.dialogPaper }}>
-				<DialogTitle>Do you want to accept this swap request?</DialogTitle>
-				<Grid container style={{ padding: '1em' }}>
-					<Grid item xs={12}>
+				<DialogTitle style={{ textAlign: 'center' }} >Do you want to accept this swap request?</DialogTitle>
+				<Grid container style={{ padding: '1em', justifyContent: "space-around" }}>
 						<DoubleCryptoMonCard
-							token1={transactionToAccept.slot}
-							token2={transactionToAccept.swappingSlot}
+							token1={transactionToAccept.swappingSlot}
+							owner1={ethAccount}
+							actions1={[{
+								title: "Validate History",
+								disabled: validateHistoryOpen,
+								func: this.openValidateHistoryModal(transactionToAccept.swappingSlot)
+							}]}
+							token2={transactionToAccept.slot}
+							owner2={transactionToAccept.owner}
+							actions2={[{
+								title: "Validate History",
+								disabled: validateHistoryOpen,
+								func: this.openValidateHistoryModal(transactionToAccept.slot)
+							}]}
+
 						/>
-					</Grid>
 				</Grid>
 				{secret && (
 					<React.Fragment>
@@ -177,8 +203,8 @@ class Swap extends InitComponent {
 
     return(
       <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
-        {_.times(10,() => swappingTokens[0]).map(transaction => (
-					<Paper key={transaction.hash} style={{margin: "1em"}}>
+        {swappingTokens.map(transaction => (
+					<Paper key={transaction.hash} style={{padding: "1em", margin: "1em"}}>
 						<DoubleCryptoMonCard
 							token1={transaction.swappingSlot}
 							owner1={ethAccount}
@@ -222,11 +248,10 @@ class Swap extends InitComponent {
     }
 
     return(
-      <React.Fragment>
-				<Grid container direction="row" alignItems="center" spacing={2}>
+				<div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
 					{swappingRequests.map(transaction => (
-						<Grid item key={transaction.hash} xs={12} md={6}>
-							<Paper style={{ padding: '1em' }}>
+						<Grid item key={transaction.hash}>
+							<Paper style={{ padding: '1em', margin: '1em' }}>
 								<Grid container spacing={3} direction="column" alignItems="center">
 									<Grid item xs={12}>
 										<Typography variant="body1" style={{ maxWidth: '25em', textAlign: 'center' }}>
@@ -248,8 +273,7 @@ class Swap extends InitComponent {
 							</Paper>
 						</Grid>
 					))}
-				</Grid>
-      </React.Fragment>
+				</div>
     )
   }
 
@@ -299,6 +323,7 @@ const mapDispatchToProps = dispatch => ({
   getSwappingTokens: address => dispatch(getSwappingTokens(address)),
   getSwappingRequests: address => dispatch(getSwappingRequests(address)),
 	revealSecret: (token, secret) => dispatch(revealSecret(token, secret)),
+	cancelSecret: (token, secret) => dispatch(cancelSecret(token, secret)),
 })
 
 const withInitSwap = withInitComponent(Swap);

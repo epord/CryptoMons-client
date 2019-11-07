@@ -168,6 +168,10 @@ export const subscribeToSlashedBond = (rootChain, address, cb) => {
 	subscribeToEvent("SlashedBond",false, {from: address}, rootChain, cb);
 }
 
+export const subscribeToWithdrewBond = (rootChain, address, cb) => {
+	subscribeToEvent("WithdrewBonds",false, {from: address}, rootChain, cb)
+};
+
 export const subscribeToChallenged = (rootChain, address, plasmaTokens, cb) => {
 	subscribeToEvent("ChallengedExit",true, {slot: plasmaTokens}, rootChain, cb);
 	subscribeToEvent("ChallengedExit",false, {owner: address}, rootChain, cb);

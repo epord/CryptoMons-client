@@ -142,3 +142,15 @@ export const getExitDataToBattleRLPData = (exitData) => {
 		return EthUtils.bufferToHex(RLP.encode(params));
 	}
 }
+
+export const hashCancelSecret = (secret, slot, minedBlock) => {
+	console.log({secret, slot, minedBlock})
+	return EthUtils.bufferToHex(
+		abi.soliditySHA3(["bytes","uint64","uint256"],
+			[
+				EthUtils.keccak256(secret),
+				slot,
+				minedBlock
+			])
+	)
+}

@@ -50,7 +50,8 @@ import {
 	subscribeToStartedExit,
 	subscribeToSubmittedBlocks,
 	subscribeToSubmittedSecretBlocks,
-	subscribeToWithdrew
+	subscribeToWithdrew,
+	subscribeToWithdrewBond
 } from '../../services/ethService';
 import {setDefaultBattleAccount} from '../../services/battleChallenges';
 
@@ -78,7 +79,7 @@ class Routes extends React.Component {
 	};
 
 	componentDidUpdate = (prevProps) => {
-		const { ethAccount, watchableTokens } = this.props;
+		const { ethAccount, watchableTokens, swappingRequests, enqueueSnackbar, swappingTokens } = this.props;
 		const { rootChain, subscribed } = this.state;
 
 		if (!prevProps.ethAccount && ethAccount) {
@@ -93,7 +94,16 @@ class Routes extends React.Component {
 			}
 		}
 
-  };
+		if(_.difference(swappingRequests.map(t => t.hash), prevProps.swappingRequests.map(t => t.hash)).length > 0) {
+			enqueueSnackbar(`New Swapping request found`, { variant: 'info' })
+		}
+
+		if(_.difference(swappingTokens.map(t => t.hash), prevProps.swappingTokens.map(t => t.hash)).length > 0) {
+			enqueueSnackbar(`New Swap committed`, { variant: 'info' })
+		}
+
+
+	};
 
 	init = () => {
 		this.loadContracts().then(() => {
@@ -104,6 +114,7 @@ class Routes extends React.Component {
 				getExitedTokens,
 				getOwnedTokens,
 				getChallengedFrom,
+				getSwappingTokens,
 				getBalance
 			} = this.props;
 
@@ -114,6 +125,7 @@ class Routes extends React.Component {
 			getExitingTokens(ethAccount, rootChain);
 			getExitedTokens(ethAccount, rootChain);
 			getChallengedFrom(ethAccount, rootChain);
+			getSwappingTokens(ethAccount)
 			getBalance(rootChain);
 		});
 
@@ -207,6 +219,12 @@ class Routes extends React.Component {
 		subscribeToSlashedBond(rootChain, address, (r => {
 			const { getBalance } = this.props;
 			console.log('Slashed Bond event');
+			getBalance(rootChain)
+		}));
+
+		subscribeToWithdrewBond(rootChain, address, (r => {
+			const { getBalance } = this.props;
+			console.log('Bond Withdrawn event');
 			getBalance(rootChain)
 		}));
 
@@ -338,7 +356,9 @@ class Routes extends React.Component {
 
 const mapStateToProps = state => ({
 	ethAccount: state.ethAccount,
-	watchableTokens: state.watchableTokens
+	watchableTokens: state.watchableTokens,
+	swappingRequests: state.swappingRequests,
+	swappingTokens: state.swappingTokens
  });
 
 const mapDispatchToProps = dispatch => ({

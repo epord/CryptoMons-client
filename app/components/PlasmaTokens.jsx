@@ -27,7 +27,7 @@ import {
   respondChallenge,
   withdraw
 } from '../../services/ethService';
-import {createAtomicSwap, getExitData, transferInPlasma} from '../../services/plasmaServices';
+import {cancelRevealSecret, createAtomicSwap, getExitData, transferInPlasma} from '../../services/plasmaServices';
 import SelectPlayerTokenModal from "./common/SelectPlayerTokenModal.jsx";
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 import {withSnackbar} from "notistack";
@@ -60,7 +60,10 @@ class PlasmaTokens extends React.Component {
       console.log("Successful Submission, wait for mining");
       enqueueSnackbar(`Transfer submitted, wait for mining`, { variant: 'warning' })
       this.closeTransferModal();
-    })
+    }).catch( e => {
+      enqueueSnackbar(`Error Transfering the token`, {variant: 'error'})
+      this.closeTransferModal();
+    });
   };
 
   swapInPlasma = (token) => async (player, swapToken) => {
@@ -327,9 +330,10 @@ class PlasmaTokens extends React.Component {
 
 
   render = () => {
-    const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens } = this.props;
+    const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens, swappingTokens } = this.props;
+    const { validateHistoryOpen } = this.state;
 
-    if (plasmaTokens.length + exitingTokens.length + challengeableTokens.length + exitedTokens.length === 0) {
+    if (plasmaTokens.length + exitingTokens.length + challengeableTokens.length + exitedTokens.length + swappingTokens.length === 0) {
       return (
         <Typography style={{ margin: 'auto' }}  variant="body1">You do not have any Plasma token. Deposit one of your CryptoMons once you have one!</Typography>
       )
@@ -359,6 +363,21 @@ class PlasmaTokens extends React.Component {
                   },{
                     title: "Exit",
                     func: this.exitToken(token)
+                  }
+                ]}
+              />
+            </Grid>
+          ))}
+          {_.uniqBy(swappingTokens, "slot").map(token => (
+            <Grid item key={token.slot}>
+              <CryptoMonCard
+                plasmaToken={token.slot}
+                swapping
+                actions={[
+                  {
+                    title: "Validate History",
+                    disabled: validateHistoryOpen,
+                    func: this.openValidateHistoryModal
                   }
                 ]}
               />
@@ -440,6 +459,7 @@ const mapStateToProps = state => ({
   exitingTokens: state.exitingTokens,
   challengeableTokens: state.challengeableTokens,
   exitedTokens: state.exitedTokens,
+  swappingTokens: state.swappingTokens,
   challengedTokens: state.challengedTokens,
   rootChainContract: state.rootChainContract,
   cryptoMonsContract: state.cryptoMonsContract,

@@ -13,6 +13,7 @@ import Grid from '@material-ui/core/Grid';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import CompareArrowsIcon from '@material-ui/icons/CompareArrows';
 
 import {getCryptomon, getPlasmaCoinId, getPokemonData} from '../../../services/ethService';
 
@@ -39,7 +40,7 @@ class CryptoMonCard extends InitComponent {
 	}
 
 	render = () => {
-		const { token, plasmaToken, exiting, exited, challengeable, challenged, owner,
+		const { token, plasmaToken, exiting, exited, swapping, challengeable, challenged, owner,
 			actions } = this.props;
 		const { img, type1, type2, isShiny } = this.state
 		return (
@@ -62,51 +63,65 @@ class CryptoMonCard extends InitComponent {
 					</Grid>
 					{token && (
 						<Grid item xs={12}>
-							<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>Coin: {token}</Typography>
+							<Typography variant="caption" style={{ marginTop: "0.5em", textAlign: 'center', width: "100%", display: "block" }} gutterBottom>
+								Coin: {token}
+							</Typography>
 						</Grid>
 					)}
 					{plasmaToken && (
 						<React.Fragment>
 							<Grid item xs={12}>
-								<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>ID: {plasmaToken}</Typography>
+								<Typography variant="caption" style={{ marginTop: "0.5em", textAlign: 'center', width: "100%", display: "block" }} gutterBottom>
+									ID: {plasmaToken}
+								</Typography>
 							</Grid>
 							{owner && (
 								<Grid item xs={12}>
-									<Typography variant="caption" style={{ textAlign: 'center' }} gutterBottom>Owner: <span style={{ color: toAddressColor(owner)}}>{toReadableAddress(owner)}</span></Typography>
+									<Typography variant="caption" style={{ textAlign: 'center', width: "100%", display: "block" }} gutterBottom>
+										Owner: <span style={{ color: toAddressColor(owner)}}>{toReadableAddress(owner)}</span>
+									</Typography>
 								</Grid>
 							)}
 						</React.Fragment>
 					)}
 					{exiting && (
-						<Grid item xs={12}>
-							<ExitToAppIcon fontSize="small" style={{ color: 'rgb(245, 155, 66)' }} />
+						<Grid style={{display: "flex", justifyContent: "center", alignItems: "center", margin: "0.3em", marginTop: "0",}} item xs={12}>
+							<ExitToAppIcon fontSize="small" style={{ margin: "0.2em", color: 'rgb(245, 155, 66)' }} />
 							<Typography variant="subtitle1" style={{ color: 'rgb(245, 155, 66)', display: 'inline' }}>
 								Exiting
 							</Typography>
 						</Grid>
 					)}
 					{challengeable && (
-						<Grid item xs={12}>
-							<WarningIcon fontSize="small" style={{ color: 'red' }} />
+						<Grid style={{display: "flex", justifyContent: "center", alignItems: "center", margin: "0.3em", marginTop: "0",}} item xs={12}>
+							<WarningIcon fontSize="small" style={{ margin: "0.2em", color: 'red' }} />
 							<Typography variant="subtitle1" style={{ color: 'red', display: 'inline' }}>
 								Challengeable
 							</Typography>
 						</Grid>
 					)}
 					{challenged && (
-						<Grid item xs={12}>
-							<WarningIcon fontSize="small" style={{ color: 'red' }} />
+						<Grid style={{display: "flex", justifyContent: "center", alignItems: "center", margin: "0.3em", marginTop: "0",}} item xs={12}>
+							<WarningIcon fontSize="small" style={{ margin: "0.2em", color: 'red' }} />
 							<Typography variant="subtitle1" style={{ color: 'red', display: 'inline' }}>
 								Challenged
 							</Typography>
 						</Grid>
 					)}
 					{exited && (
-						<Grid item xs={12}>
-						<CheckCircleIcon fontSize="small" style={{ color: 'green' }} />
+						<Grid style={{display: "flex", justifyContent: "center", alignItems: "center", margin: "0.3em", marginTop: "0",}} item xs={12}>
+						<CheckCircleIcon fontSize="small" style={{ margin: "0.2em", color: 'green' }} />
 						<Typography variant="subtitle1" style={{ color: 'green', display: 'inline' }}>
 							Exit Successful
 						</Typography>
+						</Grid>
+					)}
+					{swapping && (
+						<Grid style={{display: "flex", justifyContent: "center", alignItems: "center", margin: "0.3em", marginTop: "0",}} item xs={12}>
+							<CompareArrowsIcon fontSize="small" style={{ margin: "0.2em", color: 'orange' }} />
+							<Typography variant="subtitle1" style={{ color: 'orange', display: 'inline' }}>
+								Swapping
+							</Typography>
 						</Grid>
 					)}
 				</Grid>

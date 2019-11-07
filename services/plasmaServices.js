@@ -1,4 +1,4 @@
-import { generateSwapHash, generateTransactionHash, sign } from "../utils/cryptoUtils";
+import {generateSwapHash, generateTransactionHash, hashCancelSecret, sign} from "../utils/cryptoUtils";
 import { keccak256, randomHex256 } from "../utils/utils";
 
 const BN = require('bn.js');
@@ -8,6 +8,7 @@ export const transferInPlasma = (token, receiverAddress) => {
   return new Promise((resolve, reject) => {
     fetch(`${process.env.API_URL}/api/tokens/${token}/last-transaction`).then(response => {
       response.json().then(lastTransaction => {
+        if(response.status >=400) return reject("Transaction could not be completed");
 
         const hash = generateTransactionHash(token, lastTransaction.minedBlock, receiverAddress)
 
@@ -97,6 +98,27 @@ export const revealSecret = (token, secret) => {
     })
   })
 }
+
+export const cancelSecret = (token, secret) => {
+  return new Promise((resolve, reject) => {
+      getSwapData(token).then(swapData => {
+        sign(hashCancelSecret(secret, token, swapData.mined_block)).then(sig => {
+          const body = {
+          slot: token,
+          minedBlock: swapData.mined_block,
+          signature: sig,
+        };
+        fetch(`${process.env.API_URL}/api/transactions/cancel-reveal-secret`, {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).then(resolve);
+      })
+    })
+  });
+};
 
 const basicGet = (url) => {
   return new  Promise(async (resolve, reject) => {

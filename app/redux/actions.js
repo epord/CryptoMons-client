@@ -129,6 +129,11 @@ export const revealSecret = (token, secret) => (dispatch, getState) => {
     .revealSecret(token, secret);
 }
 
+export const cancelSecret = (token, secret) => (dispatch, getState) => {
+  return PlasmaService
+    .cancelSecret(token, secret);
+}
+
 export const getSwappingTokens = (address) => (dispatch, getState) => {
   return PlasmaService
     .getSwappingTokens(address)
