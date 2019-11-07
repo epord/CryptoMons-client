@@ -57,7 +57,9 @@ class CurrentBattle extends React.Component {
       nextHashDecision,
     } = game;
 
-    if ((isPlayer1 && turn % 2 === 0) || (!isPlayer1 && nextHashDecision)) {
+    const shouldIMove = (isPlayer1 && turn % 2 === 0) || (!isPlayer1 && (nextHashDecision || turn == 1));
+
+    if (shouldIMove) {
       return (
         <Typography>Waiting for the other player...</Typography>
       )
