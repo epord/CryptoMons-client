@@ -18,6 +18,7 @@ import {getCryptomon, getPlasmaCoinId, getPokemonData} from '../../../services/e
 
 import { getTypeData } from '../../../utils/pokeUtils';
 import { toAddressColor, toReadableAddress } from '../../../utils/utils';
+import { getCryptoMonFromId } from '../../../services/pokemonService.js';
 
 class CryptoMonCard extends InitComponent {
 
@@ -27,18 +28,13 @@ class CryptoMonCard extends InitComponent {
 		const { rootChainContract, plasmaToken, cryptoMonsContract } = this.props;
 		const token = this.props.token || await getPlasmaCoinId(plasmaToken, rootChainContract);
 
-		getCryptomon(token, cryptoMonsContract).then(ans => {
-			var pad = "000";
-			var id = (pad + ans.id).slice(-pad.length);
-			const imageUrl = `https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/images/${id}.png`;
-			this.setState({ img: imageUrl, isShiny: ans.isShiny });
+		const { cryptoMonData, cryptoMonInstance } = await getCryptoMonFromId(token, cryptoMonsContract)
 
-			getPokemonData(ans.id, cryptoMonsContract).then(data => {
-				const type1 = getTypeData(data.type1);
-				const type2 = getTypeData(data.type2);
-				this.setState({ type1, type2 })
-			})
-
+		this.setState({
+			img: cryptoMonData.imageUrl,
+			isShiny: cryptoMonInstance.isShiny,
+			type1: cryptoMonData.type1,
+			type2: cryptoMonData.type2,
 		})
 	}
 

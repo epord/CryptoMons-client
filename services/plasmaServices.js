@@ -115,6 +115,10 @@ export const getOwnedTokens = (address, state) => {
   return basicGet(`${process.env.API_URL}/api/tokens/owned-by/${address}?state=${state}`);
 };
 
+export const getBlocks = (from) => {
+  return basicGet(`${process.env.API_URL}/api/blocks?from=${from || 0}`);
+};
+
 export const getSwappingTokens = (address) => {
   return basicGet(`${process.env.API_URL}/api/tokens/swapping-tokens/${address}`);
 };

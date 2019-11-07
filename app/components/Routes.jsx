@@ -11,6 +11,7 @@ import History from './History.jsx';
 import Swap from './Swap.jsx';
 import Battles from './Battles';
 import PlayerSearch from './PlayerSearch';
+import SideChain from './SideChain';
 
 import Typography from '@material-ui/core/Typography';
 import AppBar from '@material-ui/core/AppBar';
@@ -267,6 +268,14 @@ class Routes extends React.Component {
 							<ListItemText primary="Search Players" style={{ color: 'rgba(0, 0, 0, 0.87)' }} />
 						</ListItem>
 					</Link>
+					<Link to="/side-chain" style={{ textDecoration: 'none' }}>
+						<ListItem button align="center">
+							<ListItemIcon>
+								<SearchIcon />
+							</ListItemIcon>
+							<ListItemText primary="Side Chain" style={{ color: 'rgba(0, 0, 0, 0.87)' }} />
+						</ListItem>
+					</Link>
 				</List>
 			</Drawer>
 		);
@@ -292,6 +301,7 @@ class Routes extends React.Component {
 				<Route path="/swaps" component={Swap} />
 				<Route path="/battles" component={Battles} />
 				<Route path="/players" component={PlayerSearch} />
+				<Route path="/side-chain" component={SideChain} />
 			</Router>
 		);
 	}

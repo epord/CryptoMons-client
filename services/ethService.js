@@ -193,6 +193,15 @@ export const getChallenge = (slot, txHash, rootChain) => {
 	});
 };
 
+export const withdrawBonds = (rootChain) => {
+  return new Promise((resolve, reject) => {
+  ethContract(rootChain).withdrawBonds().send({from: web3.eth.defaultAccount},async (err, res) => {
+   if (err) return reject(err);
+   resolve(res);
+  });
+ });
+}
+
 /// TODO: Shouldn't return all exits, but should return multiple times the same slot if there are multiple challengeBefore going on
 export const getChallengedFrom = (address, rootChain) => {
 	return new Promise(async (resolve, reject) => {
