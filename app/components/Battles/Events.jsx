@@ -17,7 +17,7 @@ class Events extends React.Component {
     const { code, id, damage, hit, crit, type, effective } = event;
     const pokemon = pokedex[id - 1];
     if (code == 'Attack' && hit) {
-      return `${pokemon.name.english} attacked with ${pokemon.type[type - 1].toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
+      return `${pokemon.name.english} used with ${pokemon.type[type - 1].toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
     }
     if (code == 'Status') {
       return `${pokemon.name.english} used status '${Status[type-1].name.toLowerCase()}'${hit ? `.` : ', but missed...'}`;
@@ -35,7 +35,7 @@ class Events extends React.Component {
       return `${pokemon.name.english} used shield break${hit ? `.` : ', but missed...'}`;
     }
     if (code == 'SPAttack' && hit) {
-      return `${pokemon.name.english} attacked with ${pokemon.type[type - 1].toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
+      return `${pokemon.name.english} used with ${pokemon.type[type - 1].toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
     }
     if (code == 'EndTurnDMG') {
       console.log('END TURN DAMAGE', event)
@@ -53,6 +53,8 @@ class Events extends React.Component {
 
   render = () => {
     const { events } = this.props;
+
+    if (!events || events.length == 0) return null;
 
     return (
       <div style={{

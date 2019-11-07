@@ -291,8 +291,9 @@ class Battles extends InitComponent {
                 </Grid>
               </React.Fragment>
             )}
-            {authenticated && ongoing && ongoing.map(c =>
-              <React.Fragment key={c.channelId}>
+            <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
+              {authenticated && ongoing && ongoing.map(c =>
+                <React.Fragment key={c.channelId}>
                   <BattleOverview
                     key={c.channelId}
                     channel={c}
@@ -303,6 +304,7 @@ class Battles extends InitComponent {
                   />
                 </React.Fragment>
               )}
+            </div>
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
 
