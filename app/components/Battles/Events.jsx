@@ -18,12 +18,12 @@ class Events extends React.Component {
     const pokemon = pokedex[id - 1];
     const typeName = pokemon.type[type - 1];
     const typeId = Type[typeName];
-    
+
     if (code == 'Attack' && hit) {
-      return `${pokemon.name.english} used with ${typeId.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
+      return `${pokemon.name.english} used ${typeName.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
     }
     if (code == 'Status') {
-      return `${pokemon.name.english} used status '${Status[typeId].name.toLowerCase()}'${hit ? `.` : ', but missed...'}`;
+      return `${pokemon.name.english} used ${Status[typeId].name.toUpperCase()}${hit ? `.` : ', but missed...'}`;
     }
     if (code == 'Recharge') {
       return `${pokemon.name.english} recharged.`
@@ -38,19 +38,19 @@ class Events extends React.Component {
       return `${pokemon.name.english} used shield break${hit ? `.` : ', but missed...'}`;
     }
     if (code == 'SPAttack' && hit) {
-      return `${pokemon.name.english} used with ${typeId.toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
+      return `${pokemon.name.english} used ${typeName.toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
     }
     if (code == 'EndTurnDMG') {
       console.log('END TURN DAMAGE', event)
-      return `${pokemon.name.english} received end turn damage.`;
+      return `${pokemon.name.english} received additional damage.`;
     }
     if (code == 'EndTurnHealing') {
       console.log('END TURN HEALING', event)
-      return `${pokemon.name.english} received end turn HP.`;
+      return `${pokemon.name.english} recovered some health.`;
     }
     if (code == 'ConfusedDMG') {
       console.log('Confused', event)
-      return `${pokemon.name.english} is confused.`;
+      return `${pokemon.name.english} hurt itself in confusion!`;
     }
   }
 

@@ -138,7 +138,7 @@ export const Status = {
     }],
   },
   3: {
-    name: 'poisoned',
+    name: 'poison',
     effects: [],
     icon: <StatusIcon label="POIS" color="purple" />,
   },
@@ -187,7 +187,8 @@ export const Status = {
     icon: <StatusIcon label="BURN" color="red" />
   },
   10: {
-    name: 'soaked',effects: [{
+    name: 'soak',
+    effects: [{
       name: '-60% Speed',
       isBoost: false
     }, {
@@ -204,7 +205,7 @@ export const Status = {
     }],
   },
   12: {
-    name: 'paralized',
+    name: 'paralize',
     effects: [{
       name: '-60% Speed',
       isBoost: false
@@ -212,12 +213,12 @@ export const Status = {
     icon: <StatusIcon label="PARAL" color="darkorange" />
   },
   13: {
-    name: 'confused',
+    name: 'confuse',
     effects: [],
     icon: <StatusIcon label="CONF" color="crimson" />
   },
   14: {
-    name: 'frozen',
+    name: 'freeze',
     effects: [{
       name: '-100% Speed',
       isBoost: false

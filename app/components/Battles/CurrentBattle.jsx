@@ -2,7 +2,7 @@ import React from 'react';
 import PokemonStats from './PokemonStats.jsx';
 import Events from './Events.jsx';
 import { pokedex } from '../../../utils/pokedex';
-import { getTypeData, Type } from '../../../utils/pokeUtils';
+import { getTypeData, Type, Status } from '../../../utils/pokeUtils';
 import { Moves } from "../../../utils/BattleDamageCalculator";
 
 import Button from '@material-ui/core/Button';
@@ -112,7 +112,7 @@ class CurrentBattle extends React.Component {
             <Button variant="outlined" onClick={() => play(Moves.SPATK1)} disabled={player.charge === 0}>Special Attack</Button>
           </Grid>
           <Grid item>
-            <Button variant="outlined" onClick={() => play(Moves.STATUS1)} disabled={player.charge === 0}>Status</Button>
+            <Button variant="outlined" onClick={() => play(Moves.STATUS1)} disabled={player.charge === 0}>{Status[player.type1].name}</Button>
           </Grid>
         </Grid>
 
@@ -129,7 +129,7 @@ class CurrentBattle extends React.Component {
               <Button variant="outlined" onClick={() => play(Moves.SPATK2)} disabled={player.charge === 0}>Special Attack</Button>
             </Grid>
             <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.STATUS2)} disabled={player.charge === 0}>Status</Button>
+              <Button variant="outlined" onClick={() => play(Moves.STATUS2)} disabled={player.charge === 0}>{Status[player.type2].name}</Button>
             </Grid>
           </Grid>
         )}
