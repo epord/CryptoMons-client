@@ -2,7 +2,7 @@ import web3Utils from 'web3-utils';
 import async from 'async';
 import { unique, zip } from '../utils/utils';
 
-import { getExitData, getOwnedTokens } from "./plasmaServices";
+import {basicGet, getExitData, getOwnedTokens} from "./plasmaServices";
 import { getExitDataToBattleRLPData, isSwapBytes } from '../utils/cryptoUtils';
 import { getInitialCMBState, toCMBBytes } from "../utils/CryptoMonsBattles";
 
@@ -125,71 +125,71 @@ export const getPokemonData = (id, cryptoMons) => {
 }
 
 export const subscribeToCryptoMonTransfer = (cryptoMon, address, cb) => {
-	subscribeToEvent("Transfer", false, {to: address}, cryptoMon, cb)
+	subscribeToEvent("Transfer", false, {to: address}, cryptoMon, (r) => cb(r.returnValues))
 };
 
 export const subscribeToDeposits = (rootChain, address, cb) => {
-	subscribeToEvent("Deposit", false, {from: address}, rootChain, cb)
+	subscribeToEvent("Deposit", false, {from: address}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToSubmittedBlocks = (rootChain, cb) => {
-	subscribeToEvent("SubmittedBlock",false, {}, rootChain, cb)
+	subscribeToEvent("SubmittedBlock",false, {}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToSubmittedSecretBlocks = (rootChain, cb) => {
-	subscribeToEvent("SubmittedSecretBlock",false, {}, rootChain, cb)
+	subscribeToEvent("SubmittedSecretBlock",false, {}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToStartedExit = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("StartedExit",true, {slot: plasmaTokens}, rootChain, cb)
-	subscribeToEvent("StartedExit",false, {owner: address}, rootChain, cb)
+	subscribeToEvent("StartedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("StartedExit",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToCoinReset = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("CoinReset",true, {slot: plasmaTokens}, rootChain, cb)
-	subscribeToEvent("CoinReset",false, {owner: address}, rootChain, cb)
+	subscribeToEvent("CoinReset",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("CoinReset",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToFinalizedExit = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("FinalizedExit",true, {slot: plasmaTokens}, rootChain, cb)
-	subscribeToEvent("FinalizedExit",false, {owner: address}, rootChain, cb)
+	subscribeToEvent("FinalizedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("FinalizedExit",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToWithdrew = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("Withdrew",true, {slot: plasmaTokens}, rootChain, cb)
-	subscribeToEvent("Withdrew",false, {owner: address}, rootChain, cb)
+	subscribeToEvent("Withdrew",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("Withdrew",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToFreeBond = (rootChain, address, cb) => {
-	subscribeToEvent("FreedBond",false, {from: address}, rootChain, cb);
+	subscribeToEvent("FreedBond",false, {from: address}, rootChain, (r) => cb(r.returnValues));
 }
 
 export const subscribeToSlashedBond = (rootChain, address, cb) => {
-	subscribeToEvent("SlashedBond",false, {from: address}, rootChain, cb);
+	subscribeToEvent("SlashedBond",false, {from: address}, rootChain, (r) => cb(r.returnValues));
 }
 
 export const subscribeToWithdrewBond = (rootChain, address, cb) => {
-	subscribeToEvent("WithdrewBonds",false, {from: address}, rootChain, cb)
+	subscribeToEvent("WithdrewBonds",false, {from: address}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToChallenged = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("ChallengedExit",true, {slot: plasmaTokens}, rootChain, cb);
-	subscribeToEvent("ChallengedExit",false, {owner: address}, rootChain, cb);
+	subscribeToEvent("ChallengedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues));
+	subscribeToEvent("ChallengedExit",false, {owner: address}, rootChain, (r) => cb(r.returnValues));
 }
 
 export const subscribeToChallengeRespond = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("RespondedExitChallenge",true, {slot: plasmaTokens}, rootChain, cb);
-	subscribeToEvent("RespondedExitChallenge",false, {owner: address}, rootChain, cb);
-	subscribeToEvent("RespondedExitChallenge",false, {challenger: address}, rootChain, cb);
+	subscribeToEvent("RespondedExitChallenge",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues));
+	subscribeToEvent("RespondedExitChallenge",false, {owner: address}, rootChain, (r) => cb(r.returnValues));
+	subscribeToEvent("RespondedExitChallenge",false, {challenger: address}, rootChain, (r) => cb(r.returnValues));
 }
 
 export const subscribeToCMBRequested = (plasmaCM, address, cb) => {
-	subscribeToEvent("CryptoMonBattleRequested",false, {player: address}, plasmaCM, cb);
+	subscribeToEvent("CryptoMonBattleRequested",false, {player: address}, plasmaCM, (r) => cb(r.returnValues));
 }
 
 export const subscribeToChannelFunded = (plasmaCM, address, cb) => {
-	subscribeToEvent("ChannelFunded",false, {creator: address}, plasmaCM, cb);
-	subscribeToEvent("ChannelFunded",false, {opponent: address}, plasmaCM, cb);
+	subscribeToEvent("ChannelFunded",false, {creator: address}, plasmaCM, (r) => cb(r.returnValues));
+	subscribeToEvent("ChannelFunded",false, {opponent: address}, plasmaCM, (r) => cb(r.returnValues));
 }
 
 export const getChallengeable = (address, rootChain) => {
@@ -268,13 +268,10 @@ export const getExitedFrom = (address, rootChain)  => {
 export const challengeAfter = (slot, rootChain) => {
   return new Promise((resolve, reject) => {
 		ethContract(rootChain).getExit(slot).call(async (err, res) => {
-			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const exitBlock = res[2];
-			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${exitBlock}`);
-			if(response.status >=400) return reject("Challenge After could not be completed");
+			const exitData = await basicGet(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${exitBlock}`).catch(reject);
 
-			const exitData = await response.json();
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
 			const slotBN = (slot);
 			const challengingBlockNumberBN = (challengingBlockNumber);
@@ -291,12 +288,9 @@ export const challengeAfter = (slot, rootChain) => {
 export const challengeBetween = (slot, rootChain) => {
   return new Promise((resolve, reject) => {
 		ethContract(rootChain).getExit(slot).call(async (err, res) => {
-			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const parentBlock = res[1];
-			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${parentBlock}`);
-			if(response.status >=400) return reject("Challenge Between could not be completed");
-			const exitData = await response.json();
+			const exitData = await basicGet(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${parentBlock}`).catch(reject);
 
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
 			const slotBN = (slot);
@@ -314,10 +308,7 @@ export const challengeBetween = (slot, rootChain) => {
 export const respondChallenge = (slot, challengingBlock, challengingTxHash,  rootChain) => {
 
   return new Promise(async (resolve, reject) => {
-		const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${challengingBlock}`);
-		if(response.status >=400) return reject("Challenge response could not be completed");
-
-		const challengeData = await response.json();
+		const challengeData = await basicGet(`${process.env.API_URL}/api/challenges/after?slot=${slot}&exitBlock=${challengingBlock}`).catch(reject);
 
 		const { challengingBlockNumber: respondingBlockNumber, challengingTransaction: respondingTransaction, proof, signature} = challengeData;
 		const slotBN = (slot);
@@ -338,8 +329,7 @@ export const challengeBefore = (slot, rootChain) => {
 			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const parentBlock = res[1];
-			const response = await fetch(`${process.env.API_URL}/api/challenges/before?slot=${slot}&parentBlock=${parentBlock}`);
-			const exitData = await response.json();
+			const exitData = await basicGet(`${process.env.API_URL}/api/challenges/before?slot=${slot}&parentBlock=${parentBlock}`).catch(reject);
 
 			challengeBeforeWithExitData(exitData, rootChain)
 				.then(resolve)

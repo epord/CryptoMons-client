@@ -14,6 +14,7 @@ import CryptoMonCard from './common/CryptoMonCard.jsx';
 
 import {depositToPlasma} from '../../services/ethService';
 import {buyCryptoMon, getCryptoMonsFrom} from '../redux/actions';
+import {fallibleSnackPromise} from "../../utils/utils";
 
 
 class CryptoMons extends InitComponent {
@@ -27,16 +28,22 @@ class CryptoMons extends InitComponent {
 
 	buyCryptoMon = () => {
 		const { cryptoMonsContract, ethAccount, buyCryptoMon, enqueueSnackbar } = this.props;
-		buyCryptoMon(ethAccount, cryptoMonsContract).then(() => {
-			enqueueSnackbar('Cryptomon successfully bought!', { variant: 'success' })
-		})
+		fallibleSnackPromise(
+			buyCryptoMon(ethAccount, cryptoMonsContract),
+			enqueueSnackbar,
+			'Cryptomon successfully bought!',
+			'Error purchasing a Cryptomon'
+		)
 	};
 
 	depositToPlasma = token => () => {
 		const { rootChainContract, cryptoMonsContract, enqueueSnackbar } = this.props;
-		depositToPlasma(token, cryptoMonsContract, rootChainContract).then(() => {
-			enqueueSnackbar('Deposit successful', { variant: 'success' })
-		})
+		fallibleSnackPromise(
+			depositToPlasma(token, cryptoMonsContract, rootChainContract),
+			enqueueSnackbar,
+			`Cryptomon #${token} successfully deposited!`,
+			'Error depositing the Cryptomon'
+		)
 	};
 
 	render = () => {

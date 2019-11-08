@@ -3,53 +3,63 @@ import { keccak256, randomHex256 } from "../utils/utils";
 
 const BN = require('bn.js');
 
+export const basicGet = (url) => {
+  return new  Promise(async (resolve, reject) => {
+    const response = await fetch(url);
+    if(response.status >=400) return reject(response.body);
+    const json = await response.json();
+    resolve(json);
+  });
+};
+
+export const basicPost = (url, body) => {
+  return new  Promise(async (resolve, reject) => {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    if(response.status >=400) return reject(response.body);
+    const json = await response.json();
+    resolve(json);
+  });
+};
+
 export const transferInPlasma = (token, receiverAddress) => {
 
   return new Promise((resolve, reject) => {
-    fetch(`${process.env.API_URL}/api/tokens/${token}/last-transaction`).then(response => {
-      response.json().then(lastTransaction => {
-        if(response.status >=400) return reject("Transaction could not be completed");
+    basicGet(`${process.env.API_URL}/api/tokens/${token}/last-transaction`).then(lastTransaction => {
+      const hash = generateTransactionHash(token, lastTransaction.minedBlock, receiverAddress);
 
-        const hash = generateTransactionHash(token, lastTransaction.minedBlock, receiverAddress)
+      sign(hash).then(signature => {
+        const body = {
+          "slot": token,
+          "owner": web3.eth.defaultAccount,
+          "recipient": receiverAddress,
+          "hash": hash,
+          "blockSpent": lastTransaction.minedBlock,
+          "signature": signature
+        };
 
-        sign(hash).then(signature => {
-          const body = {
-            "slot": token,
-            "owner": web3.eth.defaultAccount,
-            "recipient": receiverAddress,
-            "hash": hash,
-            "blockSpent": lastTransaction.minedBlock,
-            "signature": signature
-          };
-
-          fetch(`${process.env.API_URL}/api/transactions/create`, {
-            method: 'POST',
-            body: JSON.stringify(body),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }).then(resolve);
-
-        });
+        basicPost(`${process.env.API_URL}/api/transactions/create`, body).then(resolve);
       });
     });
   })
 };
 
-export const createAtomicSwap = (slot, swappingSlot) => {
+export const createAtomicSwap = (owner, slot, swappingSlot) => {
   return new Promise((resolve, reject) => {
     Promise.all([
-      fetch(`${process.env.API_URL}/api/tokens/${swappingSlot}/last-owner`).then(res => res.json()),
-      fetch(`${process.env.API_URL}/api/tokens/${slot}/last-transaction`).then(res => res.json())
+      basicGet(`${process.env.API_URL}/api/tokens/${swappingSlot}/last-owner`),
+      basicGet(`${process.env.API_URL}/api/tokens/${slot}/last-transaction`)
     ]).then(response => {
       const [{ lastOwner: recipient }, lastTransaction] = response;
-      const owner = web3.eth.defaultAccount;
       const blockSpent = lastTransaction.minedBlock;
       const secret = randomHex256();
       const hashSecret = keccak256(secret);
-
       if (new BN(blockSpent).isZero()) return reject('Deposits cannot be an atomic swap');
-
       const hash = generateSwapHash(slot, blockSpent, hashSecret, recipient, swappingSlot);
 
       sign(hash).then(signature => {
@@ -64,22 +74,14 @@ export const createAtomicSwap = (slot, swappingSlot) => {
           signature
         };
 
-        fetch(`${process.env.API_URL}/api/transactions/create-atomic-swap`, {
-          method: 'POST',
-          body: JSON.stringify(body),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }).then(response => {
-          if(response.status >=400) return reject("Swap failed");
+        basicPost(`${process.env.API_URL}/api/transactions/create-atomic-swap`, body).then(r => {
           localStorage.setItem(`swap_${slot}_${swappingSlot}`, secret);
           resolve(secret);
-        }).catch(reject);
-      }).catch(reject);
-    }).catch(reject);
-
-  })
-}
+        });
+      });
+    });
+  });
+};
 
 export const revealSecret = (token, secret) => {
   return new Promise((resolve, reject) => {
@@ -88,17 +90,12 @@ export const revealSecret = (token, secret) => {
         slot: token,
         minedBlock: swapData.minedBlock,
         secret: secret,
-      }
-      fetch(`${process.env.API_URL}/api/transactions/reveal-secret`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }).then(resolve);
-    })
-  })
-}
+      };
+
+      basicPost(`${process.env.API_URL}/api/transactions/reveal-secret`, body).then(resolve);
+    });
+  });
+};
 
 export const cancelSecret = (token, hashSecret) => {
   return new Promise((resolve, reject) => {
@@ -109,26 +106,10 @@ export const cancelSecret = (token, hashSecret) => {
           minedBlock: swapData.minedBlock,
           signature: sig,
         };
-        fetch(`${process.env.API_URL}/api/transactions/cancel-reveal-secret`, {
-          method: 'POST',
-          body: JSON.stringify(body),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }).then(response => {
-          if(response.status >=400) return reject("Cancellation could not be completed");
-          resolve(response)
-        });
-      })
-    })
-  });
-};
 
-const basicGet = (url) => {
-  return new  Promise(async (resolve, reject) => {
-    const response = await fetch(url);
-    const json = await response.json();
-    resolve(json);
+        basicPost(`${process.env.API_URL}/api/transactions/cancel-reveal-secret`, body).then(resolve);
+      });
+    });
   });
 };
 

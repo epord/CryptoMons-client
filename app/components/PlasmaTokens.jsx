@@ -31,7 +31,7 @@ import {createAtomicSwap, getExitData, transferInPlasma} from '../../services/pl
 import SelectPlayerTokenModal from "./common/SelectPlayerTokenModal.jsx";
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 import {withSnackbar} from "notistack";
-import {toAddressColor, toReadableAddress} from "../../utils/utils";
+import {fallibleSnackPromise, toAddressColor, toReadableAddress} from "../../utils/utils";
 import {getSwappingRequests, getSwappingTokens} from "../redux/actions";
 
 const styles = theme => ({
@@ -53,73 +53,86 @@ class PlasmaTokens extends React.Component {
   }
 
   transferInPlasma = async token => {
-    const { transferAddress } = this.state;
-    const { enqueueSnackbar } = this.props;
-    console.log(`Transfering ${token} to ${transferAddress}`);
+    const {transferAddress, } = this.state;
+    const {enqueueSnackbar} = this.props;
+    console.log(`Transferring ${token} to ${transferAddress}`);
 
-    transferInPlasma(token, transferAddress).then(() =>{
-      console.log("Successful Submission, wait for mining");
-      enqueueSnackbar(`Transfer submitted, wait for mining`, { variant: 'warning' })
-      this.closeTransferModal();
-    }).catch( e => {
-      enqueueSnackbar(`Error Transfering the token`, {variant: 'error'})
-      this.closeTransferModal();
-    });
+    this.setState({isTransferring: true});
+    fallibleSnackPromise(transferInPlasma(token, transferAddress),
+      enqueueSnackbar,
+      "Successful Submission, wait for mining",
+      `Error Transferring the token`,
+      'warning'
+    ).finally(this.closeTransferModal)
   };
 
   swapInPlasma = (token) => async (player, swapToken) => {
     const { enqueueSnackbar, getSwappingTokens, ethAccount } = this.props;
     console.log(`Swapping ${token} with ${swapToken}`);
 
-    this.setState({ swapping: true });
-    createAtomicSwap(token, swapToken).then(secret => {
-      this.setState({ secret, swapping: false });
-      enqueueSnackbar(`Swap submitted, wait for the other party to accept it`, { variant: 'warning' })
-      getSwappingTokens(ethAccount);
-    }).catch(err => {
-      this.setState({ swapping: false })
-      enqueueSnackbar(`Swap submission failed`, { variant: 'error' })
-    })
-  }
+    this.setState({ isSwapping: true });
+
+    fallibleSnackPromise(
+      createAtomicSwap(ethAccount, token, swapToken),
+      enqueueSnackbar,
+      `Swap submitted, wait for the other party to accept it`,
+      `Swap submission failed`,
+      "warning"
+    ).then(secret => this.setState({secret}).finally(() => this.setState({isSwapping: false})))
+  };
 
   exitToken = token => async () => {
-    const { rootChainContract } = this.props;
+    const { rootChainContract, enqueueSnackbar } = this.props;
     const exitData = await getExitData(token);
 
-    exitTokenWithData(rootChainContract, exitData).then(
-      () => console.log("Exit successful")
+    fallibleSnackPromise(
+      exitTokenWithData(rootChainContract, exitData),
+      enqueueSnackbar,
+      `Token exit started, wait a week to finalize it`,
+      `Token exit failed`,
+      "warning"
     );
   };
 
   finalizeExit = token => async () => {
     const { rootChainContract, enqueueSnackbar } = this.props;
-    finalizeExit(rootChainContract, token)
-      .then(r => enqueueSnackbar(`Token #${token} exit finalized successfully`, { variant: 'success' }))
-      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Finalize Exit failed", { variant: 'error' }));
+    fallibleSnackPromise(
+     finalizeExit(rootChainContract, token),
+     enqueueSnackbar,
+     `Token #${token} exit finalized successfully`,
+     `Finalize Exit failed`
+    );
   };
 
   challengeBefore = token => async () => {
     const { rootChainContract, enqueueSnackbar } = this.props;
-    console.log(`Challenging Before: ${token}`);
-    challengeBefore(token, rootChainContract)
-      .then(r => enqueueSnackbar(`Token #${token} challenged successfully`, { variant: 'success' }))
-      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge Before failed", { variant: 'error' }));
+    fallibleSnackPromise(
+      challengeBefore(token, rootChainContract),
+      enqueueSnackbar,
+      `Token #${token} challenged successfully`,
+      "Challenge Before failed"
+    )
   };
 
   challengeBetween = token => () => {
     const { rootChainContract, enqueueSnackbar } = this.props;
-    console.log(`Challenging Between: ${token}`);
-    challengeBetween(token, rootChainContract)
-      .then(r => enqueueSnackbar(`Token #${token} challenged successfully`, { variant: 'success' }))
-      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge Between failed", { variant: 'error' }));
+    fallibleSnackPromise(
+      challengeBetween(token, rootChainContract),
+      enqueueSnackbar,
+      `Token #${token} challenged successfully`,
+      "Challenge Between failed"
+    );
   };
 
   challengeAfter = token => () => {
     const { rootChainContract, enqueueSnackbar } = this.props;
     console.log(`Challenging After: ${token}`);
-    challengeAfter(token, rootChainContract)
-      .then(r => enqueueSnackbar(`Token #${token} challenged successfully`, { variant: 'success' }))
-      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge After failed", { variant: 'error' }));
+    fallibleSnackPromise(
+      challengeAfter(token, rootChainContract),
+      enqueueSnackbar,
+      `Token #${token} challenged successfully`,
+      "Challenge After failed"
+    );
   };
 
   withdraw = token => async () => {
@@ -132,24 +145,31 @@ class PlasmaTokens extends React.Component {
     const { rootChainContract, enqueueSnackbar } = this.props;
     const challenge = await getChallenge(token, hash, rootChainContract);
     const challengingBlock = challenge[3];
-    await respondChallenge(token, challengingBlock, hash, rootChainContract)
-      .then(r => enqueueSnackbar(`Token #${token} challenged responded successfully`, { variant: 'success' }))
-      .catch(e => enqueueSnackbar(typeof e == "string"? e : "Challenge response failed", { variant: 'error' }));
-    this.closeRespondChallengeModal()
+    fallibleSnackPromise(
+      respondChallenge(token, challengingBlock, hash, rootChainContract),
+      enqueueSnackbar,
+      `Token #${token} challenged responded successfully`,
+      "Challenge response failed"
+    ).finally(this.closeRespondChallengeModal);
   };
 
   onBattleStart = ownToken => async (opponent, opponentToken) => {
-    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract } = this.props;
+    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, enqueueSnackbar } = this.props;
     await this.setState({ startingBattle: true });
-    await createBattle(ownToken, opponentToken, opponent, undefined,
+    fallibleSnackPromise(
+      createBattle(ownToken, opponentToken, opponent, undefined,
       rootChainContract, cryptoMonsContract, plasmaCMContract, plasmaTurnGameContract
+      ),
+      enqueueSnackbar,
+      'Battle Created Successfully',
+      'Battle creation failed'
     );
     this.props.history.push('/battles');
   };
 
   openTransferModal = token => () => this.setState({ transferModalOpen: true, tokenToTransact: token });
 
-  closeTransferModal= () => this.setState({ transferModalOpen: false });
+  closeTransferModal= () => this.setState({ transferModalOpen: false, isTransferring: false });
 
   openSwapModal = token => () => this.setState({ swapModalOpen: true, tokenToSwap: token });
 
@@ -167,73 +187,86 @@ class PlasmaTokens extends React.Component {
   closeValidateHistoryModal = () => this.setState({ validateHistoryOpen: false, validatingToken: undefined });
 
   openRespondChallengeModal = (challengedSlot, challengeHashes) => () => {
-    //TODO add disable to button so no multiple fetches are being done
-    const { rootChainContract } = this.props;
-    const getChallenges = challengeHashes.map(hash => async cb => {
-      const ans = await getChallenge(challengedSlot, hash, rootChainContract)
-      const challenge = {
-        owner: ans[0],
-        challenger: ans[1],
-        txHash: ans[2],
-        blockNumber: ans[3],
+    const { rootChainContract, enqueueSnackbar } = this.props;
+    this.setState({isFetchingChallenges: true, respondModalOpen: true});
+
+    const getChallenges = challengeHashes.map(hash =>
+      async cb => {
+        const ans = await getChallenge(challengedSlot, hash, rootChainContract).catch(cb);
+        const challenge = {
+          owner: ans[0],
+          challenger: ans[1],
+          txHash: ans[2],
+          blockNumber: ans[3],
+        };
+        cb(null, challenge);
       }
-      cb(null, challenge);
-    });
+    );
+
     async.parallel(getChallenges, (err, challenges) => {
       if (err) {
-        console.error(err);
+        enqueueSnackbar("Error fetching challenges", {variant: 'error'})
         this.closeRespondChallengeModal();
       }
+
       this.setState({
-        respondModalOpen: true,
+        isFetchingChallenges: false,
         challengedSlot,
         challengesToRespond: challenges
       });
     });
-  }
+  };
 
   closeRespondChallengeModal = () => this.setState({ respondModalOpen: false });
 
-  handleChange = fieldName => event => {
-    this.setState({ [fieldName]: event.target.value });
-  }
+  handleChange = fieldName => event => this.setState({ [fieldName]: event.target.value });
 
   renderRespondChallengeDialog = () => {
-    const { respondModalOpen, challengedSlot, challengesToRespond } = this.state;
+    const { isFetchingChallenges, respondModalOpen, challengedSlot, challengesToRespond } = this.state;
     const { classes } = this.props;
-    const challengesCount = challengesToRespond ? challengesToRespond.length : 0;
 
-    return (
-      <Dialog
+    if(isFetchingChallenges) {
+      return (
+        <Dialog
+          onClose={this.closeRespondChallengeModal}
+          open={Boolean(respondModalOpen)} classes={{paper: classes.dialogPaper}}>
+          <DialogTitle>Fetching challenges...</DialogTitle>
+        </Dialog>
+      );
+    } else {
+      return (
+        <Dialog
         onClose={this.closeRespondChallengeModal}
-        open={Boolean(respondModalOpen)} classes={{ paper: classes.dialogPaper }}>
-        <DialogTitle>Respond to challenges</DialogTitle>
-        <Grid style={{ padding: '1em', paddingTop: "0"}}>
-        {(challengesToRespond || []).map(challenge => (
-          <div
-            key={challenge.txHash}
-            style={{
-            border: "2px solid black",
-            borderRadius: "5px",
-            margin: "0.5em",
-            padding: "0.5em",
-            display: "flex",
-            flexDirection: "column"
-          }}>
+        open={Boolean(respondModalOpen)} classes={{paper: classes.dialogPaper}}>
+          <DialogTitle>Respond to challenges</DialogTitle>
+          <Grid style={{padding: '1em', paddingTop: "0"}}>
+          {(challengesToRespond || []).map(challenge => (
+            <div
+              key={challenge.txHash}
+              style={{
+                border: "2px solid black",
+                borderRadius: "5px",
+                margin: "0.5em",
+                padding: "0.5em",
+                display: "flex",
+                flexDirection: "column"
+              }}>
 
-            <Typography style={{textAlign: "center", fontWeight: "bold"}}>
-              <span style={{color: toAddressColor(challenge.owner)}}>{toReadableAddress(challenge.owner)} </span>
-              challenged this Token in block {challenge.blockNumber}</Typography>
-            <Button variant="contained" color="primary" onClick={() => this.respondChallenge(challengedSlot, challenge.txHash)}>Respond Challenge</Button>
-          </div>
-        ))}
-        </Grid>
-      </Dialog>
-    )
-  }
+              <Typography style={{textAlign: "center", fontWeight: "bold"}}>
+                <span style={{color: toAddressColor(challenge.owner)}}>{toReadableAddress(challenge.owner)} </span>
+                challenged this Token in block {challenge.blockNumber}</Typography>
+              <Button variant="contained" color="primary"
+                      onClick={() => this.respondChallenge(challengedSlot, challenge.txHash)}>Respond Challenge</Button>
+            </div>
+          ))}
+          </Grid>
+        </Dialog>
+      )
+    }
+  };
 
   renderTransferDialog = () => {
-    const { transferModalOpen, tokenToTransact } = this.state;
+    const { transferModalOpen, tokenToTransact, isTransferring } = this.state;
     const { classes } = this.props;
     return (
       <Dialog onClose={this.closeTransferModal} open={Boolean(transferModalOpen)} classes={{ paper: classes.dialogPaper }}>
@@ -248,7 +281,12 @@ class PlasmaTokens extends React.Component {
               placeholder="Address" />
           </Grid>
           <Grid item xs={12} style={{ padding: '1em' }}>
-            <Button color="primary" fullWidth onClick={() => this.transferInPlasma(tokenToTransact)} variant="outlined" size="small">Transfer</Button>
+            <Button color="primary"
+                    fullWidth
+                    disabled={isTransferring}
+                    onClick={() => this.transferInPlasma(tokenToTransact)}
+                    variant="outlined"
+                    size="small">Transfer</Button>
           </Grid>
         </Grid>
       </Dialog>
@@ -274,7 +312,7 @@ class PlasmaTokens extends React.Component {
   };
 
   renderSwapDialog = () => {
-    const { swapModalOpen, secret, swapping, validateHistoryOpen, tokenToSwap } = this.state;
+    const { swapModalOpen, secret, isSwapping, validateHistoryOpen, tokenToSwap } = this.state;
     return (
       <React.Fragment>
         <SelectPlayerTokenModal
@@ -283,7 +321,7 @@ class PlasmaTokens extends React.Component {
           handleClose={this.closeSwapModal}
           actions = {[{
             title: "Select",
-            disabled: swapping || Boolean(secret),
+            disabled: isSwapping || Boolean(secret),
             func: this.swapInPlasma(tokenToSwap)
           },{
             title: "Validate History",
@@ -336,7 +374,7 @@ class PlasmaTokens extends React.Component {
 
   render = () => {
     const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens, swappingTokens, ethAccount } = this.props;
-    const { validateHistoryOpen } = this.state;
+    const { validateHistoryOpen, isFetchingChallenges } = this.state;
 
     if (plasmaTokens.length + exitingTokens.length + challengeableTokens.length + exitedTokens.length + swappingTokens.length === 0) {
       return (

@@ -20,7 +20,7 @@ import Paper from '@material-ui/core/Paper';
 
 import DoubleCryptoMonCard from './common/DoubleCryptoMonCard.jsx';
 
-import {toAddressColor, toReadableAddress} from '../../utils/utils';
+import {fallibleSnackPromise, toAddressColor, toReadableAddress} from '../../utils/utils';
 import {createAtomicSwap, getSwapData} from '../../services/plasmaServices'
 import {cancelSecret, getSwappingRequests, getSwappingTokens, revealSecret} from '../redux/actions';
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
@@ -37,99 +37,104 @@ class Swap extends InitComponent {
 
   state = {
     secretModalOpen: false
-  }
+  };
 
 	init = () => {
-    const { getSwappingTokens, getSwappingRequests, rootChainContract } = this.props;
-		getSwappingTokens(web3.eth.defaultAccount)
-		getSwappingRequests(web3.eth.defaultAccount)
-	}
+    const { getSwappingTokens, getSwappingRequests, ethAccount } = this.props;
+		getSwappingTokens(ethAccount);
+		getSwappingRequests(ethAccount);
+	};
 
 	revealSecret = async () => {
 		const { tokenToReveal, secretToReveal } = this.state;
 		const { revealSecret, enqueueSnackbar } = this.props;
 
-		this.setState({ revealingSecret: true });
-		revealSecret(tokenToReveal, secretToReveal)
-			.then(() => {
-				enqueueSnackbar(`Secret revealed successfully, wait for all secrets to be revealed`, { variant: 'warning' })
-				this.setState({ revealingSecret: false })
-				this.closeRevealSecretModal();
-			})
-			.catch(e => enqueueSnackbar(`Revealing secret failed`, { variant: 'error' }))
-	}
+		this.setState({ isRevealingSecret: true });
 
-	cancelSecret = async () => {
-		const { tokenToCancel, hashSecretToCancel } = this.state;
-		const { cancelSecret, enqueueSnackbar } = this.props;
-
-		this.setState({ revealingSecret: true });
-		console.log(hashSecretToCancel)
-		cancelSecret(tokenToCancel, hashSecretToCancel)
-			.then(() => {
-				enqueueSnackbar(`Secret Cancelled successfully`, { variant: 'success' })
-				this.setState({ revealingSecret: false })
-				this.closeRevealSecretModal();
-			})
-			.catch(e => enqueueSnackbar(`Canceling secret reveal failed`, { variant: 'error' }))
-	}
-
-	swapInPlasma = async (tokenToSwap, swapToken) => {
-		const { enqueueSnackbar, getSwappingRequest, getSwappingTokens, ethAccount } = this.props;
-		console.log(`Swapping ${tokenToSwap} with ${swapToken}`);
-		this.setState({ swapping: true });
-		createAtomicSwap(tokenToSwap, swapToken).then(secret => {
-			this.setState({ secret, swapping: false })
-			enqueueSnackbar(`Swap submitted, wait for secret reveal for it to be validated`, { variant: 'warning' })
-			getSwappingRequest(ethAccount);
-			getSwappingTokens(ethAccount);
-		}).catch(err => {
-			this.setState({ swapping: false })
-			enqueueSnackbar(`Swap transaction failed to submit`, { variant: 'info' })
+		fallibleSnackPromise(revealSecret(tokenToReveal, secretToReveal),
+			enqueueSnackbar,
+			`Secret revealed successfully, wait for all secrets to be revealed`,
+			`Revealing secret failed`,
+			'warning'
+		).finally(() =>{
+			this.setState({ isRevealingSecret: false });
+			this.closeRevealSecretModal();
 		})
-	}
-
-	openRevealSecretModal = (token, tokenToCancel, hashSecretToCancel) => () => {
-		this.setState({ secretModalOpen: true, tokenToReveal: token, tokenToCancel, hashSecretToCancel, loadingSwapData: true });
-		getSwapData(token).then(swapData => {
-			const swappingTokenReveal = swapData.counterpart.data.swappingSlot;
-			const savedSecret = localStorage.getItem(`swap_${swappingTokenReveal}_${token}`);
-			this.setState({ swappingTokenReveal, secretToReveal: savedSecret, loadingSwapData: false })
-		})
-	}
-
-	closeRevealSecretModal= () => this.setState({ secretModalOpen: false });
-
-	openAcceptSwapModal= transaction => () => {
-		this.setState({ acceptSwapModalOpen: true, transactionToAccept: transaction, swapToken: transaction.swappingSlot })
 	};
 
+	cancelSecret = async () => {
+		const { tokenToReveal, hashSecretToCancel } = this.state;
+		const { cancelSecret, enqueueSnackbar, getSwappingRequests, ethAccount } = this.props;
+
+		this.setState({ isRevealingSecret: true });
+
+		fallibleSnackPromise(cancelSecret(tokenToReveal, hashSecretToCancel),
+			enqueueSnackbar,
+			`Secret cancelled successfully, wait for all secrets to be revealed`,
+			`Cancelling secret failed`,
+		)
+		.then(() => getSwappingRequests(ethAccount))
+		.finally(() => {
+			this.setState({ isRevealingSecret: false });
+			this.closeRevealSecretModal();
+		});
+	};
+
+	swapInPlasma = async (myToken, swapToken) => {
+		const { enqueueSnackbar, getSwappingRequest, getSwappingTokens, ethAccount } = this.props;
+		this.setState({ isSwapping: true });
+
+		fallibleSnackPromise(createAtomicSwap(ethAccount, myToken, swapToken),
+			enqueueSnackbar,
+			`Swap submitted successfully`,
+			`Swap submission failed secret failed`
+		)
+			.then(secret => {
+				this.setState({secret});
+				getSwappingRequest(ethAccount);
+				getSwappingTokens(ethAccount);
+			})
+			.finally(() => {
+				this.setState({ isSwapping: false })
+			})
+	};
+
+	openRevealSecretModal = (myToken, swappingToken, hashSecretToCancel) => () => {
+		const savedSecret = localStorage.getItem(`swap_${myToken}_${swappingToken}`);
+		this.setState({ 
+			secretModalOpen: true,
+			otherTokenToReveal: swappingToken,
+			tokenToReveal: myToken,
+			secretToReveal: savedSecret,
+			hashSecretToCancel
+		});
+	};
+	closeRevealSecretModal= () => this.setState({ secretModalOpen: false });
+
+	openAcceptSwapModal= transaction => () => this.setState({ acceptSwapModalOpen: true, transactionToAccept: transaction });
 	closeAcceptSwapModal= () => this.setState({ acceptSwapModalOpen: false });
 
 	openValidateHistoryModal = (token) => () => this.setState({
 		validateHistoryOpen: true,
 		validatingToken: token,
 	});
-
-	closeValidateHistoryModal = () => this.setState({ validateHistoryOpen: false, validatingToken: undefined });
+	closeValidateHistoryModal = () => this.setState({ validateHistoryOpen: false });
 
 
 	handleChange = fieldName => event => {
 		this.setState({ [fieldName]: event.target.value });
-	}
+	};
 
 	renderRevealSecretDialog = () => {
-		const { secretModalOpen, tokenToReveal, revealingSecret, swappingTokenReveal, loadingSwapData, secretToReveal, hashSecretToCancel } = this.state;
+		const { secretModalOpen, isRevealingSecret, tokenToReveal, otherTokenToReveal, secretToReveal, hashSecretToCancel } = this.state;
 		const { classes } = this.props;
-
-		if (loadingSwapData) return <div>Loading...</div>
 
 		return (
 			<Dialog onClose={this.closeRevealSecretModal} open={Boolean(secretModalOpen)} classes={{ paper: classes.dialogPaper }}>
 				<DialogTitle>Reveal secret</DialogTitle>
 				<Grid container style={{ padding: '1em' }}>
 					<Grid item xs={12}>
-						<Typography variant="body1"><u>Swapping token:</u> {swappingTokenReveal}</Typography>
+						<Typography variant="body1"><u>Swapping token:</u> {otherTokenToReveal}</Typography>
 					</Grid>
 					<Grid item xs={12}>
 						<TextField
@@ -139,16 +144,18 @@ class Swap extends InitComponent {
 							value={secretToReveal || ''} />
 					</Grid>
 					<Grid item xs={12} style={{ padding: '1em' }}>
-						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.revealSecret(tokenToReveal)} variant="outlined" size="small">Reveal</Button>
-						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.cancelSecret(tokenToReveal, hashSecretToCancel)} variant="outlined" size="small">Cancel Swap</Button>
+						<Button disabled={isRevealingSecret} color="primary" fullWidth
+										onClick={() => this.revealSecret(tokenToReveal)} variant="outlined" size="small">Reveal</Button>
+						<Button disabled={isRevealingSecret} color="primary" fullWidth
+										onClick={() => this.cancelSecret(tokenToReveal, hashSecretToCancel)} variant="outlined" size="small">Cancel Swap</Button>
 					</Grid>
 				</Grid>
 			</Dialog>
 		)
-	}
+	};
 
 	renderAcceptSwapDialog = () => {
-		const { acceptSwapModalOpen, transactionToAccept, swapping, secret, validateHistoryOpen } = this.state;
+		const { acceptSwapModalOpen, transactionToAccept, isSwapping, secret, validateHistoryOpen } = this.state;
 		const { classes, ethAccount } = this.props;
 
 		if (!transactionToAccept) return null;
@@ -187,7 +194,7 @@ class Swap extends InitComponent {
 					color="primary"
 					fullWidth
 					onClick={() => this.swapInPlasma(transactionToAccept.swappingSlot, transactionToAccept.slot)}
-					disabled={Boolean(swapping || secret)}
+					disabled={Boolean(isSwapping || secret)}
 				>
 					Accept
 				</Button>
@@ -197,13 +204,11 @@ class Swap extends InitComponent {
 
   renderSwappingTokensSection = () => {
 		const { swappingTokens, ethAccount } = this.props;
-		const { secretModalOpen, validateHistoryOpen } = this.state;
+		const { validateHistoryOpen } = this.state;
 
     if (swappingTokens.length == 0){
       return <Typography style={{ margin: 'auto' }}  variant="body1">There are no swaps to confirm</Typography>
 		}
-
-		console.log('swappingTokens', swappingTokens)
 
     return(
       <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
@@ -226,14 +231,14 @@ class Swap extends InitComponent {
 							}]}
 						/>
 						<Button fullWidth variant="outlined" color="primary"
-										onClick={this.openRevealSecretModal(transaction.swappingSlot, transaction.slot, transaction.hashSecret)}>
+										onClick={this.openRevealSecretModal(transaction.slot, transaction.swappingSlot, transaction.hashSecret)}>
 							See detail
 						</Button>
 					</Paper>
         ))}
       </div>
     )
-	}
+	};
 
 	renderValidateHistoryDialog = () => {
 		const { validateHistoryOpen, validatingToken } = this.state;
@@ -282,7 +287,7 @@ class Swap extends InitComponent {
 					))}
 				</div>
     )
-  }
+  };
 
   render = () => {
 		const { rootChainContract } = this.props;
@@ -324,14 +329,14 @@ const mapStateToProps = state => ({
   swappingTokens: state.swappingTokens,
   swappingRequests: state.swappingRequests,
   rootChainContract: state.rootChainContract,
-})
+});
 
 const mapDispatchToProps = dispatch => ({
   getSwappingTokens: address => dispatch(getSwappingTokens(address)),
   getSwappingRequests: address => dispatch(getSwappingRequests(address)),
 	revealSecret: (token, secret) => dispatch(revealSecret(token, secret)),
 	cancelSecret: (token, secret) => dispatch(cancelSecret(token, secret)),
-})
+});
 
 const withInitSwap = withInitComponent(Swap);
 const connectedSwap = connect(mapStateToProps, mapDispatchToProps)(withSnackbar(withInitSwap));

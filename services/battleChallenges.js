@@ -1,3 +1,5 @@
+import {basicGet} from "./plasmaServices";
+
 const Web3 = require('web3');
 const web3 = new Web3(Web3.givenProvider);
 
@@ -11,18 +13,16 @@ export const battleChallengeAfter = (channel, index, plasmaCM) => {
   console.log(channel)
   return new Promise((resolve, reject) => {
 		ethContract(plasmaCM).getExit(channel.channelId, index).call(async (err, exit) => {
-			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const exitBlock = exit.exitBlock;
-			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${exit.slot}&exitBlock=${exitBlock}`);
-			if(response.status >=400) return reject("Challenge After could not be completed");
+			const exitData = await basicGet(`${process.env.API_URL}/api/challenges/after?slot=${exit.slot}&exitBlock=${exitBlock}`);
 
-			const exitData = await response.json();
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
 			const challengingBlockNumberBN = (challengingBlockNumber);
 
 			ethContract(plasmaCM)
-				.challengeAfter(channel.channelId, index, challengingTransaction, proof, signature, challengingBlockNumberBN).send({from: web3.eth.defaultAccount},(err, res) => {
+				.challengeAfter(channel.channelId, index, challengingTransaction, proof, signature, challengingBlockNumberBN)
+				.send({from: web3.eth.defaultAccount},(err, res) => {
 					if (err) return reject(err)
 					resolve(res);
 				})
@@ -31,27 +31,24 @@ export const battleChallengeAfter = (channel, index, plasmaCM) => {
 }
 
 export const battleChallengeBetween = (channel, index, plasmaCM) => {
-  console.log(channel)
   return new Promise((resolve, reject) => {
 		ethContract(plasmaCM).getExit(channel.channelId, index).call(async (err, exit) => {
-			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const parentBlock = exit.prevBlock;
-			const response = await fetch(`${process.env.API_URL}/api/challenges/after?slot=${exit.slot}&exitBlock=${parentBlock}`);
-			if(response.status >=400) return reject("Challenge Between could not be completed");
+			const exitData = await basicGet(`${process.env.API_URL}/api/challenges/after?slot=${exit.slot}&exitBlock=${parentBlock}`);
 
-			const exitData = await response.json();
 			const { challengingBlockNumber, challengingTransaction, proof, signature} = exitData;
 			const challengingBlockNumberBN = (challengingBlockNumber);
 
 			ethContract(plasmaCM)
-				.challengeBetween(channel.channelId, index, challengingTransaction, proof, signature, challengingBlockNumberBN).send({from: web3.eth.defaultAccount},(err, res) => {
+				.challengeBetween(channel.channelId, index, challengingTransaction, proof, signature, challengingBlockNumberBN)
+				.send({from: web3.eth.defaultAccount},(err, res) => {
 					if (err) return reject(err)
 					resolve(res);
 				})
 		})
 	})
-}
+};
 
 // export const battleRespondChallenge = (channel, index, challengingBlock, challengingTxHash,  rootChain) => {
 //   return new Promise(async (resolve, reject) => {
@@ -74,15 +71,11 @@ export const battleChallengeBetween = (channel, index, plasmaCM) => {
 export const battleChallengeBefore = (channel, index, plasmaCM) => {
   return new Promise((resolve, reject) => {
 		ethContract(plasmaCM).getExit(channel.channelId, index).call(async (err, exit) => {
-			//TODO this fetch should not be done here
 			if (err) return reject(err);
 			const parentBlock = exit.prevBlock;
-			const response = await fetch(`${process.env.API_URL}/api/challenges/before?slot=${exit.slot}&parentBlock=${parentBlock}`);
-			const exitData = await response.json();
+			const exitData = await basicGet(`${process.env.API_URL}/api/challenges/before?slot=${exit.slot}&parentBlock=${parentBlock}`);
 
-			battleChallengeBeforeWithExitData(channel, index, exitData, plasmaCM)
-				.then(resolve)
-				.catch(reject);
+			battleChallengeBeforeWithExitData(channel, index, exitData, plasmaCM).then(resolve)
 		})
 	})
 }

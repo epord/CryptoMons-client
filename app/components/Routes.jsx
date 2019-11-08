@@ -71,6 +71,7 @@ import {
   getSwappingTokens,
   initApp,
 } from '../redux/actions'
+import {infoSnack, successSnack, warnSnack} from "../../utils/utils";
 
 class Routes extends React.Component {
 	state = { drawerOpen: false, subscribed: false }
@@ -148,22 +149,22 @@ class Routes extends React.Component {
 	subscribeToEvents = (address, plasmaTokens) => {
 		const { rootChain, cryptoMons, plasmaCM, plasmaTurnGame } = this.state;
 
-		subscribeToCryptoMonTransfer(cryptoMons, address, (r => {
-			const { getCryptoMonsFrom } = this.props;
-			console.log("CryptoMon Transfer");
+		subscribeToCryptoMonTransfer(cryptoMons, address, r => {
+			const { getCryptoMonsFrom, enqueueSnackbar } = this.props;
+			infoSnack(enqueueSnackbar, `New CryptoMon Transfer: #${r.tokenId}`);
 			getCryptoMonsFrom(address, cryptoMons);
-		}));
+		});
 
 		subscribeToDeposits(rootChain, address,(r => {
-			console.log("DEPOSIT - Slot: " + r.returnValues.slot)
-			const { getCryptoMonsFrom, getOwnedTokens } = this.props;
+			const { getCryptoMonsFrom, getOwnedTokens, enqueueSnackbar } = this.props;
+			infoSnack(enqueueSnackbar, `Coin #${r.slot} deposited`);
 			getCryptoMonsFrom(address, cryptoMons);
 			getOwnedTokens(address, 'deposited');
 		}));
 
 		subscribeToCoinReset(rootChain, address, plasmaTokens,(r => {
-			console.log("Coin Reset - Slot: " + r.returnValues.slot)
-			const { getOwnedTokens, getExitingTokens, getChallengedFrom, getChallengeableTokens } = this.props;
+			const { enqueueSnackbar, getOwnedTokens, getExitingTokens, getChallengedFrom, getChallengeableTokens } = this.props;
+			infoSnack(enqueueSnackbar, `Coin ${r.slot} reset. Exit was challenged`);
 			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
       getChallengedFrom(address, rootChain);
@@ -171,16 +172,15 @@ class Routes extends React.Component {
 		}));
 
 		subscribeToFinalizedExit(rootChain, address, plasmaTokens,(r => {
-      console.log("Finalized Exit - Slot: " + r.returnValues.slot)
-			const { getExitingTokens, getExitedTokens } = this.props;
+			const { enqueueSnackbar, getExitingTokens, getExitedTokens } = this.props;
+			infoSnack(enqueueSnackbar, `Coin #${r.slot} finalized exit`);
 			getExitingTokens(address, rootChain);
 			getExitedTokens(address, rootChain);
 		}));
 
 		subscribeToStartedExit(rootChain, address, plasmaTokens,(r => {
-			console.log("Started Exit - Slot: " + r.returnValues.slot)
-			const { getOwnedTokens, getExitingTokens, getChallengedFrom, getChallengeableTokens, enqueueSnackbar } = this.props;
-			enqueueSnackbar(`Exit started for token #${r.returnValues.slot}`, { variant: 'info' })
+			const { enqueueSnackbar, getOwnedTokens, getExitingTokens, getChallengedFrom, getChallengeableTokens } = this.props;
+			infoSnack(enqueueSnackbar, `Exit started for coin #${r.slot}`);
 			getOwnedTokens(address, 'deposited');
 			getExitingTokens(address, rootChain);
       getChallengedFrom(address, rootChain);
@@ -188,71 +188,70 @@ class Routes extends React.Component {
 		}));
 
 		subscribeToSubmittedBlocks(rootChain,(r => {
-			console.log("Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
-			const { getOwnedTokens, getSwappingTokens, getSwappingRequests, enqueueSnackbar } = this.props;
-			enqueueSnackbar(`New block mined #${r.returnValues.blockNumber}`, { variant: 'default' })
+			const { enqueueSnackbar, getOwnedTokens, getSwappingTokens, getSwappingRequests } = this.props;
+			enqueueSnackbar(`New block mined #${r.blockNumber}`, { autoHideDuration: 1000 });
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address);
 			getSwappingRequests(address);
 		}));
 
 		subscribeToSubmittedSecretBlocks(rootChain,(r => {
-			console.log("Secret Block Submitted - BlockNumber: " + r.returnValues.blockNumber)
 			const { getOwnedTokens, getSwappingTokens, enqueueSnackbar } = this.props;
-			enqueueSnackbar(`New Secret block mined #${r.returnValues.blockNumber}`, { variant: 'default' })
+			enqueueSnackbar(`New Secret block mined #${r.blockNumber}`, { autoHideDuration: 1000 });
 			getOwnedTokens(address, 'deposited');
 			getSwappingTokens(address)
 		}));
 
 		subscribeToWithdrew(rootChain, address, plasmaTokens,(r => {
-			console.log("Withdrawal - Slot: " + r.returnValues.slot)
-			const { getCryptoMonsFrom, getExitedTokens } = this.props;
+			const { enqueueSnackbar, getCryptoMonsFrom, getExitedTokens } = this.props;
+			successSnack(enqueueSnackbar, "Slot withdrawn:  #" + r.slot)
 			getCryptoMonsFrom(address, cryptoMons);
 			getExitedTokens(address, rootChain);
 		}));
 
 		subscribeToFreeBond(rootChain, address, (r => {
-			const { getBalance } = this.props;
-      console.log('Free Bond event');
+			const { getBalance, enqueueSnackbar } = this.props;
+			infoSnack(enqueueSnackbar, "Bond freed");
 			getBalance(rootChain)
 		}));
 
 		subscribeToSlashedBond(rootChain, address, (r => {
-			const { getBalance } = this.props;
-			console.log('Slashed Bond event');
+			const { getBalance, enqueueSnackbar } = this.props;
+			infoSnack(enqueueSnackbar, "Bond slashed");
 			getBalance(rootChain)
 		}));
 
 		subscribeToWithdrewBond(rootChain, address, (r => {
-			const { getBalance } = this.props;
-			console.log('Bond Withdrawn event');
+			const { getBalance, enqueueSnackbar } = this.props;
+			successSnack(enqueueSnackbar, "Bond withdrawn");
 			getBalance(rootChain)
 		}));
 
 		subscribeToChallenged(rootChain, address, plasmaTokens, (r => {
 			const { getChallengedFrom, getChallengeableTokens, enqueueSnackbar } = this.props;
+			warnSnack(enqueueSnackbar, `Token #${r.slot} being challenged`);
 			getChallengeableTokens(address, rootChain);
 			getChallengedFrom(address, rootChain);
-			enqueueSnackbar(`Token being challenged`, { variant: 'warning' })
-			console.log('ChallengedExit event');
 		}));
 
 		subscribeToChallengeRespond(rootChain, address, plasmaTokens, (r => {
-      const { getChallengedFrom, getChallengeableTokens, getBalance } = this.props;
-      getChallengeableTokens(address, rootChain);
+      const { enqueueSnackbar, getChallengedFrom, getChallengeableTokens, getBalance } = this.props;
+			successSnack(enqueueSnackbar, `Token #${r.slot}'s challenged answered`);
+			getChallengeableTokens(address, rootChain);
 			getChallengedFrom(address, rootChain);
 			getBalance(rootChain);
-			console.log('RespondedExitChallenge event');
 		}));
 
 		subscribeToCMBRequested(plasmaTurnGame, address, (r => {
-			console.log('CMBRequested event');
-			this.props.getBattlesFrom(address, plasmaTurnGame, plasmaCM)
+			const { enqueueSnackbar, getBattlesFrom } = this.props;
+			infoSnack(enqueueSnackbar, `New Battle requested`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM)
 		}));
 
 		subscribeToChannelFunded(plasmaCM, address, (r => {
-			console.log('ChannelFunded event');
-			this.props.getBattlesFrom(address, plasmaTurnGame, plasmaCM)
+			const { enqueueSnackbar, getBattlesFrom } = this.props;
+			successSnack(enqueueSnackbar, `New Battle started`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM)
 		}))
 	};
 
