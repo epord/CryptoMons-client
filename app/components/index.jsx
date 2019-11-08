@@ -1,7 +1,7 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
-import { withSnackbar } from 'notistack';
+import {withSnackbar} from 'notistack';
 
 import InitComponent from './common/InitComponent.jsx'
 import withInitComponent from './common/withInitComponent.js'
@@ -18,9 +18,9 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import CryptoMons from '../components/CryptoMons.jsx';
 import PlasmaTokens from '../components/PlasmaTokens.jsx';
 
-import { getBalance, withdrawBonds } from '../../services/ethService';
+import {getBalance, withdrawBonds} from '../../services/ethService';
 
-import { buyCryptoMon, loadContracts } from '../redux/actions';
+import {buyCryptoMon, loadContracts} from '../redux/actions';
 
 class App extends InitComponent {
 

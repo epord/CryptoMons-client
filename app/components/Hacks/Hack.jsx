@@ -1,20 +1,20 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 import {
   challengeBeforeWithExitData,
+  createBattle,
   exitToken,
   exitTokenWithData,
-  getCoinState,
-  createBattle
+  getCoinState
 } from '../../../services/ethService';
 import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
 import {fastForwardBlockChain, getHistory} from "../../../services/plasmaServices";
 import Paper from "@material-ui/core/Paper";
 import Button from "@material-ui/core/Button";
-import { doubleSpendTransactions, nonExistentTransactions } from "./HackUtils";
-import { toAddressColor, toReadableAddress } from "../../../utils/utils";
+import {doubleSpendTransactions, nonExistentTransactions} from "./HackUtils";
+import {toAddressColor, toReadableAddress} from "../../../utils/utils";
 import SelectPlayerTokenModal from "../common/SelectPlayerTokenModal.jsx"
 import {withSnackbar} from "notistack";
 import InitComponent from "../common/InitComponent.jsx";

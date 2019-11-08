@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 import io from 'socket.io-client';
 
 import Button from "@material-ui/core/Button";
@@ -29,7 +29,7 @@ import {
   transitionOddToEven,
   transtionEvenToOdd,
 } from "../../../utils/CryptoMonsBattles"
-import { getExitDataToBattleRLPData, hashChannelState, sign } from "../../../utils/cryptoUtils";
+import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
 
 import {
   battleForceMove,
@@ -40,9 +40,9 @@ import {
   getCryptomon,
   getPlasmaCoinId,
 } from '../../../services/ethService';
-import { getBattlesFrom } from '../../redux/actions';
-import { getExitData } from "../../../services/plasmaServices";
-import { Typography } from '@material-ui/core';
+import {getBattlesFrom} from '../../redux/actions';
+import {getExitData} from "../../../services/plasmaServices";
+import {Typography} from '@material-ui/core';
 
 class Battles extends InitComponent {
 

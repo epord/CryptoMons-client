@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { connect } from "react-redux";
-import { withStyles } from '@material-ui/core/styles';
-import { withRouter } from 'react-router-dom';
+import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
+import {withRouter} from 'react-router-dom';
 
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
@@ -27,11 +27,12 @@ import {
   respondChallenge,
   withdraw
 } from '../../services/ethService';
-import {cancelRevealSecret, createAtomicSwap, getExitData, transferInPlasma} from '../../services/plasmaServices';
+import {createAtomicSwap, getExitData, transferInPlasma} from '../../services/plasmaServices';
 import SelectPlayerTokenModal from "./common/SelectPlayerTokenModal.jsx";
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 import {withSnackbar} from "notistack";
 import {toAddressColor, toReadableAddress} from "../../utils/utils";
+import {getSwappingRequests, getSwappingTokens} from "../redux/actions";
 
 const styles = theme => ({
   dialogPaper: {
@@ -67,13 +68,17 @@ class PlasmaTokens extends React.Component {
   };
 
   swapInPlasma = (token) => async (player, swapToken) => {
+    const { enqueueSnackbar, getSwappingTokens, ethAccount } = this.props;
     console.log(`Swapping ${token} with ${swapToken}`);
 
     this.setState({ swapping: true });
     createAtomicSwap(token, swapToken).then(secret => {
-      this.setState({ secret, swapping: false })
+      this.setState({ secret, swapping: false });
+      enqueueSnackbar(`Swap submitted, wait for the other party to accept it`, { variant: 'warning' })
+      getSwappingTokens(ethAccount);
     }).catch(err => {
       this.setState({ swapping: false })
+      enqueueSnackbar(`Swap submission failed`, { variant: 'error' })
     })
   }
 
@@ -330,7 +335,7 @@ class PlasmaTokens extends React.Component {
 
 
   render = () => {
-    const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens, swappingTokens } = this.props;
+    const { plasmaTokens, exitingTokens, challengeableTokens, exitedTokens, challengedTokens, swappingTokens, ethAccount } = this.props;
     const { validateHistoryOpen } = this.state;
 
     if (plasmaTokens.length + exitingTokens.length + challengeableTokens.length + exitedTokens.length + swappingTokens.length === 0) {
@@ -377,7 +382,7 @@ class PlasmaTokens extends React.Component {
                   {
                     title: "Validate History",
                     disabled: validateHistoryOpen,
-                    func: this.openValidateHistoryModal
+                    func: () => this.openValidateHistoryModal(ethAccount, token.slot)
                   }
                 ]}
               />
@@ -468,6 +473,9 @@ const mapStateToProps = state => ({
   plasmaTurnGameContract: state.plasmaTurnGameContract
 });
 
-const mapDispatchToProps = dispatch => ({ });
+const mapDispatchToProps = dispatch => ({
+  getSwappingRequests: address => dispatch(getSwappingRequests(address)),
+  getSwappingTokens: address => dispatch(getSwappingTokens(address))
+});
 
 export default withRouter(withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(withSnackbar(PlasmaTokens))));

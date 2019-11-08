@@ -70,7 +70,8 @@ export const createAtomicSwap = (slot, swappingSlot) => {
           headers: {
             'Content-Type': 'application/json'
           }
-        }).then(() => {
+        }).then(response => {
+          if(response.status >=400) return reject("Swap failed");
           localStorage.setItem(`swap_${slot}_${swappingSlot}`, secret);
           resolve(secret);
         }).catch(reject);
@@ -85,7 +86,7 @@ export const revealSecret = (token, secret) => {
     getSwapData(token).then(swapData => {
       const body = {
         slot: token,
-        minedBlock: swapData.mined_block,
+        minedBlock: swapData.minedBlock,
         secret: secret,
       }
       fetch(`${process.env.API_URL}/api/transactions/reveal-secret`, {
@@ -99,13 +100,13 @@ export const revealSecret = (token, secret) => {
   })
 }
 
-export const cancelSecret = (token, secret) => {
+export const cancelSecret = (token, hashSecret) => {
   return new Promise((resolve, reject) => {
       getSwapData(token).then(swapData => {
-        sign(hashCancelSecret(secret, token, swapData.mined_block)).then(sig => {
+        sign(hashCancelSecret(hashSecret, token, swapData.minedBlock)).then(sig => {
           const body = {
           slot: token,
-          minedBlock: swapData.mined_block,
+          minedBlock: swapData.minedBlock,
           signature: sig,
         };
         fetch(`${process.env.API_URL}/api/transactions/cancel-reveal-secret`, {
@@ -114,7 +115,10 @@ export const cancelSecret = (token, secret) => {
           headers: {
             'Content-Type': 'application/json'
           }
-        }).then(resolve);
+        }).then(response => {
+          if(response.status >=400) return reject("Cancellation could not be completed");
+          resolve(response)
+        });
       })
     })
   });

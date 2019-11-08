@@ -11,13 +11,13 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import HistoryIcon from '@material-ui/icons/History';
 import CancelIcon from '@material-ui/icons/Cancel';
 
-import { connect } from "react-redux";
-import { withStyles } from '@material-ui/core/styles';
-import { withRouter } from 'react-router-dom';
+import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
+import {withRouter} from 'react-router-dom';
 
-import { getProofHistory } from "../../../services/plasmaServices";
-import { HISTORY_VALIDITY, verifyToken, verifyTokenWithHistory } from "../../../services/verifyHistory";
-import { css } from '@emotion/core';
+import {getProofHistory} from "../../../services/plasmaServices";
+import {HISTORY_VALIDITY, verifyTokenWithHistory} from "../../../services/verifyHistory";
+import {css} from '@emotion/core';
 import PacmanLoader from 'react-spinners/PacmanLoader';
 
 const styles = theme => ({

@@ -1,4 +1,4 @@
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
 const mapStateToProps = state => ({
    ethAccount: state.ethAccount? state.ethAccount.toLowerCase() : undefined,

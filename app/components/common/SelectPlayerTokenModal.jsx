@@ -5,9 +5,9 @@ import withInitComponent from './withInitComponent.js';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import { connect } from "react-redux";
-import { withStyles } from '@material-ui/core/styles';
-import { withRouter } from 'react-router-dom';
+import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
+import {withRouter} from 'react-router-dom';
 import CryptoMonCard from './CryptoMonCard.jsx';
 
 import TextField from "@material-ui/core/TextField";

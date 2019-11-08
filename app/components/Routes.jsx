@@ -1,9 +1,9 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
-import { withSnackbar } from 'notistack';
+import {withSnackbar} from 'notistack';
 
-import { HashRouter as Router, Link, Route } from "react-router-dom";
+import {HashRouter as Router, Link, Route} from "react-router-dom";
 
 import App from './index.jsx';
 import Hack from './Hacks/Hack.jsx';
@@ -37,38 +37,39 @@ import "regenerator-runtime/runtime";
 import _ from 'lodash';
 
 import {
-	setDefaultAccount, subscribeToChallenged,
-	subscribeToChallengeRespond,
-	subscribeToChannelFunded,
-	subscribeToCMBRequested,
-	subscribeToCoinReset,
-	subscribeToCryptoMonTransfer,
-	subscribeToDeposits,
-	subscribeToFinalizedExit,
-	subscribeToFreeBond,
-	subscribeToSlashedBond,
-	subscribeToStartedExit,
-	subscribeToSubmittedBlocks,
-	subscribeToSubmittedSecretBlocks,
-	subscribeToWithdrew,
-	subscribeToWithdrewBond
+  setDefaultAccount,
+  subscribeToChallenged,
+  subscribeToChallengeRespond,
+  subscribeToChannelFunded,
+  subscribeToCMBRequested,
+  subscribeToCoinReset,
+  subscribeToCryptoMonTransfer,
+  subscribeToDeposits,
+  subscribeToFinalizedExit,
+  subscribeToFreeBond,
+  subscribeToSlashedBond,
+  subscribeToStartedExit,
+  subscribeToSubmittedBlocks,
+  subscribeToSubmittedSecretBlocks,
+  subscribeToWithdrew,
+  subscribeToWithdrewBond
 } from '../../services/ethService';
 import {setDefaultBattleAccount} from '../../services/battleChallenges';
 
 import {
-	buyCryptoMon,
-	getBattlesFrom,
-	getCryptoMonsFrom,
-	getEthAccount,
-	getExitedTokens,
-	getExitingTokens,
-	getOwnedTokens,
-	getSwappingRequests,
-	getSwappingTokens,
-	getChallengeableTokens,
-	getChallengedFrom,
-	initApp,
-	getBalance,
+  buyCryptoMon,
+  getBalance,
+  getBattlesFrom,
+  getChallengeableTokens,
+  getChallengedFrom,
+  getCryptoMonsFrom,
+  getEthAccount,
+  getExitedTokens,
+  getExitingTokens,
+  getOwnedTokens,
+  getSwappingRequests,
+  getSwappingTokens,
+  initApp,
 } from '../redux/actions'
 
 class Routes extends React.Component {

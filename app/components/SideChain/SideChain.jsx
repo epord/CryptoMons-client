@@ -2,7 +2,7 @@ import React from 'react';
 
 import Block from './Block.jsx';
 
-import { getBlocks } from '../../../services/plasmaServices';
+import {getBlocks} from '../../../services/plasmaServices';
 import InitComponent from '../common/InitComponent.jsx';
 
 class SideChain extends InitComponent {

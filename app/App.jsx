@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { Provider } from "react-redux";
-import { SnackbarProvider } from 'notistack';
+import {Provider} from "react-redux";
+import {SnackbarProvider} from 'notistack';
 import store from "./redux/store";
 
 import Routes from './components/Routes.jsx';

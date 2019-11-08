@@ -1,7 +1,7 @@
 import React from 'react';
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
-import { getCryptoMonFromPlasmaId } from '../../../services/pokemonService';
+import {getCryptoMonFromPlasmaId} from '../../../services/pokemonService';
 import withInitComponent from '../common/withInitComponent.js';
 import InitComponent from '../common/InitComponent.jsx';
 

@@ -21,7 +21,8 @@ const updatingWatchable = (state) => {
 		...state.exitingTokens,
 		...state.exitedTokens,
 		...state.challengeableTokens,
-		...state.challengedTokens.map(t => t.slot)
+		...state.challengedTokens.map(t => t.slot),
+		...state.swappingTokens.map(t => t.slot)
 		]
 	);
 
@@ -64,9 +65,9 @@ const reducerMapper = {
     }));
 	},
 	[C.GOT_SWAPPING]: (state, action) => {
-		return Object.assign({}, state, {
+		return updatingWatchable(Object.assign({}, state, {
       swappingTokens: action.payload
-    });
+    }));
 	},
 	[C.GOT_SWAPPING_REQUESTS]: (state, action) => {
 		return Object.assign({}, state, {

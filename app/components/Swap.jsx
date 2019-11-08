@@ -3,8 +3,8 @@ import React from 'react';
 import InitComponent from './common/InitComponent.jsx';
 import withInitComponent from './common/withInitComponent.js';
 
-import { connect } from "react-redux";
-import { withStyles } from '@material-ui/core/styles';
+import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
 
 import Typography from '@material-ui/core/Typography';
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
@@ -20,9 +20,9 @@ import Paper from '@material-ui/core/Paper';
 
 import DoubleCryptoMonCard from './common/DoubleCryptoMonCard.jsx';
 
-import { toAddressColor, toReadableAddress } from '../../utils/utils';
-import { createAtomicSwap, getSwapData} from '../../services/plasmaServices'
-import { getSwappingRequests, getSwappingTokens, revealSecret, cancelSecret } from '../redux/actions';
+import {toAddressColor, toReadableAddress} from '../../utils/utils';
+import {createAtomicSwap, getSwapData} from '../../services/plasmaServices'
+import {cancelSecret, getSwappingRequests, getSwappingTokens, revealSecret} from '../redux/actions';
 import ValidateHistoryModal from "./common/ValidateHistoryModal.jsx";
 import {withSnackbar} from "notistack";
 
@@ -60,11 +60,12 @@ class Swap extends InitComponent {
 	}
 
 	cancelSecret = async () => {
-		const { tokenToReveal, secretToReveal } = this.state;
+		const { tokenToCancel, hashSecretToCancel } = this.state;
 		const { cancelSecret, enqueueSnackbar } = this.props;
 
 		this.setState({ revealingSecret: true });
-		cancelSecret(tokenToReveal, secretToReveal)
+		console.log(hashSecretToCancel)
+		cancelSecret(tokenToCancel, hashSecretToCancel)
 			.then(() => {
 				enqueueSnackbar(`Secret Cancelled successfully`, { variant: 'success' })
 				this.setState({ revealingSecret: false })
@@ -74,22 +75,25 @@ class Swap extends InitComponent {
 	}
 
 	swapInPlasma = async (tokenToSwap, swapToken) => {
-
+		const { enqueueSnackbar, getSwappingRequest, getSwappingTokens, ethAccount } = this.props;
 		console.log(`Swapping ${tokenToSwap} with ${swapToken}`);
-
 		this.setState({ swapping: true });
 		createAtomicSwap(tokenToSwap, swapToken).then(secret => {
 			this.setState({ secret, swapping: false })
+			enqueueSnackbar(`Swap submitted, wait for secret reveal for it to be validated`, { variant: 'warning' })
+			getSwappingRequest(ethAccount);
+			getSwappingTokens(ethAccount);
 		}).catch(err => {
 			this.setState({ swapping: false })
+			enqueueSnackbar(`Swap transaction failed to submit`, { variant: 'info' })
 		})
 	}
 
-	openRevealSecretModal = token => () => {
-		this.setState({ secretModalOpen: true, tokenToReveal: token, loadingSwapData: true });
+	openRevealSecretModal = (token, tokenToCancel, hashSecretToCancel) => () => {
+		this.setState({ secretModalOpen: true, tokenToReveal: token, tokenToCancel, hashSecretToCancel, loadingSwapData: true });
 		getSwapData(token).then(swapData => {
-			const swappingTokenReveal = swapData.counterpart.data.slot;
-			const savedSecret = localStorage.getItem(`swap_${token}_${swappingTokenReveal}`);
+			const swappingTokenReveal = swapData.counterpart.data.swappingSlot;
+			const savedSecret = localStorage.getItem(`swap_${swappingTokenReveal}_${token}`);
 			this.setState({ swappingTokenReveal, secretToReveal: savedSecret, loadingSwapData: false })
 		})
 	}
@@ -115,7 +119,7 @@ class Swap extends InitComponent {
 	}
 
 	renderRevealSecretDialog = () => {
-		const { secretModalOpen, tokenToReveal, revealingSecret, swappingTokenReveal, loadingSwapData, secretToReveal } = this.state;
+		const { secretModalOpen, tokenToReveal, revealingSecret, swappingTokenReveal, loadingSwapData, secretToReveal, hashSecretToCancel } = this.state;
 		const { classes } = this.props;
 
 		if (loadingSwapData) return <div>Loading...</div>
@@ -136,7 +140,7 @@ class Swap extends InitComponent {
 					</Grid>
 					<Grid item xs={12} style={{ padding: '1em' }}>
 						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.revealSecret(tokenToReveal)} variant="outlined" size="small">Reveal</Button>
-						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.cancelSecret(tokenToReveal)} variant="outlined" size="small">Cancel</Button>
+						<Button disabled={revealingSecret} color="primary" fullWidth onClick={() => this.cancelSecret(tokenToReveal, hashSecretToCancel)} variant="outlined" size="small">Cancel Swap</Button>
 					</Grid>
 				</Grid>
 			</Dialog>
@@ -206,22 +210,25 @@ class Swap extends InitComponent {
         {swappingTokens.map(transaction => (
 					<Paper key={transaction.hash} style={{padding: "1em", margin: "1em"}}>
 						<DoubleCryptoMonCard
-							token1={transaction.swappingSlot}
+							token1={transaction.slot}
 							owner1={ethAccount}
 							actions1={[{
 								title: "Validate History",
 								disabled: validateHistoryOpen,
-								func: this.openValidateHistoryModal(transaction.swappingSlot)
+								func: this.openValidateHistoryModal(transaction.slot)
 							}]}
-							token2={transaction.slot}
-							owner2={transaction.owner}
+							token2={transaction.swappingSlot}
+							owner2={transaction.recipient}
 							actions2={[{
 								title: "Validate History",
 								disabled: validateHistoryOpen,
-								func: this.openValidateHistoryModal(transaction.slot)
+								func: this.openValidateHistoryModal(transaction.swappingSlot)
 							}]}
 						/>
-						<Button fullWidth variant="outlined" color="primary" onClick={this.openRevealSecretModal(transaction.swappingSlot)}>Reveal Secret</Button>
+						<Button fullWidth variant="outlined" color="primary"
+										onClick={this.openRevealSecretModal(transaction.swappingSlot, transaction.slot, transaction.hashSecret)}>
+							See detail
+						</Button>
 					</Paper>
         ))}
       </div>
