@@ -1,6 +1,6 @@
 import React from 'react';
 import { pokedex } from '../../../utils/pokedex';
-import { Status } from '../../../utils/pokeUtils';
+import { Status, Type } from '../../../utils/pokeUtils';
 import { Typography } from '@material-ui/core';
 
 const effectiveMap = {
@@ -16,11 +16,14 @@ class Events extends React.Component {
   createEventSentence = event => {
     const { code, id, damage, hit, crit, type, effective } = event;
     const pokemon = pokedex[id - 1];
+    const typeName = pokemon.type[type - 1];
+    const typeId = Type[typeName];
+    
     if (code == 'Attack' && hit) {
-      return `${pokemon.name.english} used with ${pokemon.type[type - 1].toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
+      return `${pokemon.name.english} used with ${typeId.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
     }
     if (code == 'Status') {
-      return `${pokemon.name.english} used status '${Status[type-1].name.toLowerCase()}'${hit ? `.` : ', but missed...'}`;
+      return `${pokemon.name.english} used status '${Status[typeId].name.toLowerCase()}'${hit ? `.` : ', but missed...'}`;
     }
     if (code == 'Recharge') {
       return `${pokemon.name.english} recharged.`
@@ -35,7 +38,7 @@ class Events extends React.Component {
       return `${pokemon.name.english} used shield break${hit ? `.` : ', but missed...'}`;
     }
     if (code == 'SPAttack' && hit) {
-      return `${pokemon.name.english} used with ${pokemon.type[type - 1].toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
+      return `${pokemon.name.english} used with ${typeId.toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'}`;
     }
     if (code == 'EndTurnDMG') {
       console.log('END TURN DAMAGE', event)

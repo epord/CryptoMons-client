@@ -70,7 +70,7 @@ class PokemonStats extends React.Component {
           }}
         >
           <Typography>{pokemonName}</Typography>
-          <LinearProgress color="secondary" variant="determinate" value={100 - (hp -currentHP) / hp * 100} />
+          <LinearProgress style={{ marginBottom: '5px' }} color="secondary" variant="determinate" value={100 - (hp -currentHP) / hp * 100} />
           {status1 && <Typography variant="caption">{Status[status1].icon}</Typography>}
           {status2 && <Typography variant="caption">{Status[status2].icon}</Typography>}
           <Typography variant="caption">{currentHP}/{hp}</Typography>

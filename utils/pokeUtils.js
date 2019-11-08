@@ -1,3 +1,5 @@
+import React from 'react';
+
 const types = [
   {
     name: 'Normal',
@@ -101,6 +103,18 @@ export const Type =  {
   Unknown     : 18
 };
 
+const StatusIcon = ({ color, label }) => (
+  <span
+    style={{
+      color: "white",
+      background: color,
+      padding: '3px 5px',
+      borderRadius:' 8px',
+      margin: '0 5px',
+    }}
+  >{label}</span>
+);
+
 export const Status = {
   0: {
     name: 'growl',
@@ -126,7 +140,7 @@ export const Status = {
   3: {
     name: 'poisoned',
     effects: [],
-    icon: 'POIS',
+    icon: <StatusIcon label="POIS" color="purple" />,
   },
   4: {
     name: 'sandstorm',
@@ -155,7 +169,7 @@ export const Status = {
       name: '-70% Attack',
       isBoost: false
     }],
-    icon: 'SCARED'
+    icon: <StatusIcon label="SCARED" color="blueviolet" />
   },
   8: {
     name: 'iron armor',
@@ -170,7 +184,7 @@ export const Status = {
       name: '-80% Attack',
       isBoost: false
     }],
-    icon: 'BURN'
+    icon: <StatusIcon label="BURN" color="red" />
   },
   10: {
     name: 'soaked',effects: [{
@@ -180,7 +194,7 @@ export const Status = {
       name: '-80% Sp. Defense',
       isBoost: false
     }],
-    icon: 'SOAK'
+    icon: <StatusIcon label="SOAK" color="cornflowerblue" />
   },
   11: {
     name: 'leech seed',
@@ -195,12 +209,12 @@ export const Status = {
       name: '-60% Speed',
       isBoost: false
     }],
-    icon: 'PARAL'
+    icon: <StatusIcon label="PARAL" color="darkorange" />
   },
   13: {
     name: 'confused',
     effects: [],
-    icon: 'CONF'
+    icon: <StatusIcon label="CONF" color="crimson" />
   },
   14: {
     name: 'frozen',
@@ -208,7 +222,7 @@ export const Status = {
       name: '-100% Speed',
       isBoost: false
     }],
-    icon: 'FROZ'
+    icon: <StatusIcon label="PARAL" color="lightblue" />
   },
   15: {
     name: 'dragon dance',
@@ -227,7 +241,7 @@ export const Status = {
   17: {
     name: 'charm',
     effects: [],
-    icon: 'CHARM'
+    icon: <StatusIcon label="CHARM" color="hotpink" />
   },
   16: { // Unknown, not in use
     name: '',
