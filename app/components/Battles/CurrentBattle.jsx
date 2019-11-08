@@ -36,7 +36,8 @@ class CurrentBattle extends React.Component {
       type1: cryptoMonData.type1,
       type2: cryptoMonData.type2,
       name: pokedex[cryptoMonInstance.id - 1].name.english.toLowerCase(),
-      shiny: cryptoMonInstance.isShiny
+      shiny: cryptoMonInstance.isShiny,
+      gender: cryptoMonInstance.gender,
     }
   }
 

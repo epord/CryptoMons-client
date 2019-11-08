@@ -1,7 +1,7 @@
 import React from 'react';
 import Typography from '@material-ui/core/Typography';
 import LinearProgress from '@material-ui/core/LinearProgress';
-import {Status} from '../../../utils/pokeUtils';
+import { Status, renderGenderIcon } from '../../../utils/pokeUtils';
 
 class PokemonStats extends React.Component {
 
@@ -20,11 +20,12 @@ class PokemonStats extends React.Component {
       type2,
       name,
       shiny,
+      gender,
     } = cryptoMon;
 
     // console.log(cryptoMon)
 
-    const pokemonName = name.charAt(0).toUpperCase() + name.slice(1);;
+    const pokemonName = name.charAt(0).toUpperCase() + name.slice(1);
 
     const effects = (() => {
       const effects1 = status1 ? Status[status1].effects : [];
@@ -69,7 +70,7 @@ class PokemonStats extends React.Component {
             width: '15em',
           }}
         >
-          <Typography>{pokemonName}</Typography>
+          <Typography>{pokemonName}{renderGenderIcon(gender)}</Typography>
           <LinearProgress style={{ marginBottom: '5px' }} color="secondary" variant="determinate" value={100 - (hp -currentHP) / hp * 100} />
           {status1 && <Typography variant="caption">{Status[status1].icon}</Typography>}
           {status2 && <Typography variant="caption">{Status[status2].icon}</Typography>}

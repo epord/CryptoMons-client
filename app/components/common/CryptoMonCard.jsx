@@ -18,6 +18,8 @@ import CompareArrowsIcon from '@material-ui/icons/CompareArrows';
 import {getPlasmaCoinId} from '../../../services/ethService';
 import {toAddressColor, toReadableAddress} from '../../../utils/utils';
 import {getCryptoMonFromId} from '../../../services/pokemonService.js';
+import { pokedex } from '../../../utils/pokedex.js';
+import { renderGenderIcon } from '../../../utils/pokeUtils.js';
 
 class CryptoMonCard extends InitComponent {
 
@@ -28,10 +30,11 @@ class CryptoMonCard extends InitComponent {
 		const token = this.props.token || await getPlasmaCoinId(plasmaToken, rootChainContract);
 
 		const { cryptoMonData, cryptoMonInstance } = await getCryptoMonFromId(token, cryptoMonsContract)
-
 		this.setState({
+			id: cryptoMonData.id,
 			img: cryptoMonData.imageUrl,
 			isShiny: cryptoMonInstance.isShiny,
+			gender: cryptoMonInstance.gender,
 			type1: cryptoMonData.type1,
 			type2: cryptoMonData.type2,
 		})
@@ -40,7 +43,8 @@ class CryptoMonCard extends InitComponent {
 	render = () => {
 		const { token, plasmaToken, exiting, exited, swapping, challengeable, challenged, owner,
 			actions } = this.props;
-		const { img, type1, type2, isShiny } = this.state
+		const { img, type1, type2, isShiny, gender, id } = this.state
+		const name = id ? pokedex[id - 1].name.english.toLowerCase() : '';
 		return (
 			<Card style={{ maxWidth: '12em', boxShadow: isShiny ? '0 0 10px gold' : null}}>
 				<CardActionArea>
@@ -58,6 +62,13 @@ class CryptoMonCard extends InitComponent {
 							<img src={type2.image || null} style={{ display: 'block', margin: 'auto' }} />
 						</Grid>
 						}
+					</Grid>
+					<Grid item xs={12}>
+						{name && (
+							<Typography variant="caption" style={{ marginTop: "0.5em", textAlign: 'center', width: "100%", display: "block" }} gutterBottom>
+								{name.charAt(0).toUpperCase() + name.slice(1)}{renderGenderIcon(gender)}
+							</Typography>
+						)}
 					</Grid>
 					{token && (
 						<Grid item xs={12}>
