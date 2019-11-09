@@ -326,6 +326,15 @@ class Battles extends InitComponent {
 						<Typography>Ongoing battles</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
+            {(!ongoing || ongoing.length === 0) && (
+              <React.Fragment>
+                <Grid container direction="column" style={{ margin: 'auto' }} alignItems="center">
+                  <Grid item>
+                    <Typography variant="body1">You don't have any active battle</Typography>
+                  </Grid>
+                </Grid>
+              </React.Fragment>
+            )}
             <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
               {ongoing && ongoing.map(c =>
                 <React.Fragment key={c.channelId}>

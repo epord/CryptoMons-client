@@ -485,10 +485,15 @@ export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) 
 			(err, games ) => {
 				if(err) return reject(err);
 				const battleIds = games.map(g => g.returnValues.gameId);
+				const battles = games.reduce((result, g) => {
+					if(result[g.returnValues.gameId]) result[g.returnValues.gameId].push({player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon});
+					result[g.returnValues.gameId] = [{player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon}];
+					return result;
+				}, {});
 
-				let ChannelState = { INITIATED: 0, FUNDED: 1, SUSPENDED: 2, CLOSED: 3, CHALLENGED: 4 }
+				let ChannelState = { INITIATED: '0', FUNDED: '1', SUSPENDED: '2', CLOSED: '3', CHALLENGED: '4' }
 				async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r))),
-					(err, result) => {
+					(err, results) => {
 						if (err) return reject(err);
 						const games = {
 							opened: [],
@@ -498,7 +503,7 @@ export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) 
 							respondable: []
 						};
 
-						result.forEach(c => {
+						results.forEach(c => {
 							switch (c.state) {
 								case ChannelState.INITIATED:
 									if(c.players[0].toLowerCase() === address.toLowerCase()) games.opened.push(c);
@@ -506,8 +511,17 @@ export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) 
 									break;
 
 								case ChannelState.FUNDED:
-									if(c.players[0].player !== address.toLowerCase() && plasmaTokens.includes(c.players[0].cryptoMon)) games.challengeables.push({ channel: c, index: 0 });
-									if(c.players[1].player !== address.toLowerCase() && plasmaTokens.includes(c.players[1].cryptoMon)) games.challengeables.push({ channel: c, index: 1 });
+									if(c.players[0].toLowerCase() === address.toLowerCase()) {
+										games.ongoing.push(c);
+									} else if(c.players[1].toLowerCase() === address.toLowerCase()) {
+										games.ongoing.push(c);
+									}
+
+									let battle = battles[c.channelId];
+									if( battle.length > 0 && battle[0].player !== address.toLowerCase() && plasmaTokens.includes(battles[0].cryptoMon))
+										 games.challengeables.push({ channel: c, index: battle[0].player === c.players[0].toLowerCase() ? 0 : 1 });
+									if( battle.length > 1 && battle[1].player !== address.toLowerCase() && plasmaTokens.includes(battles[1].cryptoMon))
+										games.challengeables.push({ channel: c, index: battle[1].player === c.players[0].toLowerCase() ? 0 : 1 })
 									break;
 
 								case ChannelState.SUSPENDED:
