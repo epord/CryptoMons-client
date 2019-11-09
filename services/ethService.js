@@ -183,13 +183,13 @@ export const subscribeToChallengeRespond = (rootChain, address, plasmaTokens, cb
 	subscribeToEvent("RespondedExitChallenge",false, {challenger: address}, rootChain, (r) => cb(r.returnValues));
 }
 
-export const subscribeToCMBRequested = (plasmaCM, address, cb) => {
-	subscribeToEvent("CryptoMonBattleRequested",false, {player: address}, plasmaCM, (r) => cb(r.returnValues));
+export const subscribeToCMBRequested = (plasmaTurnGame, address, cb) => {
+	subscribeToEvent("CryptoMonBattleRequested",false, {player: address}, plasmaTurnGame, (r) => cb(r.returnValues));
 }
 
-export const subscribeToCMBStarted = (plasmaCM, address, plasmaTokens, cb) => {
-	subscribeToEvent("CryptoMonBattleFunded",false, {player: address}, plasmaCM, (r) => cb(r.returnValues));
-	subscribeToEvent("CryptoMonBattleStarted",true, {CryptoMon: plasmaTokens}, plasmaCM, (r) => cb(r.returnValues));
+export const subscribeToCMBStarted = (plasmaTurnGame, address, plasmaTokens, cb) => {
+	subscribeToEvent("CryptoMonBattleStarted",false, {player: address}, plasmaTurnGame, (r) => cb(r.returnValues));
+	subscribeToEvent("CryptoMonBattleStarted",true, {CryptoMon: plasmaTokens}, plasmaTurnGame, (r) => cb(r.returnValues));
 }
 
 export const subscribeToChannelConcluded = (plasmaCM, channels, cb) => {

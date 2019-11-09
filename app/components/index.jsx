@@ -19,8 +19,8 @@ import CryptoMons from '../components/CryptoMons.jsx';
 import PlasmaTokens from '../components/PlasmaTokens.jsx';
 
 import {getBalance, withdrawBonds} from '../../services/ethService';
-
 import {buyCryptoMon, loadContracts} from '../redux/actions';
+const BN = require('bn.js');
 
 class App extends InitComponent {
 
@@ -48,7 +48,7 @@ class App extends InitComponent {
 		const { rootChainContract, withdrawableAmount } = this.props;
 		withdrawBonds(rootChainContract).then(() => {
 			console.log(`You have withdrew ${withdrawableAmount} wei.`);
-			this.setState({ withdrawableAmount: 0 });
+			this.setState({ withdrawableAmount: "0" });
 		})
 	}
 
@@ -62,6 +62,7 @@ class App extends InitComponent {
 	render() {
 		const { cryptoMonsContract, rootChainContract, vmcContract, ethAccount, withdrawableAmount} = this.props;
 		const { loading } = this.state;
+		const withdrawableAmountBN = new BN(withdrawableAmount);
 
 		if (loading) return (<div>Loading...</div>)
 
@@ -80,9 +81,9 @@ class App extends InitComponent {
 					<Grid item>
 					</Grid>
 					<Grid item>
-						{withdrawableAmount != '0' && (
+						{!withdrawableAmountBN.isZero() && (
 							<React.Fragment>
-								<Typography style={{ display: 'inline-block', marginRight: '0.5em' }}>You have {withdrawableAmount / 1000000000000000000} ETH to withdraw</Typography>
+								<Typography style={{ display: 'inline-block', marginRight: '0.5em' }}>You have {withdrawableAmountBN.div(new BN("1000000000000000000")).toString()} ETH to withdraw</Typography>
 								<Button color="primary" variant="contained" size="small" onClick={this.withdrawBonds}>Withdraw all bonds</Button>
 							</React.Fragment>
 						)}

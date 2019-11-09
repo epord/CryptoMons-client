@@ -10,6 +10,7 @@ import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 
 import './CurrentBattle.css';
+import {battleForceMove, battleRespondWithMove} from "../../../services/ethService";
 
 class CurrentBattle extends React.Component {
   getCryptoMonData = (
@@ -41,8 +42,9 @@ class CurrentBattle extends React.Component {
     }
   }
 
+
   renderAttacks = () => {
-    const { isPlayer1, game, play, turn } = this.props;
+    const { isPlayer1, game, play, turn, battleForceMove, battleRespondForceMove } = this.props;
     const {
       cryptoMonPLInstance,
       cryptoMonOPInstance,
@@ -63,7 +65,10 @@ class CurrentBattle extends React.Component {
 
     if (shouldIMove) {
       return (
-        <Typography>Waiting for the other player...</Typography>
+        <Grid>
+          <Typography>Waiting for the other player...</Typography>
+          <Button variant="outlined" onClick={() => battleForceMove()} >ForceMove</Button>
+        </Grid>
       )
     }
 

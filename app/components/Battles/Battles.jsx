@@ -17,6 +17,7 @@ import withInitComponent from '../common/withInitComponent.js';
 
 import BattleOverview from './BattleOverview.jsx';
 import CurrentBattle from './CurrentBattle.jsx';
+const BN = require('bn.js');
 
 import {
   addNextMove,
@@ -202,13 +203,13 @@ class Battles extends InitComponent {
     concludeBattle(plasmaCMContract, prevState, currentState).then(res => console.log("Battle concluded ", res));
   }
 
-  forceMove = channelId => {
+  forceMove = channelId => () => {
     const { plasmaCMContract } = this.props;
     const { prevState, currentState } = this.state;
     battleForceMove(plasmaCMContract, channelId, prevState, currentState).then(res => console.log("Move forced ", res));
   }
 
-  respondForceMove = async(channelId, move) => {
+  respondForceMove = (channelId) => async (move) => {
     const { plasmaCMContract } = this.props;
     const newState = await this.transitionState(move);
     battleRespondWithMove(plasmaCMContract, channelId, newState).then(res => console.log("Responded force move ", res));
@@ -236,6 +237,8 @@ class Battles extends InitComponent {
             game={currentState.game}
             turn={currentState.turnNum}
             events={events}
+            battleForceMove={this.forceMove(currentState.channelId)}
+            battleRespondForceMove={this.respondForceMove(currentState.channelId)}
           />
         </div>
       </Dialog>
@@ -245,14 +248,23 @@ class Battles extends InitComponent {
 
   render = () => {
     const { loading, currentState, authenticated } = this.state;
-    const { battles } = this.props;
+    const { battles, battleFunds } = this.props;
     const { opened, toFund, ongoing, challengeables } = battles;
+    const battleFundsBN = new BN(battleFunds);
 
     if(loading) return <div>Loading...</div>
 
     return (
       <div style={{ padding: '1em' }}>
         <Typography variant="h5">Battles</Typography>
+        <Grid item>
+          {(
+            <React.Fragment>
+              <Typography style={{ display: 'inline-block', marginRight: '0.5em' }}>You have {battleFundsBN.div(new BN("1000000000000000000")).toString()} ETH to withdraw</Typography>
+              <Button color="primary" variant="contained" size="small" onClick={this.withdrawBonds}>Withdraw all bonds</Button>
+            </React.Fragment>
+          )}
+        </Grid>
 
 				<ExpansionPanel
           expanded={Boolean((opened && opened.length > 0) || (toFund && toFund.length > 0))}
