@@ -9,6 +9,7 @@ import DoubleCryptoMonCard from '../common/DoubleCryptoMonCard.jsx';
 import {getBattleTokens} from '../../../services/ethService';
 import {battleChallengeAfter, battleChallengeBefore, battleChallengeBetween} from '../../../services/battleChallenges';
 import {toAddressColor, toReadableAddress} from '../../../utils/utils';
+import { Typography } from '@material-ui/core';
 
 class BattleOverview extends React.Component {
 
@@ -55,7 +56,7 @@ class BattleOverview extends React.Component {
   }
 
   render = () => {
-    const { channel, actions } = this.props;
+    const { channel, actions, waiting } = this.props;
     const { participants, tokens, is1challengeable, is2challengeable } = this.state;
 
     if (!participants) {
@@ -76,6 +77,14 @@ class BattleOverview extends React.Component {
         actions1={is1challengeable ? this.getChallengeActionsFor(channel, 0) : []}
         actions2={is2challengeable ? this.getChallengeActionsFor(channel, 1) : []}
         />
+        {waiting && (
+          <Typography
+            variant="caption"
+            style={{ display: 'block', textAlign: 'center' }}
+          >
+            Waiting for player to accept...
+          </Typography>
+        )}
         {actions && actions.map(action =>
           <Button
             style={{ marginTop: '0.5em' }}

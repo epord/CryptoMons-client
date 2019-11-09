@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {connect} from "react-redux";
+import {withStyles} from '@material-ui/core/styles';
 import io from 'socket.io-client';
 
 import Button from "@material-ui/core/Button";
@@ -43,6 +44,13 @@ import {
 import {getBattlesFrom} from '../../redux/actions';
 import {getExitData} from "../../../services/plasmaServices";
 import {Typography} from '@material-ui/core';
+
+const styles = theme => ({
+	dialogPaper: {
+		maxWidth: '40em',
+		width: '40em',
+	},
+});
 
 class Battles extends InitComponent {
 
@@ -170,7 +178,7 @@ class Battles extends InitComponent {
     return currentState;
   };
 
-  fundBattle = async (channelId, stake) => {
+  fundBattle = (channelId, stake) => async () => {
     const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
 
     const {player, opponent} = await getBattleTokens(channelId, plasmaTurnGameContract);
@@ -216,11 +224,11 @@ class Battles extends InitComponent {
   }
 
   renderDialogBattle = () => {
-    const { ethAccount } = this.props;
+    const { ethAccount, classes } = this.props;
     const { currentState, battleOpen, events } = this.state;
 
     return (
-      <Dialog open={Boolean(battleOpen)} onClose={this.closeBattleDialog}>
+      <Dialog open={Boolean(battleOpen)} onClose={this.closeBattleDialog} classes={{ paper: classes.dialogPaper }}>
         <div style={{ padding: '1em' }}>
           <CurrentBattle
             play={this.play}
@@ -243,34 +251,71 @@ class Battles extends InitComponent {
     if(loading) return <div>Loading...</div>
 
     return (
-      <React.Fragment>
-        <div>Battles</div>
+      <div style={{ padding: '1em' }}>
+        <Typography variant="h5">Battles</Typography>
 
-        <button onClick={this.initSocket}>Connect</button>
+				<ExpansionPanel
+          expanded={Boolean((opened && opened.length > 0) || (toFund && toFund.length > 0))}
+          style={{ marginTop: '1em' }}
+        >
+					<ExpansionPanelSummary
+						expandIcon={<ExpandMoreIcon />}>
+						<Typography>Unfunded battles</Typography>
+					</ExpansionPanelSummary>
+					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
+            {opened && opened.map(c =>
+              <React.Fragment key={c.channelId}>
+                <BattleOverview
+                  key={c.channelId}
+                  channel={c}
+                  waiting
+                  actions={[{
+                    title: 'Close unfunded',
+                    func: () => 'TODO',
+                  }]}
+                />
+              </React.Fragment>
+            )}
+            {toFund && toFund.map(c =>
+              <React.Fragment key={c.channelId}>
+                <BattleOverview
+                  key={c.channelId}
+                  channel={c}
+                  actions={[{
+                    title: 'Fund battle',
+                    func: this.fundBattle(c.channelId, c.stake),
+                  }]}
+                />
+              </React.Fragment>
+            )}
 
-        {opened && opened.map(c =>
-          <React.Fragment key={c.channelId}>
-            <div>{c.channelId} - Waiting for {c.players[1]}</div>
-            <button>Close unfunded</button>
-          </React.Fragment>
-        )}
+					</ExpansionPanelDetails>
+				</ExpansionPanel>
 
-        {toFund && toFund.map(c =>
-          <React.Fragment key={c.channelId}>
-            <div>{c.channelId} - Accept battle from {c.players[0]}</div>
-            <button onClick={() => this.fundBattle(c.channelId, c.stake)}>Accept</button>
-          </React.Fragment>
-        )}
-
-        {challengeables && challengeables.map(c =>
-          <React.Fragment key={c.channelId}>
-            <Typography>Challengeables</Typography>
-            <BattleOverview
-              key={c.channelId}
-              channel={c}
-            />
-          </React.Fragment>
-        )}
+        <ExpansionPanel
+          expanded={challengeables && challengeables.length > 0}
+          style={{ marginTop: '1em' }}
+        >
+					<ExpansionPanelSummary
+						expandIcon={<ExpandMoreIcon />}>
+						<Typography>Challengeable battles</Typography>
+					</ExpansionPanelSummary>
+					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
+            {challengeables && challengeables.map(c =>
+              <React.Fragment key={c.channelId}>
+                <BattleOverview
+                  key={c.channelId}
+                  channel={c}
+                  waiting
+                  actions={[{
+                    title: 'Challenge',
+                    func: () => 'TODO',
+                  }]}
+                />
+              </React.Fragment>
+            )}
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
 
 				<ExpansionPanel defaultExpanded style={{ marginTop: '1em' }}>
 					<ExpansionPanelSummary
@@ -311,7 +356,7 @@ class Battles extends InitComponent {
         {/* TODO: show in modal */}
         {currentState && this.renderDialogBattle()}
 
-      </React.Fragment>
+      </div>
     )
   }
 
@@ -330,4 +375,4 @@ const mapDispatchToProps = dispatch => ({
   getBattlesFrom: (ethAccount, plasmaTurnGameContract, plasmaCMContract) => dispatch(getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract))
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(withInitComponent(Battles));
+export default withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(withInitComponent(Battles)));
