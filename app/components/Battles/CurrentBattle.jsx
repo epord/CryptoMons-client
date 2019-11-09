@@ -164,7 +164,7 @@ class CurrentBattle extends React.Component {
   }
 
   render = () => {
-    const { isPlayer1, game, play, hasForceMove } = this.props;
+    const { isPlayer1, game, play, hasForceMove, forceMoveChallenge } = this.props;
     const {
       cryptoMonPLInstance,
       cryptoMonOPInstance,
@@ -193,6 +193,9 @@ class CurrentBattle extends React.Component {
     if(!isPlayer1) {
       [player, opponent] = [opponent, player];
     }
+
+    // TODO: add dead pokemon
+    const isBattleFinished = !this.hasForceMove() || forceMoveChallenge.expirationTime + '000' < Date.now();
 
     return (
       <div style={{ borderStyle: 'double', borderWidth: 'thick', background: 'white', display: 'flex', flexDirection: 'column', padding: '1em' }}>
@@ -224,7 +227,9 @@ class CurrentBattle extends React.Component {
           <PokemonStats cryptoMon={player}/>
         </div>
         <Events events={events} />
-        {this.renderAttacks()}
+        {!isBattleFinished && this.renderAttacks()}
+        {isBattleFinished && <Button varaint="outlined" color="primary">Conclude battle</Button>}
+
       </div>
     )
   }

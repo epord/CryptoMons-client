@@ -4,8 +4,6 @@ import {connect} from "react-redux";
 import {withStyles} from '@material-ui/core/styles';
 import io from 'socket.io-client';
 
-import moment from 'moment';
-
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import Dialog from "@material-ui/core/Dialog";
@@ -367,10 +365,6 @@ class Battles extends InitComponent {
                       title: 'Select',
                       func: this.battleRequest(c),
                       disabled: !authenticated
-                    }, {
-                      title: 'Close battle',
-                      func: () => 'TODO',
-                      disabled: !this.hasForceMove(c) || moment(c.forceMoveChallenge.expirationTime).isBefore(moment())
                     }]}
                   />
                 </React.Fragment>
