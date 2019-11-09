@@ -23,8 +23,6 @@ class PokemonStats extends React.Component {
       gender,
     } = cryptoMon;
 
-    // console.log(cryptoMon)
-
     const pokemonName = name.charAt(0).toUpperCase() + name.slice(1);
 
     const effects = (() => {

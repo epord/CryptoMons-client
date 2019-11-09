@@ -1,5 +1,6 @@
 import { getCryptomon, getPokemonData, getPlasmaCoinId } from './ethService';
 import { getTypeData } from '../utils/pokeUtils';
+import { pokedex } from '../utils/pokedex';
 
 export const getCryptoMonFromId = (id, cryptoMonsContract) => {
   console.log('fetching id', id)
@@ -9,6 +10,7 @@ export const getCryptoMonFromId = (id, cryptoMonsContract) => {
         const cryptoMonInstance = ans;
         const cryptoMonData = data
 
+        cryptoMonData.name = pokedex[data.id - 1].name.english;
         cryptoMonData.imageUrl = getCryptoMonImageUrl(data.id);
         cryptoMonData.type1 = getTypeData(data.type1);
         cryptoMonData.type2 = getTypeData(data.type2);
