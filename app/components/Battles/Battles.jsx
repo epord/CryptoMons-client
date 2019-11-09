@@ -17,6 +17,7 @@ import withInitComponent from '../common/withInitComponent.js';
 
 import BattleOverview from './BattleOverview.jsx';
 import CurrentBattle from './CurrentBattle.jsx';
+import _ from 'lodash';
 const BN = require('bn.js');
 
 import {
@@ -41,8 +42,9 @@ import {
   getBattleTokens,
   getCryptomon,
   getPlasmaCoinId,
+  withdrawBattleFunds
 } from '../../../services/ethService';
-import {getBattlesFrom} from '../../redux/actions';
+import {getBattlesFrom, getBattleFunds} from '../../redux/actions';
 import {getExitData} from "../../../services/plasmaServices";
 import {Typography} from '@material-ui/core';
 import {fallibleSnackPromise} from "../../../utils/utils";
@@ -81,9 +83,9 @@ class Battles extends InitComponent {
     if(currentState) this.setState({ currentState, prevState }, async () => {
       const { ethAccount } = this.props;
       if(currentState && readyForBattleCalculation(ethAccount, currentState)) {
-        prevState = currentState;
+        prevState = _.cloneDeep(currentState);
         currentState = await this.transitionState(undefined);
-        this.setState({ currentState: currentState, prevState: prevState });
+        this.setState({ currentState, prevState });
       }
     });
     //Else INVALID STATE RECEIVED FORCE MOVE!
@@ -219,12 +221,17 @@ class Battles extends InitComponent {
     battleRespondWithMove(plasmaCMContract, newState).then(res => console.log("Responded force move ", res));
   }
 
-  concludeBattle = () => {
-    const { plasmaCMContract, enqueueSnackbar } = this.props;
+  concludeBattle = async () => {
+    const { plasmaCMContract, enqueueSnackbar, ethAccount } = this.props;
     const { prevState, currentState } = this.state;
 
+    if(shouldIAddMove(ethAccount, currentState)) {
+      const hash = hashChannelState(currentState);
+      currentState.signature = await sign(hash);
+    }
+
     fallibleSnackPromise(
-      concludeBattle(plasmaCMContract, currentState.channelId. prevState, currentState),
+      concludeBattle(plasmaCMContract, prevState, currentState),
       enqueueSnackbar,
       "Battle closed successfully",
       "Error while closing battle"
@@ -238,6 +245,16 @@ class Battles extends InitComponent {
   needsMyForceMoveResponse = (channel) => {
     const { ethAccount } = this.props;
     return CMBmover(channel.forceMoveChallenge.state).toLowerCase() === ethAccount
+  }
+
+  withdrawFunds = () => {
+    const {enqueueSnackbar, plasmaCMContract, ethAccount, getBattleFunds } = this.props;
+    fallibleSnackPromise(
+      withdrawBattleFunds(plasmaCMContract),
+      enqueueSnackbar,
+      "Funds Withdrawn successfully",
+      "Error withdrawing funds"
+    ).then(r => getBattleFunds(ethAccount, plasmaCMContract));
   }
 
   renderDialogBattle = () => {
@@ -279,7 +296,7 @@ class Battles extends InitComponent {
           {(
             <React.Fragment>
               <Typography style={{ display: 'inline-block', marginRight: '0.5em' }}>You have {battleFundsBN.div(new BN("1000000000000000000")).toString()} ETH to withdraw</Typography>
-              <Button color="primary" variant="contained" size="small" onClick={this.withdrawBonds}>Withdraw all bonds</Button>
+              <Button color="primary" variant="contained" size="small" onClick={this.withdrawFunds}>Withdraw funds</Button>
             </React.Fragment>
           )}
         </Grid>
@@ -294,31 +311,33 @@ class Battles extends InitComponent {
 						<Typography>Unfunded battles</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
-            {opened && opened.map(c =>
-              <React.Fragment key={c.channelId}>
-                <BattleOverview
-                  key={c.channelId}
-                  channel={c}
-                  waiting
-                  actions={[{
-                    title: 'Close unfunded',
-                    func: () => 'TODO',
-                  }]}
-                />
-              </React.Fragment>
-            )}
-            {toFund && toFund.map(c =>
-              <React.Fragment key={c.channelId}>
-                <BattleOverview
-                  key={c.channelId}
-                  channel={c}
-                  actions={[{
-                    title: 'Fund battle',
-                    func: this.fundBattle(c.channelId, c.stake),
-                  }]}
-                />
-              </React.Fragment>
-            )}
+            <div>
+              {opened && opened.map(c =>
+                <React.Fragment key={c.channelId}>
+                  <BattleOverview
+                    key={c.channelId}
+                    channel={c}
+                    waiting
+                    actions={[{
+                      title: 'Close unfunded',
+                      func: () => 'TODO',
+                    }]}
+                  />
+                </React.Fragment>
+              )}
+              {toFund && toFund.map(c =>
+                <React.Fragment key={c.channelId}>
+                  <BattleOverview
+                    key={c.channelId}
+                    channel={c}
+                    actions={[{
+                      title: 'Fund battle',
+                      func: this.fundBattle(c.channelId, c.stake),
+                    }]}
+                  />
+                </React.Fragment>
+              )}
+            </div>
 
 					</ExpansionPanelDetails>
 				</ExpansionPanel>
@@ -333,19 +352,21 @@ class Battles extends InitComponent {
 						<Typography>Challengeable battles</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
-            {challengeables && challengeables.map(c =>
-              <React.Fragment key={c.channelId}>
-                <BattleOverview
-                  key={c.channelId}
-                  channel={c}
-                  waiting
-                  actions={[{
-                    title: 'Challenge',
-                    func: () => 'TODO',
-                  }]}
-                />
-              </React.Fragment>
-            )}
+            <div>
+              {challengeables && challengeables.map(c =>
+                <React.Fragment key={c.channelId}>
+                  <BattleOverview
+                    key={c.channelId}
+                    channel={c}
+                    waiting
+                    actions={[{
+                      title: 'Challenge',
+                      func: () => 'TODO',
+                    }]}
+                  />
+                </React.Fragment>
+              )}
+            </div>
           </ExpansionPanelDetails>
         </ExpansionPanel>
 
@@ -398,11 +419,22 @@ const mapStateToProps = state => ({
 	plasmaTurnGameContract: state.plasmaTurnGameContract,
 	cryptoMonsContract: state.cryptoMonsContract,
 	rootChainContract: state.rootChainContract,
-	battles: state.battles || {},
+  battles: state.battles || {},
+  battleFunds: state.battleFunds
  });
 
 const mapDispatchToProps = dispatch => ({
+  getBattleFunds: (ethAccount, plasmaCMContract) => dispatch(getBattleFunds(ethAccount, plasmaCMContract)),
   getBattlesFrom: (ethAccount, plasmaTurnGameContract, plasmaCMContract) => dispatch(getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract))
 });
 
-export default withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(withInitComponent(Battles)));
+export default
+  withStyles(styles)(
+    connect(mapStateToProps, mapDispatchToProps)(
+      withInitComponent(
+        withSnackbar(
+          Battles
+        )
+      )
+    )
+  );

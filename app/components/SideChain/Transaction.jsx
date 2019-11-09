@@ -19,7 +19,6 @@ class Transaction extends InitComponent {
   render = () => {
     const { transaction } = this.props;
     const { cryptoMonData, cryptoMonInstance } = this.state;
-    console.log('cm data',cryptoMonData)
     return (
       <React.Fragment>
         <div>slot: {transaction.slot}</div>

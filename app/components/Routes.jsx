@@ -93,13 +93,11 @@ class Routes extends React.Component {
 
 		if(ethAccount && rootChain) {
 			if(!subscribed || _.xor(prevProps.watchableTokens, watchableTokens).length > 0) {
-			  console.log(watchableTokens);
         this.setState({subscribed: true});
 				this.subscribeToTokenEvents(ethAccount, watchableTokens);
 			}
 
 			if(!subscribed || _.xor(prevProps.watchableChannels, watchableChannels).length > 0) {
-				console.log(watchableChannels);
 				this.subscribeToBattleEvents(ethAccount, watchableChannels);
 			}
 		}
@@ -125,10 +123,12 @@ class Routes extends React.Component {
 				getOwnedTokens,
 				getChallengedFrom,
 				getSwappingTokens,
-				getBalance
+				getBalance,
+				getBattlesFrom,
+				getBattleFunds
 			} = this.props;
 
-		const { rootChain } = this.state;
+		const { rootChain, plasmaCM } = this.state;
 
 			getOwnedTokens(ethAccount, 'deposited');
 			getChallengeableTokens(ethAccount, rootChain);
@@ -137,6 +137,7 @@ class Routes extends React.Component {
 			getChallengedFrom(ethAccount, rootChain);
 			getSwappingTokens(ethAccount)
 			getBalance(rootChain);
+			getBattleFunds(ethAccount, plasmaCM);
 		});
 
 		setDefaultAccount(this.props.ethAccount);

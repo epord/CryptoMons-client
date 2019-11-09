@@ -3,7 +3,6 @@ import { getTypeData } from '../utils/pokeUtils';
 import { pokedex } from '../utils/pokedex';
 
 export const getCryptoMonFromId = (id, cryptoMonsContract) => {
-  console.log('fetching id', id)
   return new Promise((resolve, reject) => {
   getCryptomon(id, cryptoMonsContract).then(ans => {
       getPokemonData(ans.id, cryptoMonsContract).then(data => {

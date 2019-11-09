@@ -24,7 +24,6 @@ class History extends React.Component {
     verifyToken(token, rootChainContract).then(
       ({validity, lastOwner, transactionsHistory, swappingOwner}) => {
         console.log(`Correct history! Last true owner: ${lastOwner}`);
-        console.log(transactionsHistory)
         this.setState({
           loading: false,
           transactionsHistory,

@@ -51,7 +51,7 @@ const gotBalance = balance => {
 }
 
 const gotBattleFunds = funds => {
-  return { type: C.GOT_BALANCE, payload: funds };
+  return { type: C.GOT_BATTLE_FUNDS, payload: funds };
 }
 
 
@@ -177,5 +177,5 @@ export const getBalance = (rootChainContract) => (dispatch, getState) => {
 export const getBattleFunds = (address, plasmaCM) => (dispatch, getState) => {
   return EthService
     .getBattleFunds(address, plasmaCM)
-    .then(balance => dispatch(gotBalance(balance)));
+    .then(balance => dispatch(gotBattleFunds(balance)));
 }

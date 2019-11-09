@@ -684,7 +684,6 @@ export const battleForceMove = (plasmaCM, prevState, currentState) => {
 	};
 
 	if (!prevState) {
-		console.log('force first move');
 		return new Promise((resolve, reject) => {
 			ethContract(plasmaCM)
 				.forceFirstMove(currentState.channelId, _currentState)
@@ -703,10 +702,11 @@ export const battleForceMove = (plasmaCM, prevState, currentState) => {
 		gameAttributes: toCMBBytes(prevState.game)
 	};
 
-	console.log('force move');
+	const prevSig = prevState ? prevState.signature || '0x' : "0x";
+
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
-			.forceMove(currentState.channelId, _prevState, _currentState, [prevState.signature || '0x', currentState.signature])
+			.forceMove(currentState.channelId, _prevState, _currentState, [prevSig, currentState.signature])
 			.send({from: web3.eth.defaultAccount}, (err, res) => {
 				if (err) return reject(err);
 				resolve(res);
@@ -743,16 +743,19 @@ export const concludeBattle = (plasmaCM, prevState, finalState) => {
   };
 
   const _prevState = {
-    channelId:      prevState ? prevState.channelId         :"0",
-    channelType:    prevState ? prevState.channelType       :"0x0000000000000000000000000000",
-    participants:   prevState ? prevState.participants      : ["0x0000000000000000000000000000", "0x0000000000000000000000000000"],
+		channelId:      prevState ? prevState.channelId         :"0",
+    channelType:    prevState ? prevState.channelType       :"0x0000000000000000000000000000000000000000",
+    participants:   prevState ? prevState.participants      : ["0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"],
     turnNum:        prevState ? prevState.turnNum           :	"0",
     gameAttributes: prevState ? toCMBBytes(prevState.game)  :	"0x0",
-  };
+	};
+
+	const prevSig = prevState ? prevState.signature || '0x' : "0x";
+	const finalStateSig = finalState ? finalState.signature || '0x' : "0x";
 
   return new Promise((resolve, reject) => {
     ethContract(plasmaCM)
-      .conclude(finalState.channelId, _prevState, _finalState, [prevState.signature || '0x', finalState.signature])
+      .conclude(finalState.channelId, _prevState, _finalState, [prevSig, finalStateSig])
       .send({from: web3.eth.defaultAccount}, (err, res) => {
         if (err) return reject(err);
         resolve(res);
@@ -764,6 +767,15 @@ export const getChannel = (channelId, plasmaCM) => {
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
 			.getChannel(channelId).call((err, res) => {
+				if (err) return reject(err)
+				resolve(res);
+		})
+	});
+}
+
+export const withdrawBattleFunds = (plasmaCM) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM).withdraw().send({from: web3.eth.defaultAccount}, (err, res) => {
 				if (err) return reject(err)
 				resolve(res);
 		})

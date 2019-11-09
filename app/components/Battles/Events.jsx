@@ -41,15 +41,12 @@ class Events extends React.Component {
       return `${pokemon.name.english} used ${typeName.toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
     }
     if (code == 'EndTurnDMG') {
-      console.log('END TURN DAMAGE', event)
       return `${pokemon.name.english} received additional damage.`;
     }
     if (code == 'EndTurnHealing') {
-      console.log('END TURN HEALING', event)
       return `${pokemon.name.english} recovered some health.`;
     }
     if (code == 'ConfusedDMG') {
-      console.log('Confused', event)
       return `${pokemon.name.english} hurt itself in confusion!`;
     }
   }

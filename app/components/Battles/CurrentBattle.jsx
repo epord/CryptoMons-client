@@ -55,6 +55,31 @@ class CurrentBattle extends React.Component {
     return CMBmover(forceMoveChallenge.state).toLowerCase() !== ethAccount
   }
 
+  isOver = () => {
+    const { game } = this.props;
+    return game.HPOP == 0 || game.HPPL == 0;
+  }
+
+  amIWinner = () => {
+    const { game, ethAccount, isPlayer1, forceMoveChallenge } = this.props;
+
+    if(!this.canConclude) {
+      return false;
+    }
+
+    if(this.isOver()) {
+      return isPlayer1 ? game.HPOP == 0 : game.HPPL == 0;
+    }
+
+    return forceMoveChallenge.winner.toLowerCase() == ethAccount;
+  }
+
+  canConclude = () => {
+    const { forceMoveChallenge } = this.props;
+    return this.isOver() || (this.hasForceMove() && forceMoveChallenge.expirationTime + '000' < Date.now());
+  }
+
+
   renderAttacks = () => {
     const { isPlayer1, game, play, turn, battleForceMove, battleRespondForceMove, forceMoveChallenge } = this.props;
     const {
@@ -194,9 +219,6 @@ class CurrentBattle extends React.Component {
       [player, opponent] = [opponent, player];
     }
 
-    // TODO: add dead pokemon
-    const isBattleFinished = !this.hasForceMove() || forceMoveChallenge.expirationTime + '000' < Date.now();
-
     return (
       <div style={{ borderStyle: 'double', borderWidth: 'thick', background: 'white', display: 'flex', flexDirection: 'column', padding: '1em' }}>
         {this.hasForceMove() && this.needsMyForceMoveResponse() && (
@@ -227,9 +249,9 @@ class CurrentBattle extends React.Component {
           <PokemonStats cryptoMon={player}/>
         </div>
         <Events events={events} />
-        {!isBattleFinished && this.renderAttacks()}
-        {isBattleFinished && <Button varaint="outlined" color="primary" onClick={concludeBattle}>Conclude battle</Button>}
-
+        {!this.canConclude() && this.renderAttacks()}
+        {this.canConclude() && this.amIWinner() && <Button varaint="outlined" color="primary" onClick={concludeBattle}>Conclude battle</Button>}
+        {this.canConclude() && !this.amIWinner() && <Typography style={{ color: 'coral', display: 'inline' }} variant="body1">Waiting for opponent to conclude battle</Typography>}
       </div>
     )
   }

@@ -27,7 +27,6 @@ class Hack extends InitComponent {
   }
 
   init = () => {
-    console.log("INIT")
     this.setState({loading: false});
   };
 
@@ -45,7 +44,6 @@ class Hack extends InitComponent {
 
   forceOldExit = exitData => () => {
     const { rootChainContract } = this.props;
-    console.log(exitData);
     exitTokenWithData(rootChainContract, exitData).then(() => console.log("Exit successful"));
   };
 

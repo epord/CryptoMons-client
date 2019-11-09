@@ -48,7 +48,6 @@ class ValidateHistoryModal extends InitComponent {
         verifyTokenWithHistory(token, h, rootChainContract).then(
           ({validity, lastOwner, blockNumber, transactionsHistory, swappingOwner}) => {
             console.log(`Correct history! Last true owner: ${lastOwner}`);
-            console.log(transactionsHistory)
             this.setState({loading: false, historyValid: validity, lastValidOwner: lastOwner, swappingOwner, lastValidBlock: blockNumber});
           }).catch(err => {
           console.log(`Error in history! ${err.error}. Last true owner: ${err.lastOwner} in block ${err.blockNumber}`);

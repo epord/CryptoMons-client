@@ -10,7 +10,6 @@ export const setDefaultBattleAccount = (account) => {
 const ethContract = (data) => new web3.eth.Contract(data.abi, data.address).methods;
 
 export const battleChallengeAfter = (channel, index, plasmaCM) => {
-  console.log(channel)
   return new Promise((resolve, reject) => {
 		ethContract(plasmaCM).getExit(channel.channelId, index).call(async (err, exit) => {
 			if (err) return reject(err);
