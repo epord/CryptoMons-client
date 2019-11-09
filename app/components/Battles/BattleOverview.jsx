@@ -55,6 +55,10 @@ class BattleOverview extends React.Component {
       }]
   }
 
+  hasForceMove = () => {
+    return this.props.channel.forceMoveChallenge.state.channelId > 0;
+  }
+
   render = () => {
     const { channel, actions, waiting } = this.props;
     const { participants, tokens, is1challengeable, is2challengeable } = this.state;
@@ -68,7 +72,7 @@ class BattleOverview extends React.Component {
     }
 
     return (
-      <Paper style={{ display: 'table-caption', padding: '1em' }}>
+      <Paper style={{ display: 'table-caption', padding: '1em', border: this.hasForceMove() ? 'coral 3px solid' : 'unset' }}>
         <DoubleCryptoMonCard
         token1={tokens[0]}
         owner1={participants[0]}

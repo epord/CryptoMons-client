@@ -250,4 +250,4 @@ export const Status = {
   },
 }
 
-export const renderGenderIcon = gender => <span style={{ color: gender == 1 ? 'blue' : 'red' }}>&nbsp;{gender == 0 ? '♂' : '♀'}</span>
+export const renderGenderIcon = gender => <span style={{ color: gender == 0 ? 'blue' : 'red' }}>&nbsp;{gender == 0 ? '♂' : '♀'}</span>

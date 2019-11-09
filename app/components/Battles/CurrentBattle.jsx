@@ -1,13 +1,16 @@
 import React from 'react';
+import {connect} from "react-redux";
 import PokemonStats from './PokemonStats.jsx';
 import Events from './Events.jsx';
 import { pokedex } from '../../../utils/pokedex';
 import { getTypeData, Type, Status } from '../../../utils/pokeUtils';
 import { Moves } from "../../../utils/BattleDamageCalculator";
+import { CMBmover } from "../../../utils/CryptoMonsBattles";
 
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
+import WarningIcon from '@material-ui/icons/Warning';
 
 import './CurrentBattle.css';
 import {battleForceMove, battleRespondWithMove} from "../../../services/ethService";
@@ -42,9 +45,18 @@ class CurrentBattle extends React.Component {
     }
   }
 
+  hasForceMove = () => {
+    const { forceMoveChallenge } = this.props;
+    return forceMoveChallenge.state.channelId != "0";
+  }
+
+  needsMyForceMoveResponse = () => {
+    const { ethAccount, forceMoveChallenge } = this.props;
+    return CMBmover(forceMoveChallenge.state).toLowerCase() !== ethAccount
+  }
 
   renderAttacks = () => {
-    const { isPlayer1, game, play, turn, battleForceMove, battleRespondForceMove } = this.props;
+    const { isPlayer1, game, play, turn, battleForceMove, battleRespondForceMove, forceMoveChallenge } = this.props;
     const {
       cryptoMonPLInstance,
       cryptoMonOPInstance,
@@ -61,14 +73,22 @@ class CurrentBattle extends React.Component {
       nextHashDecision,
     } = game;
 
-    const shouldIMove = (isPlayer1 && turn % 2 === 0) || (!isPlayer1 && (nextHashDecision || turn == 1));
+    const notMyTurn = (isPlayer1 && turn % 2 === 0) || (!isPlayer1 && (nextHashDecision || turn == 1));
 
-    if (shouldIMove) {
+    if (notMyTurn && !(this.hasForceMove() && this.needsMyForceMoveResponse())) {
       return (
-        <Grid>
+        <div style={{ textAlign: 'center' }}>
           <Typography>Waiting for the other player...</Typography>
-          <Button variant="outlined" onClick={() => battleForceMove()} >ForceMove</Button>
-        </Grid>
+          <Button
+            disabled={this.hasForceMove()}
+            variant="outlined"
+            size="small"
+            style={{ margin: '0 1em' }}
+            onClick={() => battleForceMove()}
+          >
+            Force Move
+          </Button>
+        </div>
       )
     }
 
@@ -144,7 +164,7 @@ class CurrentBattle extends React.Component {
   }
 
   render = () => {
-    const { isPlayer1, game, play } = this.props;
+    const { isPlayer1, game, play, hasForceMove } = this.props;
     const {
       cryptoMonPLInstance,
       cryptoMonOPInstance,
@@ -176,6 +196,19 @@ class CurrentBattle extends React.Component {
 
     return (
       <div style={{ borderStyle: 'double', borderWidth: 'thick', background: 'white', display: 'flex', flexDirection: 'column', padding: '1em' }}>
+        {this.hasForceMove() && this.needsMyForceMoveResponse() && (
+          <div style={{ display: 'flex', alignContent: 'center' }}>
+            <WarningIcon fontSize="small" style={{ margin: "0.2em", color: 'coral' }} />
+            <Typography style={{ color: 'coral', display: 'inline' }} variant="body1">Force Move issued, please respond</Typography>
+          </div>
+        )}
+        {this.hasForceMove() && !this.needsMyForceMoveResponse() && (
+          <div style={{ display: 'flex', alignContent: 'center' }}>
+            <WarningIcon fontSize="small" style={{ margin: "0.2em", color: 'coral' }} />
+            <Typography style={{ color: 'coral', display: 'inline' }} variant="body1">Waiting for other to respond Force Move</Typography>
+          </div>
+        )}
+
         <div style={{ display: 'flex' }}>
           <PokemonStats cryptoMon={opponent} />
           <img
@@ -198,4 +231,10 @@ class CurrentBattle extends React.Component {
 
 }
 
-export default CurrentBattle;
+const mapStateToProps = state => ({
+	ethAccount: state.ethAccount? state.ethAccount.toLowerCase() : undefined,
+ });
+
+const mapDispatchToProps = dispatch => ({});
+
+export default connect(mapStateToProps, mapDispatchToProps)(CurrentBattle);

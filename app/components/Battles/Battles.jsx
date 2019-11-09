@@ -4,6 +4,8 @@ import {connect} from "react-redux";
 import {withStyles} from '@material-ui/core/styles';
 import io from 'socket.io-client';
 
+import moment from 'moment';
+
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import Dialog from "@material-ui/core/Dialog";
@@ -49,7 +51,12 @@ import {Typography} from '@material-ui/core';
 const styles = theme => ({
 	dialogPaper: {
 		maxWidth: '40em',
-		width: '40em',
+    width: '40em',
+	},
+	dialogPaperWithForceMove: {
+		maxWidth: '40em',
+    width: '40em',
+    border: 'coral 3px solid',
 	},
 });
 
@@ -67,8 +74,6 @@ class Battles extends InitComponent {
   stateUpdate = (prevState, currentState) => {
     const { ethAccount } = this.props;
 
-    console.log("MY TURN?,", shouldIMove(ethAccount, currentState));
-    console.log(currentState.turnNum)
     if(shouldIMove(ethAccount, currentState)) {
       this.validateTransition(prevState, currentState);
     }
@@ -92,7 +97,6 @@ class Battles extends InitComponent {
     }else if(prevState.turnNum%2 == 0) {
       let calculatedState = transtionEvenToOdd(prevState.game, currentState.game.decisionOP, currentState.game.saltOP);
       this.setState({ events: calculatedState.events });
-      console.log('EVENTS1:', calculatedState.events);
     } else {
       let calculatedState = transitionOddToEven(prevState.game, currentState.game.decisionPL, prevState.turNum == 1);
       //Validate initial conditions
@@ -110,7 +114,9 @@ class Battles extends InitComponent {
 
     this.socket.on('invalidAction', (data) => {
       console.log('Error ', data);
-      this.stateUpdate(data.prevState, data.state);
+      if(data.state) {
+        this.stateUpdate(data.prevState, data.state);
+      }
     });
 
     this.socket.on('battleEstablished', (data) => {
@@ -138,18 +144,18 @@ class Battles extends InitComponent {
     this.socket.on("authenticated", () => this.setState({ authenticated: true }));
   };
 
-  openBattleDialog = () => this.setState({ battleOpen: true })
+  openBattleDialog = channel => this.setState({ battleOpen: true , channelOpened: channel})
 
   closeBattleDialog = () => this.setState({ battleOpen: false })
 
-  battleRequest = channelId => () => {
-    this.socket.emit("battleRequest", { channelId });
-    this.openBattleDialog();
+  battleRequest = channel => () => {
+    this.socket.emit("battleRequest", { channelId: channel.channelId });
+    this.openBattleDialog(channel);
   };
 
   play = async (move) => {
     const { ethAccount } = this.props;
-    const { currentState } = this.state;
+    const { currentState, channelOpened } = this.state;
 
     let newState = currentState;
     if(shouldIAddMove(ethAccount, currentState)) {
@@ -159,7 +165,12 @@ class Battles extends InitComponent {
     } else {
       newState = await this.transitionState(move);
     }
-    this.socket.emit("play", newState);
+
+    if(channelOpened && this.hasForceMove(channelOpened)) {
+      this.respondForceMove(channelOpened.channelId, newState);
+    } else {
+      this.socket.emit("play", newState);
+    }
   };
 
   transitionState = async (move) => {
@@ -168,7 +179,6 @@ class Battles extends InitComponent {
 
     const calculatedState = transitionCMBState(currentState.game, currentState.turnNum, move);
     this.setState({ events: calculatedState.events });
-    console.log('EVENTS2:', calculatedState.events);
     currentState.game = calculatedState;
     currentState.turnNum = currentState.turnNum + 1;
 
@@ -209,14 +219,13 @@ class Battles extends InitComponent {
     battleForceMove(plasmaCMContract, channelId, prevState, currentState).then(res => console.log("Move forced ", res));
   }
 
-  respondForceMove = (channelId) => async (move) => {
+  respondForceMove = (channelId, newState) => {
     const { plasmaCMContract } = this.props;
-    const newState = await this.transitionState(move);
     battleRespondWithMove(plasmaCMContract, channelId, newState).then(res => console.log("Responded force move ", res));
   }
 
   hasForceMove = (channel) => {
-    return channel.forceMoveChallenge.state.channelId > 0;
+    return channel.forceMoveChallenge.state.channelId != '0';
   }
 
   needsMyForceMoveResponse = (channel) => {
@@ -226,19 +235,20 @@ class Battles extends InitComponent {
 
   renderDialogBattle = () => {
     const { ethAccount, classes } = this.props;
-    const { currentState, battleOpen, events } = this.state;
+    const { currentState, battleOpen, channelOpened, events } = this.state;
+    const dialogPaperStyle = this.hasForceMove(channelOpened) ? classes.dialogPaperWithForceMove : classes.dialogPaper;
 
     return (
-      <Dialog open={Boolean(battleOpen)} onClose={this.closeBattleDialog} classes={{ paper: classes.dialogPaper }}>
+      <Dialog open={Boolean(battleOpen)} onClose={this.closeBattleDialog} classes={{ paper: dialogPaperStyle }}>
         <div style={{ padding: '1em' }}>
           <CurrentBattle
             play={this.play}
+            forceMoveChallenge={channelOpened.forceMoveChallenge}
             isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
             game={currentState.game}
             turn={currentState.turnNum}
             events={events}
             battleForceMove={this.forceMove(currentState.channelId)}
-            battleRespondForceMove={this.respondForceMove(currentState.channelId)}
           />
         </div>
       </Dialog>
@@ -355,8 +365,12 @@ class Battles extends InitComponent {
                     channel={c}
                     actions={[{
                       title: 'Select',
-                      func: this.battleRequest(c.channelId),
+                      func: this.battleRequest(c),
                       disabled: !authenticated
+                    }, {
+                      title: 'Close battle',
+                      func: () => 'TODO',
+                      disabled: !this.hasForceMove(c) || moment(c.forceMoveChallenge.expirationTime).isBefore(moment())
                     }]}
                   />
                 </React.Fragment>
