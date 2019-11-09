@@ -256,6 +256,7 @@ class Battles extends InitComponent {
 
 				<ExpansionPanel
           expanded={Boolean((opened && opened.length > 0) || (toFund && toFund.length > 0))}
+          disabled={!Boolean((opened && opened.length > 0) || (toFund && toFund.length > 0))}
           style={{ marginTop: '1em' }}
         >
 					<ExpansionPanelSummary
@@ -294,6 +295,7 @@ class Battles extends InitComponent {
 
         <ExpansionPanel
           expanded={challengeables && challengeables.length > 0}
+          disabled={!Boolean(challengeables && challengeables.length > 0)}
           style={{ marginTop: '1em' }}
         >
 					<ExpansionPanelSummary
@@ -317,27 +319,15 @@ class Battles extends InitComponent {
           </ExpansionPanelDetails>
         </ExpansionPanel>
 
+        <Button onClick={this.initSocket} style={{ marginTop: '1em' }} color="primary" variant="contained" size="small">Connect</Button>
 				<ExpansionPanel defaultExpanded style={{ marginTop: '1em' }}>
 					<ExpansionPanelSummary
 						expandIcon={<ExpandMoreIcon />}>
 						<Typography>Ongoing battles</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
-            {!authenticated && (
-
-              <React.Fragment>
-                <Grid container direction="column" style={{ margin: 'auto' }} alignItems="center">
-                  <Grid item>
-                    <Typography variant="body1">Connect to see all your battles</Typography>
-                  </Grid>
-                  <Grid item>
-                    <Button onClick={this.initSocket} style={{ marginBottom: '1em' }} variant="outlined" size="small">Connect</Button>
-                  </Grid>
-                </Grid>
-              </React.Fragment>
-            )}
             <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
-              {authenticated && ongoing && ongoing.map(c =>
+              {ongoing && ongoing.map(c =>
                 <React.Fragment key={c.channelId}>
                   <BattleOverview
                     key={c.channelId}
@@ -345,6 +335,7 @@ class Battles extends InitComponent {
                     actions={[{
                       title: 'Select',
                       func: this.battleRequest(c.channelId),
+                      disabled: !authenticated
                     }]}
                   />
                 </React.Fragment>
