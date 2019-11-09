@@ -163,8 +163,7 @@ class PlasmaTokens extends React.Component {
       enqueueSnackbar,
       'Battle Created Successfully',
       'Battle creation failed'
-    );
-    this.props.history.push('/battles');
+    ).then(() => this.props.history.push('/battles'));
   };
 
   openTransferModal = token => () => this.setState({ transferModalOpen: true, tokenToTransact: token });

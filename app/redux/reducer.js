@@ -12,9 +12,12 @@ const initialState = {
 	swappingRequests: [],
 	challengedTokens: [],
   withdrawableAmount: '0',
+	battleFunds: '0',
+	battles: [],
+	watchableChannels: []
 };
 
-const updatingWatchable = (state) => {
+const updatingWatchableTokens = (state) => {
 	state.watchableTokens = unique(
 		[
 		...state.plasmaTokens,
@@ -29,6 +32,20 @@ const updatingWatchable = (state) => {
 	return state;
 };
 
+const getWatchableChannels = (channels) => {
+	return _.uniq(
+		_.flatten(
+			[
+				channels.opened.map(c => c.channelId),
+				channels.toFund.map(c => c.channelId),
+				channels.ongoing.map(c => c.channelId),
+				channels.challengeables.map(c => c.channel.channelId),
+				channels.respondable.map(c => c.channelId),
+			]
+		)
+	);
+};
+
 const reducerMapper = {
 	[C.GOT_ETH_ACCOUNT]: (state, action) => {
 		return Object.assign({}, state, {
@@ -41,31 +58,31 @@ const reducerMapper = {
     });
 	},
 	[C.GOT_OWNED_TOKENS]: (state, action) => {
-		return updatingWatchable(Object.assign({}, state, {
+		return updatingWatchableTokens(Object.assign({}, state, {
       plasmaTokens: action.payload,
 			tokensLoaded: true,
     }));
 	},
 	[C.GOT_CHALLENGEABLES]: (state, action) => {
-		return updatingWatchable(Object.assign({}, state, {
+		return updatingWatchableTokens(Object.assign({}, state, {
 			challengeableTokens: action.payload,
 			challengeableTokensLoaded: true,
 		}));
 	},
 	[C.GOT_EXITING_FROM]: (state, action) => {
-		return updatingWatchable(Object.assign({}, state, {
+		return updatingWatchableTokens(Object.assign({}, state, {
       exitingTokens: action.payload,
 			exitingTokensLoaded: true,
     }));
 	},
 	[C.GOT_EXITED]: (state, action) => {
-		return updatingWatchable(Object.assign({}, state, {
+		return updatingWatchableTokens(Object.assign({}, state, {
       exitedTokens: action.payload,
 			exitedTokensLoaded: true,
     }));
 	},
 	[C.GOT_SWAPPING]: (state, action) => {
-		return updatingWatchable(Object.assign({}, state, {
+		return updatingWatchableTokens(Object.assign({}, state, {
       swappingTokens: action.payload
     }));
 	},
@@ -75,14 +92,15 @@ const reducerMapper = {
     });
 	},
 	[C.GOT_CHALLENGED_TOKENS]: (state, action) => {
-		return updatingWatchable(Object.assign({}, state, {
+		return updatingWatchableTokens(Object.assign({}, state, {
       challengedTokens: action.payload,
 			challengedTokensLoaded: true,
     }));
 	},
 	[C.GOT_BATTLES]: (state, action) => {
 		return Object.assign({}, state, {
-      battles: action.payload
+      battles: action.payload,
+			watchableChannels: getWatchableChannels(action.payload)
     });
 	},
   [C.GOT_BALANCE]: (state, action) => {
@@ -90,6 +108,11 @@ const reducerMapper = {
       withdrawableAmount: action.payload
     });
   },
+	[C.GOT_BATTLE_FUNDS]: (state, action) => {
+		return Object.assign({}, state, {
+			battleFunds: action.payload
+		});
+	},
 	[C.GOT_CONTRACTS]: (state, action) => {
 		return Object.assign({}, state, {
 			rootChainContract: { ...action.payload.RootChain, address: action.payload.RootChain.networks['5777'].address },

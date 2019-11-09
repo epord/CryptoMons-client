@@ -47,7 +47,7 @@ const initialTransition = (game, move) => {
 
 const gameToState = (game, move, salt) => {
   const oldSalt = salt || localStorage.getItem('salt');
-  const oldMove = move || localStorage.getItem('move');
+  const oldMove = move !== undefined ? move : localStorage.getItem('move');
   game.saltOP = oldSalt;
   game.decisionOP = parseInt(oldMove);
 

@@ -37,7 +37,7 @@ class App extends InitComponent {
 	}
 
 	getBalance = () => {
-		const { rootChainContract, withdrawableAmount } = this.props;
+		const { rootChainContract } = this.props;
 		return getBalance(rootChainContract).then(async withdrawable => {
 			await this.setState({ withdrawableAmount: withdrawable });
 			return withdrawable;

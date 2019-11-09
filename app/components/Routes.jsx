@@ -37,39 +37,42 @@ import "regenerator-runtime/runtime";
 import _ from 'lodash';
 
 import {
-  setDefaultAccount,
-  subscribeToChallenged,
-  subscribeToChallengeRespond,
-  subscribeToChannelFunded,
-  subscribeToCMBRequested,
-  subscribeToCoinReset,
-  subscribeToCryptoMonTransfer,
-  subscribeToDeposits,
-  subscribeToFinalizedExit,
-  subscribeToFreeBond,
-  subscribeToSlashedBond,
-  subscribeToStartedExit,
-  subscribeToSubmittedBlocks,
-  subscribeToSubmittedSecretBlocks,
-  subscribeToWithdrew,
-  subscribeToWithdrewBond
+	setDefaultAccount,
+	subscribeToChallenged,
+	subscribeToChallengeRespond,
+	subscribeToChannelChallenged,
+	subscribeToChannelChallengeRequest, subscribeToChannelChallengeResponded,
+	subscribeToChannelConcluded,
+	subscribeToCMBRequested,
+	subscribeToCMBStarted,
+	subscribeToCoinReset,
+	subscribeToCryptoMonTransfer,
+	subscribeToDeposits,
+	subscribeToFinalizedExit, subscribeToForceMoveRequested, subscribeToForceMoveResponded,
+	subscribeToFreeBond,
+	subscribeToSlashedBond,
+	subscribeToStartedExit,
+	subscribeToSubmittedBlocks,
+	subscribeToSubmittedSecretBlocks,
+	subscribeToWithdrew,
+	subscribeToWithdrewBond
 } from '../../services/ethService';
 import {setDefaultBattleAccount} from '../../services/battleChallenges';
 
 import {
-  buyCryptoMon,
-  getBalance,
-  getBattlesFrom,
-  getChallengeableTokens,
-  getChallengedFrom,
-  getCryptoMonsFrom,
-  getEthAccount,
-  getExitedTokens,
-  getExitingTokens,
-  getOwnedTokens,
-  getSwappingRequests,
-  getSwappingTokens,
-  initApp,
+	buyCryptoMon,
+	getBalance, getBattleFunds,
+	getBattlesFrom,
+	getChallengeableTokens,
+	getChallengedFrom,
+	getCryptoMonsFrom,
+	getEthAccount,
+	getExitedTokens,
+	getExitingTokens,
+	getOwnedTokens,
+	getSwappingRequests,
+	getSwappingTokens,
+	initApp,
 } from '../redux/actions'
 import {infoSnack, successSnack, warnSnack} from "../../utils/utils";
 
@@ -81,7 +84,7 @@ class Routes extends React.Component {
 	};
 
 	componentDidUpdate = (prevProps) => {
-		const { ethAccount, watchableTokens, swappingRequests, enqueueSnackbar, swappingTokens } = this.props;
+		const { ethAccount, watchableTokens, swappingRequests, enqueueSnackbar, swappingTokens, watchableChannels } = this.props;
 		const { rootChain, subscribed } = this.state;
 
 		if (!prevProps.ethAccount && ethAccount) {
@@ -92,7 +95,12 @@ class Routes extends React.Component {
 			if(!subscribed || _.xor(prevProps.watchableTokens, watchableTokens).length > 0) {
 			  console.log(watchableTokens);
         this.setState({subscribed: true});
-				this.subscribeToEvents(ethAccount, watchableTokens);
+				this.subscribeToTokenEvents(ethAccount, watchableTokens);
+			}
+
+			if(!subscribed || _.xor(prevProps.watchableChannels, watchableChannels).length > 0) {
+				console.log(watchableChannels);
+				this.subscribeToBattleEvents(ethAccount, watchableChannels);
 			}
 		}
 
@@ -146,8 +154,8 @@ class Routes extends React.Component {
 		});
 	};
 
-	subscribeToEvents = (address, plasmaTokens) => {
-		const { rootChain, cryptoMons, plasmaCM, plasmaTurnGame } = this.state;
+	subscribeToTokenEvents = (address, plasmaTokens) => {
+		const { rootChain, cryptoMons, plasmaTurnGame, plasmaCM } = this.state;
 
 		subscribeToCryptoMonTransfer(cryptoMons, address, r => {
 			const { getCryptoMonsFrom, enqueueSnackbar } = this.props;
@@ -248,11 +256,55 @@ class Routes extends React.Component {
 			getBattlesFrom(address, plasmaTurnGame, plasmaCM)
 		}));
 
-		subscribeToChannelFunded(plasmaCM, address, (r => {
+		subscribeToCMBStarted(plasmaTurnGame, address, plasmaTokens, (r => {
 			const { enqueueSnackbar, getBattlesFrom } = this.props;
-			successSnack(enqueueSnackbar, `New Battle started`);
+			infoSnack(enqueueSnackbar, `New Battle Started`);
 			getBattlesFrom(address, plasmaTurnGame, plasmaCM)
+		}));
+	};
+
+	subscribeToBattleEvents = (address, channels) => {
+		const { plasmaCM, plasmaTurnGame } = this.state;
+
+		subscribeToChannelConcluded(plasmaCM, channels, (r => {
+			const { enqueueSnackbar, getBattlesFrom, getBattleFunds } = this.props;
+			successSnack(enqueueSnackbar, `Battle finished`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM);
+			getBattleFunds(address, plasmaCM)
 		}))
+
+		subscribeToChannelChallenged(plasmaCM, channels, (r => {
+			const { enqueueSnackbar, getBattlesFrom, getBattleFunds } = this.props;
+			successSnack(enqueueSnackbar, `New Battle started`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM);
+			getBattleFunds(address, plasmaCM);
+		}))
+
+		subscribeToChannelChallengeRequest(plasmaCM, channels, (r => {
+			const { enqueueSnackbar, getBattlesFrom } = this.props;
+			warnSnack(enqueueSnackbar, `New Challenge requested`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM);
+		}))
+
+		subscribeToChannelChallengeResponded(plasmaCM, channels, (r => {
+			const { enqueueSnackbar, getBattlesFrom, getBattleFunds } = this.props;
+			successSnack(enqueueSnackbar, `Challenged responded succesfully`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM);
+			getBattleFunds(address, plasmaCM);
+		}))
+
+		subscribeToForceMoveRequested(plasmaCM, channels, (r => {
+			const { enqueueSnackbar, getBattlesFrom } = this.props;
+			warnSnack(enqueueSnackbar, `Force move requested`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM);
+		}))
+
+		subscribeToForceMoveResponded(plasmaCM, channels, (r => {
+			const { enqueueSnackbar, getBattlesFrom } = this.props;
+			successSnack(enqueueSnackbar, `Force move answered`);
+			getBattlesFrom(address, plasmaTurnGame, plasmaCM);
+		}))
+
 	};
 
 	openDrawer = () => this.setState({ drawerOpen: true });
@@ -357,6 +409,7 @@ class Routes extends React.Component {
 const mapStateToProps = state => ({
 	ethAccount: state.ethAccount,
 	watchableTokens: state.watchableTokens,
+	watchableChannels: state.watchableChannels,
 	swappingRequests: state.swappingRequests,
 	swappingTokens: state.swappingTokens
  });
@@ -374,7 +427,8 @@ const mapDispatchToProps = dispatch => ({
 	getEthAccount: () => dispatch(getEthAccount()),
 	getBattlesFrom: (address, plasmaTurnGame, plasmaCM) => dispatch(getBattlesFrom(address, plasmaTurnGame, plasmaCM)),
   getChallengedFrom: (address, rootChainContract) => dispatch(getChallengedFrom(address, rootChainContract)),
-	getBalance: (address, rootChainContract) => dispatch(getBalance(address, rootChainContract)),
+	getBalance: (rootChainContract) => dispatch(getBalance(rootChainContract)),
+	getBattleFunds: (address, rootChainContract) => dispatch(getBattleFunds(address, rootChainContract)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(withSnackbar(Routes));

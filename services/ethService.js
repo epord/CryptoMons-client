@@ -187,10 +187,35 @@ export const subscribeToCMBRequested = (plasmaCM, address, cb) => {
 	subscribeToEvent("CryptoMonBattleRequested",false, {player: address}, plasmaCM, (r) => cb(r.returnValues));
 }
 
-export const subscribeToChannelFunded = (plasmaCM, address, cb) => {
-	subscribeToEvent("ChannelFunded",false, {creator: address}, plasmaCM, (r) => cb(r.returnValues));
-	subscribeToEvent("ChannelFunded",false, {opponent: address}, plasmaCM, (r) => cb(r.returnValues));
+export const subscribeToCMBStarted = (plasmaCM, address, plasmaTokens, cb) => {
+	subscribeToEvent("CryptoMonBattleFunded",false, {player: address}, plasmaCM, (r) => cb(r.returnValues));
+	subscribeToEvent("CryptoMonBattleStarted",true, {CryptoMon: plasmaTokens}, plasmaCM, (r) => cb(r.returnValues));
 }
+
+export const subscribeToChannelConcluded = (plasmaCM, channels, cb) => {
+	subscribeToEvent("ChannelConcluded",true, {channelId: channels}, plasmaCM, (r) => cb(r.returnValues));
+};
+
+export const subscribeToChannelChallenged = (plasmaCM, channels, cb) => {
+	subscribeToEvent("ChannelChallenged",true, {channelId: channels}, plasmaCM, (r) => cb(r.returnValues));
+};
+
+export const subscribeToChannelChallengeRequest = (plasmaCM, channels, cb) => {
+	subscribeToEvent("ChallengeRequest",true, {channelId: channels}, plasmaCM, (r) => cb(r.returnValues));
+};
+
+export const subscribeToChannelChallengeResponded = (plasmaCM, channels, cb) => {
+	subscribeToEvent("ChallengeResponded",true, {channelId: channels}, plasmaCM, (r) => cb(r.returnValues));
+};
+
+export const subscribeToForceMoveRequested = (plasmaCM, channels, cb) => {
+	subscribeToEvent("ForceMoveRequested",true, {channelId: channels}, plasmaCM, (r) => cb(r.returnValues));
+};
+
+export const subscribeToForceMoveResponded = (plasmaCM, channels, cb) => {
+	subscribeToEvent("ForceMoveResponded",true, {channelId: channels}, plasmaCM, (r) => cb(r.returnValues));
+};
+
 
 export const getChallengeable = (address, rootChain) => {
   return new Promise(async (resolve, reject) => {
@@ -348,6 +373,15 @@ export const getBalance = (rootChain) => {
 	});
 }
 
+export const getBattleFunds = (address, plasmaCM) => {
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM).getFunds(address).call(async (err, res) => {
+			if (err) return reject(err);
+			resolve(res);
+		});
+	});
+}
+
 export const getBlock = (blockNumber, rootChain) => {
   return new Promise((resolve, reject) => {
 		ethContract(rootChain).getBlock(blockNumber).call(async (err, res) => {
@@ -451,12 +485,8 @@ export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) 
 			(err, games ) => {
 				if(err) return reject(err);
 				const battleIds = games.map(g => g.returnValues.gameId);
-				const battles = games.reduce((result, g) => {
-					if(result[g.returnValues.gameId]) result[g.returnValues.gameId].push({player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon});
-					result[g.returnValues.gameId] = [{player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon}];
-					return result;
-				}, {});
 
+				let ChannelState = { INITIATED: 0, FUNDED: 1, SUSPENDED: 2, CLOSED: 3, CHALLENGED: 4 }
 				async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r))),
 					(err, result) => {
 						if (err) return reject(err);
@@ -464,26 +494,29 @@ export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) 
 							opened: [],
 							toFund: [],
 							ongoing: [],
-							challengeables: []
+							challengeables: [],
+							respondable: []
 						};
 
 						result.forEach(c => {
-							if(c.state == 0) {
-								if(c.players[0].toLowerCase() == address.toLowerCase()) {
-									games.opened.push(c);
-								}
+							switch (c.state) {
+								case ChannelState.INITIATED:
+									if(c.players[0].toLowerCase() === address.toLowerCase()) games.opened.push(c);
+									if(c.players[1].toLowerCase() === address.toLowerCase()) games.toFund.push(c);
+									break;
 
-								if(c.players[1].toLowerCase() == address.toLowerCase()){
-									games.toFund.push(c);
-								}
-							} else if(c.state == 1) {
-								let players = battles[c.channelId];
-								if( (players[0].player !== address.toLowerCase() && plasmaTokens.includes(players[0].cryptoMon))
-										|| (players.length > 1 && players[1].player !== address.toLowerCase() && plasmaTokens.includes(players[1].cryptoMon))) {
-									games.challengeables.push(c);
-								} else {
-									games.ongoing.push(c);
-								}
+								case ChannelState.FUNDED:
+									if(c.players[0].player !== address.toLowerCase() && plasmaTokens.includes(c.players[0].cryptoMon)) games.challengeables.push({ channel: c, index: 0 });
+									if(c.players[1].player !== address.toLowerCase() && plasmaTokens.includes(c.players[1].cryptoMon)) games.challengeables.push({ channel: c, index: 1 });
+									break;
+
+								case ChannelState.SUSPENDED:
+									games.respondable.push(c);
+									break;
+
+								case ChannelState.CHALLENGED:
+								case ChannelState.CLOSED:
+									break;
 							}
 						});
 

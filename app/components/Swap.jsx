@@ -81,7 +81,7 @@ class Swap extends InitComponent {
 	};
 
 	swapInPlasma = async (myToken, swapToken) => {
-		const { enqueueSnackbar, getSwappingRequest, getSwappingTokens, ethAccount } = this.props;
+		const { enqueueSnackbar, getSwappingRequests, getSwappingTokens, ethAccount } = this.props;
 		this.setState({ isSwapping: true });
 
 		fallibleSnackPromise(createAtomicSwap(ethAccount, myToken, swapToken),
@@ -91,7 +91,7 @@ class Swap extends InitComponent {
 		)
 			.then(secret => {
 				this.setState({secret});
-				getSwappingRequest(ethAccount);
+				getSwappingRequests(ethAccount);
 				getSwappingTokens(ethAccount);
 			})
 			.finally(() => {
