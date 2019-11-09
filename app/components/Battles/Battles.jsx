@@ -45,6 +45,8 @@ import {
 import {getBattlesFrom} from '../../redux/actions';
 import {getExitData} from "../../../services/plasmaServices";
 import {Typography} from '@material-ui/core';
+import {fallibleSnackPromise} from "../../../utils/utils";
+import {withSnackbar} from "notistack";
 
 const styles = theme => ({
 	dialogPaper: {
@@ -205,22 +207,29 @@ class Battles extends InitComponent {
     fundBattle(plasmaCMContract, channelId, stake, toCMBBytes(initialState), exitRLPData);
   }
 
+  forceMove = () => {
+    const { plasmaCMContract } = this.props;
+    const { prevState, currentState } = this.state;
+    battleForceMove(plasmaCMContract, prevState, currentState).then(res => console.log("Move forced ", res));
+  }
+
+  respondForceMove = async (move) => {
+    const { plasmaCMContract } = this.props;
+    const newState = await this.transitionState(move);
+    battleRespondWithMove(plasmaCMContract, newState).then(res => console.log("Responded force move ", res));
+  }
+
   concludeBattle = () => {
-    const { plasmaCMContract } = this.props;
+    const { plasmaCMContract, enqueueSnackbar } = this.props;
     const { prevState, currentState } = this.state;
-    concludeBattle(plasmaCMContract, prevState, currentState).then(res => console.log("Battle concluded ", res));
-  }
 
-  forceMove = channelId => () => {
-    const { plasmaCMContract } = this.props;
-    const { prevState, currentState } = this.state;
-    battleForceMove(plasmaCMContract, channelId, prevState, currentState).then(res => console.log("Move forced ", res));
-  }
-
-  respondForceMove = (channelId, newState) => {
-    const { plasmaCMContract } = this.props;
-    battleRespondWithMove(plasmaCMContract, channelId, newState).then(res => console.log("Responded force move ", res));
-  }
+    fallibleSnackPromise(
+      concludeBattle(plasmaCMContract, currentState.channelId. prevState, currentState),
+      enqueueSnackbar,
+      "Battle closed successfully",
+      "Error while closing battle"
+    ).finally(this.closeBattleDialog);
+  };
 
   hasForceMove = (channel) => {
     return channel.forceMoveChallenge.state.channelId != '0';
@@ -246,7 +255,8 @@ class Battles extends InitComponent {
             game={currentState.game}
             turn={currentState.turnNum}
             events={events}
-            battleForceMove={this.forceMove(currentState.channelId)}
+            battleForceMove={this.forceMove}
+            concludeBattle={this.concludeBattle}
           />
         </div>
       </Dialog>

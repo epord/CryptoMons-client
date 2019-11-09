@@ -164,7 +164,7 @@ class CurrentBattle extends React.Component {
   }
 
   render = () => {
-    const { isPlayer1, game, play, hasForceMove, forceMoveChallenge } = this.props;
+    const { isPlayer1, game, concludeBattle, forceMoveChallenge } = this.props;
     const {
       cryptoMonPLInstance,
       cryptoMonOPInstance,
@@ -228,7 +228,7 @@ class CurrentBattle extends React.Component {
         </div>
         <Events events={events} />
         {!isBattleFinished && this.renderAttacks()}
-        {isBattleFinished && <Button varaint="outlined" color="primary">Conclude battle</Button>}
+        {isBattleFinished && <Button varaint="outlined" color="primary" onClick={concludeBattle}>Conclude battle</Button>}
 
       </div>
     )

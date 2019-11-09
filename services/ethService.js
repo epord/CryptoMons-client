@@ -673,36 +673,7 @@ export const fundBattle = (plasmaCM, channelId, stake, initialGameAttributes, ex
 	});
 }
 
-export const concludeBattle = (plasmaCM, prevState, currentState) => {
-
-	const _prevState = {
-		channelId: prevState.channelId,
-		channelType: prevState.channelType,
-		participants: prevState.participants,
-		turnNum: prevState.turnNum,
-		gameAttributes: toCMBBytes(prevState.game)
-	}
-
-	const _currentState = {
-		channelId: currentState.channelId,
-		channelType: currentState.channelType,
-		participants: currentState.participants,
-		turnNum: currentState.turnNum,
-		gameAttributes: toCMBBytes(currentState.game)
-	}
-
-	return new Promise((resolve, reject) => {
-		ethContract(plasmaCM)
-			.conclude(currentState.channelId, _prevState, _currentState, [prevState.signature || '0x', currentState.signature]).send({from: web3.eth.defaultAccount}, {
-				from: web3.eth.defaultAccount
-			}, (err, res) => {
-				if (err) return reject(err)
-				resolve(res);
-		})
-	});
-}
-
-export const battleForceMove = (plasmaCM, channelId, prevState, currentState) => {
+export const battleForceMove = (plasmaCM, prevState, currentState) => {
 
 	const _currentState = {
 		channelId: currentState.channelId,
@@ -716,7 +687,7 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 		console.log('force first move');
 		return new Promise((resolve, reject) => {
 			ethContract(plasmaCM)
-				.forceFirstMove(channelId, _currentState)
+				.forceFirstMove(currentState.channelId, _currentState)
 				.send({from: web3.eth.defaultAccount}, (err, res) => {
 					if (err) return reject(err);
 					resolve(res);
@@ -735,7 +706,7 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 	console.log('force move');
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
-			.forceMove(channelId, _prevState, _currentState, [prevState.signature || '0x', currentState.signature])
+			.forceMove(currentState.channelId, _prevState, _currentState, [prevState.signature || '0x', currentState.signature])
 			.send({from: web3.eth.defaultAccount}, (err, res) => {
 				if (err) return reject(err);
 				resolve(res);
@@ -743,7 +714,7 @@ export const battleForceMove = (plasmaCM, channelId, prevState, currentState) =>
 	});
 }
 
-export const battleRespondWithMove = (plasmaCM, channelId, nextState) => {
+export const battleRespondWithMove = (plasmaCM, nextState) => {
 	const _nextState = {
 		channelId: nextState.channelId,
 		channelType: nextState.channelType,
@@ -754,12 +725,39 @@ export const battleRespondWithMove = (plasmaCM, channelId, nextState) => {
 
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
-			.respondWithMove(channelId, _nextState, nextState.signature)
+			.respondWithMove(nextState.channelId, _nextState, nextState.signature)
 			.send({from: web3.eth.defaultAccount}, (err, res) => {
 				if (err) return reject(err);
 				resolve(res);
 		})
 	})
+}
+
+export const concludeBattle = (plasmaCM, prevState, finalState) => {
+  const _finalState = {
+    channelId: finalState.channelId,
+    channelType: finalState.channelType,
+    participants: finalState.participants,
+    turnNum: finalState.turnNum,
+    gameAttributes: toCMBBytes(finalState.game)
+  };
+
+  const _prevState = {
+    channelId:      prevState ? prevState.channelId         :"0",
+    channelType:    prevState ? prevState.channelType       :"0x0000000000000000000000000000",
+    participants:   prevState ? prevState.participants      : ["0x0000000000000000000000000000", "0x0000000000000000000000000000"],
+    turnNum:        prevState ? prevState.turnNum           :	"0",
+    gameAttributes: prevState ? toCMBBytes(prevState.game)  :	"0x0",
+  };
+
+  return new Promise((resolve, reject) => {
+    ethContract(plasmaCM)
+      .conclude(finalState.channelId, _prevState, _finalState, [prevState.signature || '0x', finalState.signature])
+      .send({from: web3.eth.defaultAccount}, (err, res) => {
+        if (err) return reject(err);
+        resolve(res);
+      })
+  });
 }
 
 export const getChannel = (channelId, plasmaCM) => {
