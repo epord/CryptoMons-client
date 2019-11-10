@@ -5,6 +5,7 @@ import { unique, zip } from '../utils/utils';
 import {basicGet, getExitData, getOwnedTokens} from "./plasmaServices";
 import { getExitDataToBattleRLPData, isSwapBytes } from '../utils/cryptoUtils';
 import { getInitialCMBState, toCMBBytes } from "../utils/CryptoMonsBattles";
+import { rlp } from 'ethereumjs-util';
 
 const Web3 = require('web3');
 const web3 = new Web3(Web3.givenProvider);
@@ -480,63 +481,88 @@ export const getCryptoMonsFrom = (address, cryptoMons) => {
 
 export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) => {
   return new Promise((resolve, reject) => {
-		baseEthContract(plasmaTurnGame).getPastEvents("CryptoMonBattleRequested",
-		 { filter: { CryptoMon: plasmaTokens }, fromBlock: 0, toBlock: 'latest' },
-			(err, games ) => {
+		async.parallel({
+			myCMBattles: cb => {
+				baseEthContract(plasmaTurnGame)
+				.getPastEvents(
+					"CryptoMonBattleRequested",
+					{ filter: { CryptoMon: plasmaTokens },
+						fromBlock: 0,
+						toBlock: 'latest'
+					}, cb)
+			},
+			initiatedBattles : cb => {
+				baseEthContract(plasmaTurnGame)
+				.getPastEvents(
+					"CryptoMonBattleRequested",
+					{ filter: { player: address },
+						fromBlock: 0,
+						toBlock: 'latest'
+					}, cb)
+			}
+		}, (err, { myCMBattles, initiatedBattles }) => {
 				if(err) return reject(err);
-				const battleIds = games.map(g => g.returnValues.gameId);
-				const battles = games.reduce((result, g) => {
-					if(result[g.returnValues.gameId]) result[g.returnValues.gameId].push({player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon});
-					result[g.returnValues.gameId] = [{player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon}];
-					return result;
-				}, {});
-
-				let ChannelState = { INITIATED: '0', FUNDED: '1', SUSPENDED: '2', CLOSED: '3', CHALLENGED: '4' }
-				async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r))),
-					(err, results) => {
-						if (err) return reject(err);
-						const games = {
-							opened: [],
-							toFund: [],
-							ongoing: [],
-							challengeables: [],
-							respondable: []
-						};
-
-						results.forEach(c => {
-							switch (c.state) {
-								case ChannelState.INITIATED:
-									if(c.players[0].toLowerCase() === address.toLowerCase()) games.opened.push(c);
-									if(c.players[1].toLowerCase() === address.toLowerCase()) games.toFund.push(c);
-									break;
-
-								case ChannelState.FUNDED:
-									if(c.players[0].toLowerCase() === address.toLowerCase()) {
-										games.ongoing.push(c);
-									} else if(c.players[1].toLowerCase() === address.toLowerCase()) {
-										games.ongoing.push(c);
-									}
-
-									let battle = battles[c.channelId];
-									if( battle.length > 0 && battle[0].player !== address.toLowerCase() && plasmaTokens.includes(battles[0].cryptoMon))
-										 games.challengeables.push({ channel: c, index: battle[0].player === c.players[0].toLowerCase() ? 0 : 1 });
-									if( battle.length > 1 && battle[1].player !== address.toLowerCase() && plasmaTokens.includes(battles[1].cryptoMon))
-										games.challengeables.push({ channel: c, index: battle[1].player === c.players[0].toLowerCase() ? 0 : 1 })
-									break;
-
-								case ChannelState.SUSPENDED:
-									games.respondable.push(c);
-									break;
-
-								case ChannelState.CHALLENGED:
-								case ChannelState.CLOSED:
-									break;
-							}
-						});
-
-						resolve(games);
+				const battles = _.uniqBy([...myCMBattles, ...initiatedBattles], 'returnValues.gameId');
+				getGames(battles, address, plasmaTokens, plasmaCM, (err, games) => {
+					if (err) return reject(err);
+					console.log(games)
+					resolve(games);
 				});
-			})
+		})
+	});
+}
+
+const getGames = (games, address, plasmaTokens, plasmaCM, cb) => {
+	const battleIds = games.map(g => g.returnValues.gameId)
+	const battles = games.reduce((result, g) => {
+		if(result[g.returnValues.gameId]) result[g.returnValues.gameId].push({player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon});
+		result[g.returnValues.gameId] = [{player: g.returnValues.player.toLowerCase(), cryptoMon: g.returnValues.CryptoMon}];
+		return result;
+	}, {});
+
+	let ChannelState = { INITIATED: '0', FUNDED: '1', SUSPENDED: '2', CLOSED: '3', CHALLENGED: '4' }
+	async.parallel(battleIds.map(id => cb => getChannel(id, plasmaCM).then(r => cb(null, r))),
+		(err, results) => {
+			if (err) return cb(err);
+			const games = {
+				opened: [],
+				toFund: [],
+				ongoing: [],
+				challengeables: [],
+				respondable: [],
+			};
+			results.forEach(c => {
+				switch (c.state) {
+					case ChannelState.INITIATED:
+						if(c.players[0].toLowerCase() === address.toLowerCase()) games.opened.push(c);
+						if(c.players[1].toLowerCase() === address.toLowerCase()) games.toFund.push(c);
+						break;
+
+					case ChannelState.FUNDED:
+						if(c.players[0].toLowerCase() === address.toLowerCase()) {
+							games.ongoing.push(c);
+						} else if(c.players[1].toLowerCase() === address.toLowerCase()) {
+							games.ongoing.push(c);
+						}
+
+						let battle = battles[c.channelId];
+						if( battle.length > 0 && battle[0].player !== address.toLowerCase() && plasmaTokens.includes(battle[0].cryptoMon))
+								games.challengeables.push({ channel: c, index: battle[0].player === c.players[0].toLowerCase() ? 0 : 1 });
+						if( battle.length > 1 && battle[1].player !== address.toLowerCase() && plasmaTokens.includes(battle[1].cryptoMon))
+							games.challengeables.push({ channel: c, index: battle[1].player === c.players[0].toLowerCase() ? 0 : 1 })
+						break;
+
+					case ChannelState.SUSPENDED:
+						games.respondable.push(c);
+						break;
+
+					case ChannelState.CHALLENGED:
+					case ChannelState.CLOSED:
+						break;
+				}
+			});
+
+			cb(null, games);
 	});
 }
 
@@ -752,6 +778,15 @@ export const concludeBattle = (plasmaCM, prevState, finalState) => {
 
 	const prevSig = prevState ? prevState.signature || '0x' : "0x";
 	const finalStateSig = finalState ? finalState.signature || '0x' : "0x";
+
+	console.log({
+		channelId: finalState.channelId,
+		prevstate: _prevState,
+		finalstate: _finalState,
+		prevGameAttr: rlp.decode(_prevState.gameAttributes),
+		finalGameAttr: rlp.decode(_finalState.gameAttributes),
+		signatures: [prevSig, finalStateSig]
+	});
 
   return new Promise((resolve, reject) => {
     ethContract(plasmaCM)

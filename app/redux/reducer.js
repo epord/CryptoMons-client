@@ -14,7 +14,8 @@ const initialState = {
   withdrawableAmount: '0',
 	battleFunds: '0',
 	battles: [],
-	watchableChannels: []
+	watchableChannels: [],
+	hackedChannels: []
 };
 
 const updatingWatchableTokens = (state) => {

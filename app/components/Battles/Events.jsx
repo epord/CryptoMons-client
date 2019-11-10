@@ -19,6 +19,8 @@ class Events extends React.Component {
     const typeName = pokemon.type[type - 1];
     const typeId = Type[typeName];
 
+    console.log(event)
+
     if (code == 'Attack' && hit) {
       return `${pokemon.name.english} used ${typeName.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
     }
@@ -63,7 +65,7 @@ class Events extends React.Component {
         padding: '0.5em',
         borderRadius: '5px',
       }}>
-        {(events || []).map((event, i) => <Typography variant="body1">{this.createEventSentence(event)}</Typography>)}
+        {(events || []).map((event, i) => <Typography key={i} variant="body1">{this.createEventSentence(event)}</Typography>)}
       </div>
     )
   }

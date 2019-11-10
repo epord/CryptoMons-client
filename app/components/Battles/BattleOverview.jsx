@@ -39,7 +39,7 @@ class BattleOverview extends React.Component {
 
   challengeBefore = (channel, index) => () => {
     const {plasmaCMContract} = this.props;
-    battleChallengeBefore(channel, index ,plasmaCMContract)
+    battleChallengeBefore(channel, index, plasmaCMContract)
   };
 
   getChallengeActionsFor = (channel, index) => {
@@ -74,12 +74,12 @@ class BattleOverview extends React.Component {
     return (
       <Paper style={{ display: 'table-caption', padding: '1em', border: this.hasForceMove() ? 'coral 3px solid' : 'unset' }}>
         <DoubleCryptoMonCard
-        token1={tokens[0]}
-        owner1={participants[0]}
-        token2={tokens[1]}
-        owner2={participants[1]}
-        actions1={is1challengeable ? this.getChallengeActionsFor(channel, 0) : []}
-        actions2={is2challengeable ? this.getChallengeActionsFor(channel, 1) : []}
+          token1={tokens[0]}
+          owner1={participants[0]}
+          token2={tokens[1]}
+          owner2={participants[1]}
+          actions1={is1challengeable ? this.getChallengeActionsFor(channel, 0) : []}
+          actions2={is2challengeable ? this.getChallengeActionsFor(channel, 1) : []}
         />
         {waiting && (
           <Typography

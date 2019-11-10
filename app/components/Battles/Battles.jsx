@@ -408,10 +408,10 @@ class Battles extends InitComponent {
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
             <div>
               {challengeables && challengeables.map(c =>
-                <React.Fragment key={c.channelId}>
+                <React.Fragment key={c.channel.channelId}>
                   <BattleOverview
-                    key={c.channelId}
-                    channel={c}
+                    key={c.channel.channelId}
+                    channel={c.channel}
                     waiting
                     actions={[{
                       title: 'Challenge',

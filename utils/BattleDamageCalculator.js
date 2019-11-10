@@ -88,7 +88,7 @@ const EventCode = {
  * Recharge - null
  * Protect - null
  * Cleanse - null
- * ShieldBreak - break: boolean (if hit) damage: int
+ * ShieldBreak - hit: boolean (if hit) damage: int
  * Status - type: (1|2) hit: boolean
  * Attack|SPAttack - type: (1|2) hit: boolean
  *                  if hit - crit: boolean damage: int effective: int (effective ID)
@@ -295,7 +295,7 @@ function moveTurn(state){
     turnEvents.push({
       id: state.player.cryptoMon.id,
       code: EventCode.ShieldBreak,
-      break: state.opponent.move === Moves.PROTECT,
+      hit: state.opponent.move === Moves.PROTECT,
       damage: Math.floor(state.opponent.cryptoMon.stats.hp / 3)
     });
     if(state.opponent.move === Moves.PROTECT) {
