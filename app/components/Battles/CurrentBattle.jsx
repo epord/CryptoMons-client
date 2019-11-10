@@ -5,7 +5,7 @@ import Events from './Events.jsx';
 import { pokedex } from '../../../utils/pokedex';
 import { getTypeData, Type, Status } from '../../../utils/pokeUtils';
 import { Moves } from "../../../utils/BattleDamageCalculator";
-import { CMBmover } from "../../../utils/CryptoMonsBattles";
+import { CMBmover, canIPlay } from "../../../utils/CryptoMonsBattles";
 
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
@@ -56,19 +56,19 @@ class CurrentBattle extends React.Component {
   }
 
   isOver = () => {
-    const { game } = this.props;
+    const { game } = this.props.currentState;
     return game.HPOP == 0 || game.HPPL == 0;
   }
 
   amIWinner = () => {
-    const { game, ethAccount, isPlayer1, forceMoveChallenge } = this.props;
+    const { currentState, ethAccount, isPlayer1, forceMoveChallenge } = this.props;
 
     if(!this.canConclude) {
       return false;
     }
 
     if(this.isOver()) {
-      return isPlayer1 ? game.HPOP == 0 : game.HPPL == 0;
+      return isPlayer1 ? currentState.game.HPOP == 0 : currentState.game.HPPL == 0;
     }
 
     return forceMoveChallenge.winner.toLowerCase() == ethAccount;
@@ -81,7 +81,7 @@ class CurrentBattle extends React.Component {
 
 
   renderAttacks = () => {
-    const { isPlayer1, game, play, turn, battleForceMove, battleRespondForceMove, forceMoveChallenge } = this.props;
+    const { isPlayer1, currentState, play, battleForceMove, ethAccount } = this.props;
     const {
       cryptoMonPLInstance,
       cryptoMonOPInstance,
@@ -95,12 +95,9 @@ class CurrentBattle extends React.Component {
       status2PL,
       chargePL,
       chargeOP,
-      nextHashDecision,
-    } = game;
+    } = currentState.game;
 
-    const notMyTurn = (isPlayer1 && turn % 2 === 0) || (!isPlayer1 && (nextHashDecision || turn == 1));
-
-    if (notMyTurn && !(this.hasForceMove() && this.needsMyForceMoveResponse())) {
+    if (!canIPlay(ethAccount, currentState) && !(this.hasForceMove() && this.needsMyForceMoveResponse())) {
       return (
         <div style={{ textAlign: 'center' }}>
           <Typography>Waiting for the other player...</Typography>
@@ -189,7 +186,7 @@ class CurrentBattle extends React.Component {
   }
 
   render = () => {
-    const { isPlayer1, game, concludeBattle, forceMoveChallenge } = this.props;
+    const { isPlayer1, currentState , concludeBattle, signAndSend } = this.props;
     const {
       cryptoMonPLInstance,
       cryptoMonOPInstance,
@@ -204,7 +201,7 @@ class CurrentBattle extends React.Component {
       chargePL,
       chargeOP,
       events,
-    } = game;
+    } = currentState.game;
 
 
     let player = this.getCryptoMonData(
@@ -250,8 +247,9 @@ class CurrentBattle extends React.Component {
         </div>
         <Events events={events} />
         {!this.canConclude() && this.renderAttacks()}
+        {this.canConclude() && !this.amIWinner() && !isPlayer1 && <Button varaint="outlined" color="primary" onClick={signAndSend}>Sign and notify</Button>}
+        {this.canConclude() && !this.amIWinner() && isPlayer1 && <Typography style={{ color: 'coral', display: 'inline' }} variant="body1">Waiting for opponent to conclude battle</Typography>}
         {this.canConclude() && this.amIWinner() && <Button varaint="outlined" color="primary" onClick={concludeBattle}>Conclude battle</Button>}
-        {this.canConclude() && !this.amIWinner() && <Typography style={{ color: 'coral', display: 'inline' }} variant="body1">Waiting for opponent to conclude battle</Typography>}
       </div>
     )
   }

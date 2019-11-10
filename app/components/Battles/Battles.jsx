@@ -25,10 +25,11 @@ import {
   CMBmover,
   getInitialCMBState, isCMBFinished,
   readyForBattleCalculation,
-  shouldIAddMove, shouldIMove,
   toCMBBytes,
   transitionCMBState,
   transtionEvenToOdd,
+  canIPlay,
+  isAlreadyTransitioned,
 } from "../../../utils/CryptoMonsBattles"
 import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
 
@@ -68,38 +69,6 @@ class Battles extends InitComponent {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
-  }
-
-  stateUpdate = (prevState, currentState) => {
-    const { ethAccount } = this.props;
-
-    if(shouldIMove(ethAccount, currentState)) {
-      this.validateTransition(prevState, currentState);
-    }
-    //if(valid) {}
-    if(currentState) this.setState({ currentState, prevState }, async () => {
-      const { ethAccount } = this.props;
-      if(currentState && readyForBattleCalculation(ethAccount, currentState)) {
-        prevState = _.cloneDeep(currentState);
-        currentState = await this.transitionState(undefined);
-        this.setState({ currentState, prevState });
-      }
-    });
-    //Else INVALID STATE RECEIVED FORCE MOVE!
-  }
-
-  validateTransition = (prevState, currentState) => {
-    if(currentState.turnNum == 0) {
-      //Validate initial conditions
-    } else if(prevState.turnNum == 0) {
-      //validate first move
-    }else if(prevState.turnNum%2 == 0) {
-      let calculatedState = transtionEvenToOdd(prevState.game, currentState.game.decisionOP, currentState.game.saltOP);
-      this.setState({ events: calculatedState.events });
-    } else {
-      let calculatedState = transitionOddToEven(prevState.game, currentState.game.decisionPL, prevState.turNum == 1);
-      //Validate initial conditions
-    }
   }
 
   initSocket = () => {
@@ -150,27 +119,36 @@ class Battles extends InitComponent {
     if(!newCurrentState) return;
 
     if(!oldCurrentState) {
-      //TODO validate initial conditions if is initial state
-      oldCurrentState = newPrevState;
-      this.setState({prevState: newPrevState, currentState: newCurrentState});
-      return;
+      if(!newPrevState) {
+        //TODO validate initial conditions if is initial state
+        return  this.setState({currentState: newCurrentState});
+      } else {
+        oldCurrentState = newPrevState;
+      }
     }
 
+    let calculatedState;
     //TODO delete this
-    if(newCurrentState.turnNum + 1 !== newCurrentState.turnNum) {
+    if(newCurrentState.turnNum !== oldCurrentState.turnNum + 1) {
       console.error("RETRIEVING A TURN THAT IS MORE THAN 1 THE ONE I HAD, SOME CASES THIS MAY BE OK");
-      this.setState({prevState: newPrevState, currentState: newCurrentState});
-      return;
+      oldCurrentState = newPrevState;
+      calculatedState = newCurrentState;
+    } else {
+      calculatedState = this.generateCalculatedState(oldCurrentState, newCurrentState);
+      //ValidateEqual(calculatedState, newCurrentState)
+      //ValidateSigned(calculatedState)
+      //I can trust calculatedState now.
     }
 
-    let calculatedState = this.generateCalculatedState(oldCurrentState, newCurrentState);
-    //ValidateEqual(calculatedState, newCurrentState)
-    //ValidateSigned(calculatedState)
-
-    //I can trust calculatedState now.
-
+    //Si soy player, tengo impar
+    //Si soy opponet, tengo par, tengo que transicionarlo
     if(readyForBattleCalculation(ethAccount, calculatedState)) {
-      calculatedState.game = transtionEvenToOdd(prevState.game);
+      calculatedState.game = transtionEvenToOdd(calculatedState.game, calculatedState.channelId, calculatedState.turnNum);
+
+      calculatedState.turnNum = calculatedState.turnNum + 1;
+      calculatedState.signature = undefined;
+      calculatedState.game.nextHashDecision = undefined;
+      oldCurrentState = newCurrentState;
     }
 
     this.setState({prevState: oldCurrentState, currentState: calculatedState});
@@ -184,14 +162,14 @@ class Battles extends InitComponent {
 
     if(prevState.turnNum === 0) {
       nextState.game.hashDecision = currentState.game.hashDecision;
-    } else if(prevState.turnNum % 2 === 0) {
+    } else if(prevState.turnNum % 2 !== 0) {
       if(prevState.turnNum > 1) {
         nextState.game.hashDecision = nextState.game.nextHashDecision;
       }
       nextState.game.decisionPL = currentState.game.decisionPL;
       nextState.game.saltPL = currentState.game.saltPL;
-    } else if(prevState.turnNum % 2 !== 0) {
-      nextState.game = transtionEvenToOdd(nextState.game, currentState.game.decisionOP, currentState.game.saltOP);
+    } else if(prevState.turnNum % 2 === 0) {
+      nextState.game = transtionEvenToOdd(nextState.game, undefined, undefined, currentState.game.decisionOP, currentState.game.saltOP);
       if(!isCMBFinished(nextState.game)) {
         nextState.game.nextHashDecision = currentState.game.nextHashDecision;
       }
@@ -199,6 +177,14 @@ class Battles extends InitComponent {
 
     return nextState;
   };
+
+  signAndSend = async () => {
+    const { currentState } = this.state;
+
+    const hash = hashChannelState(currentState);
+    currentState.signature = await sign(hash);
+    this.socket.emit("play", currentState);
+  }
 
   openBattleDialog = channel => this.setState({ battleOpen: true , channelOpened: channel})
 
@@ -210,41 +196,54 @@ class Battles extends InitComponent {
   };
 
   play = async (move) => {
-    const { ethAccount } = this.props;
-    const { currentState, channelOpened } = this.state;
-
-    let newState = currentState;
-    if(shouldIAddMove(ethAccount, currentState)) {
-      if(!isCMBFinished(currentState.game)) {
-        newState.game = addNextMove(currentState.game, move);
-      }
-      const hash = hashChannelState(newState);
-      newState.signature = await sign(hash);
-    } else {
-      newState = await this.transitionState(move);
-    }
+    const { ethAccount, enqueueSnackbar, plasmaCMContract } = this.props;
+    const { channelOpened } = this.state;
 
     if(channelOpened && this.hasForceMove(channelOpened)) {
-      this.respondForceMove(channelOpened.channelId, newState);
-    } else {
-      this.socket.emit("play", newState);
-    }
-  };
+      let fmState = forceMoveChallenge.state;
+      if(CMBmover(fmState).toLowerCase() !== ethAccount) throw "CANT PLAY!";
 
-  transitionState = async (move) => {
-    const { currentState } = this.state;
-    const { ethAccount } = this.props;
+      fmState.game = transitionCMBState(fmState.game, fmState.channelId, fmState.turnNum, move);
+      fmState.turnNum = fmState.turnNum + 1;
 
-    currentState.game = transitionCMBState(currentState.game, currentState.turnNum, move);
-    currentState.game = calculatedState;
-    currentState.turnNum = currentState.turnNum + 1;
-
-    if(!shouldIAddMove(ethAccount, currentState)) {
-      const hash = hashChannelState(currentState);
+      const hash = hashChannelState(fmState);
       currentState.signature = await sign(hash);
+
+      fallibleSnackPromise(
+        enqueueSnackbar,
+        battleRespondWithMove(plasmaCMContract, currentState),
+        "Force Move answered",
+        "Force Move answer failed"
+      );
+    } else {
+      const { currentState } = this.state;
+
+      if(!canIPlay(ethAccount, currentState)) throw "CANT PLAY!"
+      if(isCMBFinished(currentState.game)) throw "CONCLUDE INSTEAD OF PLAYING"
+
+      const submittableState = await this.getSubmittableState(move);
+      this.socket.emit("play", submittableState);
     }
-    return currentState;
   };
+
+  getSubmittableState = async (move) => {
+    const {ethAccount} = this.props;
+    const {currentState} = this.state;
+
+    if(isAlreadyTransitioned(ethAccount, currentState)) {
+      if(!isCMBFinished(currentState.game)) {
+        currentState.game = addNextMove(currentState.game, move, currentState.channelId, currentState.turnNum);
+      }
+    } else {
+      currentState.game = transitionCMBState(currentState.game, currentState.channelId, currentState.turnNum, move);
+      currentState.turnNum = currentState.turnNum + 1;
+    }
+
+    const hash = hashChannelState(currentState);
+    currentState.signature = await sign(hash);
+
+    return currentState
+  }
 
   fundBattle = (channelId, stake) => async () => {
     const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
@@ -270,17 +269,12 @@ class Battles extends InitComponent {
     battleForceMove(plasmaCMContract, prevState, currentState).then(res => console.log("Move forced ", res));
   }
 
-  respondForceMove = async (move) => {
-    const { plasmaCMContract } = this.props;
-    const newState = await this.transitionState(move);
-    battleRespondWithMove(plasmaCMContract, newState).then(res => console.log("Responded force move ", res));
-  }
-
   concludeBattle = async () => {
     const { plasmaCMContract, enqueueSnackbar, ethAccount } = this.props;
-    const { prevState, currentState } = this.state;
+    let { prevState, currentState } = this.state;
 
-    if(shouldIAddMove(ethAccount, currentState)) {
+    debugger
+    if(isAlreadyTransitioned(ethAccount, currentState)) {
       const hash = hashChannelState(currentState);
       currentState.signature = await sign(hash);
     }
@@ -295,11 +289,6 @@ class Battles extends InitComponent {
 
   hasForceMove = (channel) => {
     return channel.forceMoveChallenge.state.channelId != '0';
-  }
-
-  needsMyForceMoveResponse = (channel) => {
-    const { ethAccount } = this.props;
-    return CMBmover(channel.forceMoveChallenge.state).toLowerCase() === ethAccount
   }
 
   withdrawFunds = () => {
@@ -324,10 +313,10 @@ class Battles extends InitComponent {
             play={this.play}
             forceMoveChallenge={channelOpened.forceMoveChallenge}
             isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
-            game={currentState.game}
-            turn={currentState.turnNum}
+            currentState={currentState}
             battleForceMove={this.forceMove}
             concludeBattle={this.concludeBattle}
+            signAndSend={this.signAndSend}
           />
         </div>
       </Dialog>

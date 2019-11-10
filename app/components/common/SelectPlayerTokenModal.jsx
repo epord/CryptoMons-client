@@ -35,7 +35,6 @@ class SelectPlayerTokenModal extends InitComponent {
   onPlayerChange = event => {
     let player = event.target.value;
     getOwnedTokens(player, 'deposited').then(p => {
-      console.log(p);
       this.setState({player, plasmaTokens: p})
     });
   };

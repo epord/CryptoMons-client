@@ -505,7 +505,6 @@ export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) 
 				const battles = _.uniqBy([...myCMBattles, ...initiatedBattles], 'returnValues.gameId');
 				getGames(battles, address, plasmaTokens, plasmaCM, (err, games) => {
 					if (err) return reject(err);
-					console.log(games)
 					resolve(games);
 				});
 		})
@@ -778,15 +777,6 @@ export const concludeBattle = (plasmaCM, prevState, finalState) => {
 
 	const prevSig = prevState ? prevState.signature || '0x' : "0x";
 	const finalStateSig = finalState ? finalState.signature || '0x' : "0x";
-
-	console.log({
-		channelId: finalState.channelId,
-		prevstate: _prevState,
-		finalstate: _finalState,
-		prevGameAttr: rlp.decode(_prevState.gameAttributes),
-		finalGameAttr: rlp.decode(_finalState.gameAttributes),
-		signatures: [prevSig, finalStateSig]
-	});
 
   return new Promise((resolve, reject) => {
     ethContract(plasmaCM)

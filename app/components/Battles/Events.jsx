@@ -19,8 +19,6 @@ class Events extends React.Component {
     const typeName = pokemon.type[type - 1];
     const typeId = Type[typeName];
 
-    console.log(event)
-
     if (code == 'Attack' && hit) {
       return `${pokemon.name.english} used ${typeName.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
     }

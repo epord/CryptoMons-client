@@ -7,34 +7,57 @@ import { calculateBattle } from "./BattleDamageCalculator";
 const RLP = require('rlp');
 const abi = require('ethereumjs-abi');
 
-export const shouldIMove = (me, state) => {
-  const isPlayer = me.toLowerCase() == state.participants[0].toLowerCase();
-  return (isPlayer && state.turnNum % 2 === 1) || (!isPlayer && state.turnNum % 2 === 0);
-}
-
-export const shouldIAddMove = (me, state) => {
-  return state.turnNum % 2 != 0 && state.turnNum > 1 && me.toLowerCase() == state.participants[1].toLowerCase()
+export const isAlreadyTransitioned = (me, state) => {
+  return state.turnNum %2 == 1 && me.toLowerCase() == state.participants[1].toLowerCase()
 }
 
 export const readyForBattleCalculation = (me, state) => {
   return state.turnNum % 2 == 0 && state.turnNum > 0 && me.toLowerCase() == state.participants[1].toLowerCase()
 }
 
-export const transitionCMBState = (gameState, turnNum, move) => {
+//ONLY FOR USE WITH CURRENT STATE THAT SOME TIMES IS TRANSITIONED
+export const canIPlay = (me, state) => {
+  if(state.participants[0].toLowerCase() == me.toLowerCase()) {
+    return state.turnNum % 2 == 1;
+  } else if(state.turnNum <= 1){
+      return state.game.hashDecision === undefined;
+  } else {
+     return state.game.nextHashDecision === undefined;
+  }
+}
+
+export const CMBmover = (state) => {
+  return state.turnNum%2 === 1 ? state.participants[0]: state.participants[1];
+}
+
+export const isCMBFinished = (game) => {
+  return game.HPPL === 0 || game.HPOP === 0;
+}
+
+export const CMBWinner = (state) => {
+  if(state.game.HPOP === 0) {
+    return state.participants[0];
+  } else {
+    return state.participants[1];
+  }
+}
+
+
+export const transitionCMBState = (gameState, gameId, turnNum, move) => {
   if(turnNum == 0) {
-    return initialTransition(gameState, move);
+    return initialTransition(gameState, gameId, move);
   } else if(turnNum%2 == 0) {
     if(move) throw "Please transition before moving" + move;
-    return transtionEvenToOdd(gameState);
+    return transtionEvenToOdd(gameState, gameId, turnNum);
   } else {
       return transitionOddToEven(gameState, move, turnNum == 1);
   }
 }
 
-const initialTransition = (game, move) => {
+const initialTransition = (game, gameId, move) => {
   const salt = randomHex256();
-  localStorage.setItem('salt', salt)
-  localStorage.setItem('move', move)
+  localStorage.setItem(`salt-${gameId}-0`, salt)
+  localStorage.setItem(`move-${gameId}-0`, move)
   const hashDecision = keccak256(
     EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
     EthUtils.toBuffer(salt)
@@ -45,9 +68,9 @@ const initialTransition = (game, move) => {
   return game;
 };
 
-const gameToState = (game, move, salt) => {
-  const oldSalt = salt || localStorage.getItem('salt');
-  const oldMove = move !== undefined ? move : localStorage.getItem('move');
+const gameToState = (game, gameId, turnNum, move, salt) => {
+  const oldSalt = salt !== undefined ? salt : localStorage.getItem(`salt-${gameId}-${turnNum-2}`);
+  const oldMove = move !== undefined ? move : localStorage.getItem(`move-${gameId}-${turnNum-2}`);
   game.saltOP = oldSalt;
   game.decisionOP = parseInt(oldMove);
 
@@ -76,8 +99,8 @@ const gameToState = (game, move, salt) => {
   return state;
 }
 
-export const transtionEvenToOdd = (game, move, salt) => {
-  const state = gameToState(game, move, salt);
+export const transtionEvenToOdd = (game, gameId, turnNum, move, salt) => {
+  const state = gameToState(game, gameId, turnNum, move, salt);
   const [nextState, events] = calculateBattle(state);
 
   const oddState = {
@@ -106,32 +129,20 @@ export const transtionEvenToOdd = (game, move, salt) => {
   return oddState;
 };
 
-export const addNextMove = (state, move) => {
+export const addNextMove = (state, move, gameId, turnNum) => {
   const newSalt = randomHex256();
-  localStorage.setItem('salt', newSalt)
-  localStorage.setItem('move', move)
+  localStorage.setItem(`salt-${gameId}-${turnNum-1}`, newSalt)
+  localStorage.setItem(`move-${gameId}-${turnNum-1}`, move)
   const newHashDecision = keccak256(
     EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
     EthUtils.toBuffer(newSalt)
   );
-  state.nextHashDecision = newHashDecision;
-  return state;
-}
-
-export const isCMBFinished = (game) => {
-  return game.HPPL === 0 || game.HPOP === 0;
-}
-
-export const CMBWinner = (state) => {
-  if(state.game.HPOP === 0) {
-    return state.participants[0];
+  if(turnNum == 1) {
+    state.hashDecision = newHashDecision;
   } else {
-    return state.participants[1];
+    state.nextHashDecision = newHashDecision;
   }
-}
-
-export const CMBmover = (state) => {
-  return state.turnNum%2 === 0 ? state.participants[0]: state.participants[1];
+  return state;
 }
 
 export const transitionOddToEven = (game, move, isFirst) => {

@@ -174,7 +174,7 @@ export function calculateBattle(state) {
 
   state = moveTurn(state);
 
-  if(someoneDied(state)) return [swapIfSwitchded(state, switchTurn), turnEvents];
+  if(someoneDied(state)) return [swapIfSwitched(state, switchTurn), turnEvents];
 
   state = moveTurn(swap(state));
 
@@ -213,6 +213,7 @@ function moveTurn(state){
   }
 
   if(needsCharge(state.player.move)) {
+    if(state.player.charges == 0) debugger
     check(state.player.charges > 0, "Player needs a charge to do this move");
     state.player.charges = state.player.charges - 1;
   }
