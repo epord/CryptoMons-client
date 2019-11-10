@@ -1,5 +1,6 @@
 import React from 'react';
 import {connect} from "react-redux";
+import {withSnackbar} from "notistack";
 
 import Paper from "@material-ui/core/Paper";
 import Button from "@material-ui/core/Button";
@@ -8,7 +9,7 @@ import DoubleCryptoMonCard from '../common/DoubleCryptoMonCard.jsx';
 
 import {getBattleTokens} from '../../../services/ethService';
 import {battleChallengeAfter, battleChallengeBefore, battleChallengeBetween} from '../../../services/battleChallenges';
-import {toAddressColor, toReadableAddress} from '../../../utils/utils';
+import {toAddressColor, toReadableAddress, fallibleSnackPromise} from '../../../utils/utils';
 import { Typography } from '@material-ui/core';
 
 class BattleOverview extends React.Component {
@@ -16,30 +17,45 @@ class BattleOverview extends React.Component {
   state = {}
 
   componentDidMount = async () => {
-    const { plasmaTurnGameContract, channel, ethAccount, plasmaTokens } = this.props;
+    const { plasmaTurnGameContract, channel } = this.props;
     const participantsTokens = await getBattleTokens(channel.channelId, plasmaTurnGameContract);
 
     const participants = Object.values(participantsTokens).map(v => v.address);
     const tokens = Object.values(participantsTokens).map(v => v.cryptoMon);
-    const is1challengeable = participants[0] !== ethAccount && plasmaTokens.includes(tokens[0]);
-    const is2challengeable = participants[1] !== ethAccount && plasmaTokens.includes(tokens[1]);
 
-    this.setState({ participants, tokens, is1challengeable, is2challengeable });
+    this.setState({ participants, tokens});
   };
 
   challengeAfter = (channel, index) => () => {
-    const {plasmaCMContract} = this.props;
-    battleChallengeAfter(channel, index ,plasmaCMContract)
+    const {plasmaCMContract, enqueueSnackbar} = this.props;
+    fallibleSnackPromise(
+      enqueueSnackbar,
+      battleChallengeAfter(channel, index ,plasmaCMContract),
+      `Channel challenged successfully`,
+      "Challenge After failed"
+    );
   };
 
   challengeBetween = (channel, index) => () => {
-    const {plasmaCMContract} = this.props;
-    battleChallengeBetween(channel, index ,plasmaCMContract)
+    const {plasmaCMContract, enqueueSnackbar} = this.props;
+    fallibleSnackPromise(
+      battleChallengeBetween(channel, index ,plasmaCMContract),
+      enqueueSnackbar,
+      `Channel challenged successfully`,
+      "Challenge Between failed"
+    );
+
   };
 
   challengeBefore = (channel, index) => () => {
-    const {plasmaCMContract} = this.props;
-    battleChallengeBefore(channel, index, plasmaCMContract)
+    const {plasmaCMContract, enqueueSnackbar} = this.props;
+    fallibleSnackPromise(
+      battleChallengeBefore(channel, index, plasmaCMContract),
+      enqueueSnackbar,
+      `Channel challenged successfully`,
+      "Challenge Before failed"
+    );
+
   };
 
   getChallengeActionsFor = (channel, index) => {
@@ -60,8 +76,8 @@ class BattleOverview extends React.Component {
   }
 
   render = () => {
-    const { channel, actions, waiting } = this.props;
-    const { participants, tokens, is1challengeable, is2challengeable } = this.state;
+    const { channel, actions, waiting, is1Challengeable, is2Challengeable } = this.props;
+    const { participants, tokens } = this.state;
 
     if (!participants) {
       return (
@@ -78,8 +94,8 @@ class BattleOverview extends React.Component {
           owner1={participants[0]}
           token2={tokens[1]}
           owner2={participants[1]}
-          actions1={is1challengeable ? this.getChallengeActionsFor(channel, 0) : []}
-          actions2={is2challengeable ? this.getChallengeActionsFor(channel, 1) : []}
+          actions1={is1Challengeable ? this.getChallengeActionsFor(channel, 0) : []}
+          actions2={is2Challengeable ? this.getChallengeActionsFor(channel, 1) : []}
         />
         {waiting && (
           <Typography
@@ -114,9 +130,8 @@ const mapStateToProps = state => ({
 	plasmaTurnGameContract: state.plasmaTurnGameContract,
 	rootChainContract: state.rootChainContract,
   cryptoMonsContract: state.cryptoMonsContract,
-  plasmaTokens: state.plasmaTokens
  });
 
 const mapDispatchToProps = dispatch => ({ });
 
-export default connect(mapStateToProps, mapDispatchToProps)(BattleOverview);
+export default connect(mapStateToProps, mapDispatchToProps)(withSnackbar(BattleOverview));

@@ -502,6 +502,7 @@ export const getBattlesFrom = (address, plasmaTokens, plasmaTurnGame, plasmaCM) 
 			}
 		}, (err, { myCMBattles, initiatedBattles }) => {
 				if(err) return reject(err);
+				//TODO revise this uniq
 				const battles = _.uniqBy([...myCMBattles, ...initiatedBattles], 'returnValues.gameId');
 				getGames(battles, address, plasmaTokens, plasmaCM, (err, games) => {
 					if (err) return reject(err);
@@ -530,6 +531,7 @@ const getGames = (games, address, plasmaTokens, plasmaCM, cb) => {
 				challengeables: [],
 				respondable: [],
 			};
+			
 			results.forEach(c => {
 				switch (c.state) {
 					case ChannelState.INITIATED:
@@ -545,10 +547,15 @@ const getGames = (games, address, plasmaTokens, plasmaCM, cb) => {
 						}
 
 						let battle = battles[c.channelId];
+						let is1Challengeable = false;
+						let is2Challengeable = false;
 						if( battle.length > 0 && battle[0].player !== address.toLowerCase() && plasmaTokens.includes(battle[0].cryptoMon))
-								games.challengeables.push({ channel: c, index: battle[0].player === c.players[0].toLowerCase() ? 0 : 1 });
+							is1Challengeable = battle[0].player === c.players[0].toLowerCase();
 						if( battle.length > 1 && battle[1].player !== address.toLowerCase() && plasmaTokens.includes(battle[1].cryptoMon))
-							games.challengeables.push({ channel: c, index: battle[1].player === c.players[0].toLowerCase() ? 0 : 1 })
+							is2Challengeable = battle[0].player === c.players[0].toLowerCase();
+						if(is1Challengeable || is2Challengeable) {
+							games.challengeables.push({channel: c, is1Challengeable, is2Challengeable})
+						}
 						break;
 
 					case ChannelState.SUSPENDED:

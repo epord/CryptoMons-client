@@ -13,7 +13,6 @@ import Typography from '@material-ui/core/Typography';
 import WarningIcon from '@material-ui/icons/Warning';
 
 import './CurrentBattle.css';
-import {battleForceMove, battleRespondWithMove} from "../../../services/ethService";
 
 class CurrentBattle extends React.Component {
   getCryptoMonData = (

@@ -7,6 +7,7 @@ import io from 'socket.io-client';
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import Dialog from "@material-ui/core/Dialog";
+import DialogTitle from '@material-ui/core/DialogTitle';
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
 import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
 import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
@@ -43,10 +44,11 @@ import {
   getPlasmaCoinId,
   withdrawBattleFunds
 } from '../../../services/ethService';
+import { getBattleChallenges, respondBattleChallenge } from "../../../services/battleChallenges";
 import {getBattlesFrom, getBattleFunds} from '../../redux/actions';
 import {getExitData} from "../../../services/plasmaServices";
 import {Typography} from '@material-ui/core';
-import {fallibleSnackPromise} from "../../../utils/utils";
+import {fallibleSnackPromise, toAddressColor, toReadableAddress} from "../../../utils/utils";
 import {withSnackbar} from "notistack";
 
 const styles = theme => ({
@@ -210,8 +212,8 @@ class Battles extends InitComponent {
       currentState.signature = await sign(hash);
 
       fallibleSnackPromise(
-        enqueueSnackbar,
         battleRespondWithMove(plasmaCMContract, currentState),
+        enqueueSnackbar,
         "Force Move answered",
         "Force Move answer failed"
       );
@@ -273,7 +275,6 @@ class Battles extends InitComponent {
     const { plasmaCMContract, enqueueSnackbar, ethAccount } = this.props;
     let { prevState, currentState } = this.state;
 
-    debugger
     if(isAlreadyTransitioned(ethAccount, currentState)) {
       const hash = hashChannelState(currentState);
       currentState.signature = await sign(hash);
@@ -301,6 +302,76 @@ class Battles extends InitComponent {
     ).then(r => getBattleFunds(ethAccount, plasmaCMContract));
   }
 
+  respondChallenge = async (challenge) => {
+    const { plasmaCMContract, enqueueSnackbar } = this.props;
+    const { challengedchannel } = this.state;
+    const challengingBlock = challenge.challengingBlockNumber;
+    fallibleSnackPromise(
+      respondBattleChallenge(challengedchannel, challengingBlock, challenge.txHash, plasmaCMContract),
+      enqueueSnackbar,
+      `Battle challenged responded successfully`,
+      "Challenge response failed"
+    ).finally(this.closeRespondChallengeModal);
+  };
+
+  openRespondChallengeModal = (channel) => () => {
+    const { enqueueSnackbar, plasmaCMContract } = this.props;
+    this.setState({isFetchingChallenges: true, respondModalOpen: true});
+
+    getBattleChallenges(channel.channelId, plasmaCMContract)
+      .then(challenges => this.setState({challengedchannel: channel, isFetchingChallenges: false, challengesToRespond: challenges}))
+      .catch(e => {
+        enqueueSnackbar("Error fetching challenges", {variant: 'error'})
+        this.closeRespondChallengeModal()
+      });
+  };
+
+  closeRespondChallengeModal = () => this.setState({ respondModalOpen: false });
+
+  renderRespondChallengeDialog = () => {
+    const { isFetchingChallenges, respondModalOpen, challengesToRespond } = this.state;
+    const { classes } = this.props;
+
+    if(isFetchingChallenges) {
+      return (
+        <Dialog
+          onClose={this.closeRespondChallengeModal}
+          open={Boolean(respondModalOpen)} classes={{paper: classes.dialogPaper}}>
+          <DialogTitle>Fetching challenges...</DialogTitle>
+        </Dialog>
+      );
+    } else {
+      return (
+        <Dialog
+        onClose={this.closeRespondChallengeModal}
+        open={Boolean(respondModalOpen)} classes={{paper: classes.dialogPaper}}>
+          <DialogTitle>Respond to challenges</DialogTitle>
+          <Grid style={{padding: '1em', paddingTop: "0"}}>
+          {(challengesToRespond || []).map(challenge => (
+            <div
+              key={challenge.txHash}
+              style={{
+                border: "2px solid black",
+                borderRadius: "5px",
+                margin: "0.5em",
+                padding: "0.5em",
+                display: "flex",
+                flexDirection: "column"
+              }}>
+
+              <Typography style={{textAlign: "center", fontWeight: "bold"}}>
+                <span style={{color: toAddressColor(challenge.owner)}}>{toReadableAddress(challenge.owner)} </span>
+                challenged this Token in block {challenge.blockNumber}</Typography>
+              <Button variant="contained" color="primary"
+                      onClick={() => this.respondChallenge(challenge)}>Respond Challenge</Button>
+            </div>
+          ))}
+          </Grid>
+        </Dialog>
+      )
+    }
+  };
+
   renderDialogBattle = () => {
     const { ethAccount, classes } = this.props;
     const { currentState, battleOpen, channelOpened } = this.state;
@@ -325,15 +396,16 @@ class Battles extends InitComponent {
   }
 
   render = () => {
-    const { loading, currentState, authenticated } = this.state;
+    const { loading, currentState, authenticated, respondModalOpen } = this.state;
     const { battles, battleFunds } = this.props;
-    const { opened, toFund, ongoing, challengeables } = battles;
+    const { opened, toFund, ongoing, challengeables, respondable } = battles;
     const battleFundsBN = new BN(battleFunds);
 
     if(loading) return <div>Loading...</div>
 
     return (
       <div style={{ padding: '1em' }}>
+        {this.renderRespondChallengeDialog()}
         <Typography variant="h5">Battles</Typography>
         <Grid item>
           {(
@@ -386,8 +458,8 @@ class Battles extends InitComponent {
 				</ExpansionPanel>
 
         <ExpansionPanel
-          expanded={challengeables && challengeables.length > 0}
-          disabled={!Boolean(challengeables && challengeables.length > 0)}
+          expanded={(challengeables && challengeables.length > 0) || (respondable && respondable.length > 0)}
+          disabled={!Boolean((challengeables && challengeables.length > 0) || (respondable && respondable.length > 0))}
           style={{ marginTop: '1em' }}
         >
 					<ExpansionPanelSummary
@@ -401,11 +473,23 @@ class Battles extends InitComponent {
                   <BattleOverview
                     key={c.channel.channelId}
                     channel={c.channel}
-                    waiting
-                    actions={[{
-                      title: 'Challenge',
-                      func: () => 'TODO',
-                    }]}
+                    is1Challengeable={c.is1Challengeable}
+                    is2Challengeable={c.is2Challengeable}
+                  />
+                </React.Fragment>
+              )}
+              {respondable && respondable.map(c =>
+                <React.Fragment key={c.channelId}>
+                  <BattleOverview
+                    key={c.channelId}
+                    channel={c}
+                    actions={[
+                      {
+                        title: "Respond challenge",
+                        disabled: respondModalOpen,
+                        func: this.openRespondChallengeModal(c)
+                      }
+                    ]}
                   />
                 </React.Fragment>
               )}
