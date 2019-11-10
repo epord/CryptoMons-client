@@ -23,13 +23,11 @@ const BN = require('bn.js');
 import {
   addNextMove,
   CMBmover,
-  getInitialCMBState,
+  getInitialCMBState, isCMBFinished,
   readyForBattleCalculation,
-  shouldIAddMove,
-  shouldIMove,
+  shouldIAddMove, shouldIMove,
   toCMBBytes,
   transitionCMBState,
-  transitionOddToEven,
   transtionEvenToOdd,
 } from "../../../utils/CryptoMonsBattles"
 import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
@@ -64,13 +62,12 @@ const styles = theme => ({
 
 class Battles extends InitComponent {
 
-  state = { loading: true, events: [] }
+  state = { loading: true };
 
   init = async () => {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
-    this.setState({ tokenPL: '4365297341472105176', tokenOP: '5767501881849970565' })
   }
 
   stateUpdate = (prevState, currentState) => {
@@ -146,6 +143,63 @@ class Battles extends InitComponent {
     this.socket.on("authenticated", () => this.setState({ authenticated: true }));
   };
 
+  stateUpdate = (newPrevState, newCurrentState) => {
+    const { ethAccount } = this.props;
+    let { currentState: oldCurrentState } = this.props;
+
+    if(!newCurrentState) return;
+
+    if(!oldCurrentState) {
+      //TODO validate initial conditions if is initial state
+      oldCurrentState = newPrevState;
+      this.setState({prevState: newPrevState, currentState: newCurrentState});
+      return;
+    }
+
+    //TODO delete this
+    if(newCurrentState.turnNum + 1 !== newCurrentState.turnNum) {
+      console.error("RETRIEVING A TURN THAT IS MORE THAN 1 THE ONE I HAD, SOME CASES THIS MAY BE OK");
+      this.setState({prevState: newPrevState, currentState: newCurrentState});
+      return;
+    }
+
+    let calculatedState = this.generateCalculatedState(oldCurrentState, newCurrentState);
+    //ValidateEqual(calculatedState, newCurrentState)
+    //ValidateSigned(calculatedState)
+
+    //I can trust calculatedState now.
+
+    if(readyForBattleCalculation(ethAccount, calculatedState)) {
+      calculatedState.game = transtionEvenToOdd(prevState.game);
+    }
+
+    this.setState({prevState: oldCurrentState, currentState: calculatedState});
+  };
+
+  generateCalculatedState =(prevState, currentState) => {
+    if(!prevState) throw "Cant calculate from undefined";
+    let nextState = _.cloneDeep(prevState);
+    nextState.turnNum = prevState.turnNum + 1;
+    nextState.signature = currentState.signature;
+
+    if(prevState.turnNum === 0) {
+      nextState.game.hashDecision = currentState.game.hashDecision;
+    } else if(prevState.turnNum % 2 === 0) {
+      if(prevState.turnNum > 1) {
+        nextState.game.hashDecision = nextState.game.nextHashDecision;
+      }
+      nextState.game.decisionPL = currentState.game.decisionPL;
+      nextState.game.saltPL = currentState.game.saltPL;
+    } else if(prevState.turnNum % 2 !== 0) {
+      nextState.game = transtionEvenToOdd(nextState.game, currentState.game.decisionOP, currentState.game.saltOP);
+      if(!isCMBFinished(nextState.game)) {
+        nextState.game.nextHashDecision = currentState.game.nextHashDecision;
+      }
+    }
+
+    return nextState;
+  };
+
   openBattleDialog = channel => this.setState({ battleOpen: true , channelOpened: channel})
 
   closeBattleDialog = () => this.setState({ battleOpen: false })
@@ -161,7 +215,9 @@ class Battles extends InitComponent {
 
     let newState = currentState;
     if(shouldIAddMove(ethAccount, currentState)) {
-      newState.game = addNextMove(currentState.game, move);
+      if(!isCMBFinished(currentState.game)) {
+        newState.game = addNextMove(currentState.game, move);
+      }
       const hash = hashChannelState(newState);
       newState.signature = await sign(hash);
     } else {
@@ -179,8 +235,7 @@ class Battles extends InitComponent {
     const { currentState } = this.state;
     const { ethAccount } = this.props;
 
-    const calculatedState = transitionCMBState(currentState.game, currentState.turnNum, move);
-    this.setState({ events: calculatedState.events });
+    currentState.game = transitionCMBState(currentState.game, currentState.turnNum, move);
     currentState.game = calculatedState;
     currentState.turnNum = currentState.turnNum + 1;
 
@@ -259,7 +314,7 @@ class Battles extends InitComponent {
 
   renderDialogBattle = () => {
     const { ethAccount, classes } = this.props;
-    const { currentState, battleOpen, channelOpened, events } = this.state;
+    const { currentState, battleOpen, channelOpened } = this.state;
     const dialogPaperStyle = this.hasForceMove(channelOpened) ? classes.dialogPaperWithForceMove : classes.dialogPaper;
 
     return (
@@ -271,7 +326,6 @@ class Battles extends InitComponent {
             isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
             game={currentState.game}
             turn={currentState.turnNum}
-            events={events}
             battleForceMove={this.forceMove}
             concludeBattle={this.concludeBattle}
           />
