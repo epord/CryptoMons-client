@@ -51,7 +51,7 @@ class CurrentBattle extends React.Component {
 
   needsMyForceMoveResponse = () => {
     const { ethAccount, forceMoveChallenge } = this.props;
-    return CMBmover(forceMoveChallenge.state).toLowerCase() !== ethAccount
+    return CMBmover(forceMoveChallenge.state).toLowerCase() === ethAccount
   }
 
   isOver = () => {

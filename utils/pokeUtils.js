@@ -119,7 +119,7 @@ export const Status = {
   0: {
     name: 'growl',
     effects: [{
-      name: '-50% Defense',
+      name: '-50% Attack',
       isBoost: false
     }],
   },
@@ -135,7 +135,12 @@ export const Status = {
     effects: [{
       name: 'Hurricane hit',
       isBoost: false
-    }],
+    },
+      {
+        name: '+50% Speed',
+        isBoost: true
+      }
+    ],
   },
   3: {
     name: 'poison',
@@ -166,7 +171,7 @@ export const Status = {
   7: {
     name: 'scared',
     effects: [{
-      name: '-70% Attack',
+      name: '-30% Attack',
       isBoost: false
     }],
     icon: <StatusIcon label="SCARED" color="blueviolet" />
@@ -181,7 +186,7 @@ export const Status = {
   9: {
     name: 'burn',
     effects: [{
-      name: '-80% Attack',
+      name: '-20% Attack',
       isBoost: false
     }],
     icon: <StatusIcon label="BURN" color="red" />
@@ -189,10 +194,10 @@ export const Status = {
   10: {
     name: 'soak',
     effects: [{
-      name: '-60% Speed',
+      name: '-40% Speed',
       isBoost: false
     }, {
-      name: '-80% Sp. Defense',
+      name: '-20% Sp. Attack',
       isBoost: false
     }],
     icon: <StatusIcon label="SOAK" color="cornflowerblue" />
@@ -205,9 +210,9 @@ export const Status = {
     }],
   },
   12: {
-    name: 'paralize',
+    name: 'paralyze',
     effects: [{
-      name: '-60% Speed',
+      name: '-40% Speed',
       isBoost: false
     }],
     icon: <StatusIcon label="PARAL" color="darkorange" />
@@ -244,7 +249,7 @@ export const Status = {
     effects: [],
     icon: <StatusIcon label="CHARM" color="hotpink" />
   },
-  16: { // Unknown, not in use
+  18: { // Unknown, not in use
     name: '',
     effects: [/* ??? */],
   },

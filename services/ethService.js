@@ -142,23 +142,23 @@ export const subscribeToSubmittedSecretBlocks = (rootChain, cb) => {
 };
 
 export const subscribeToStartedExit = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("StartedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 	subscribeToEvent("StartedExit",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("StartedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToCoinReset = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("CoinReset",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 	subscribeToEvent("CoinReset",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("CoinReset",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToFinalizedExit = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("FinalizedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 	subscribeToEvent("FinalizedExit",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("FinalizedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToWithdrew = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("Withdrew",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 	subscribeToEvent("Withdrew",false, {owner: address}, rootChain, (r) => cb(r.returnValues))
+	subscribeToEvent("Withdrew",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues))
 };
 
 export const subscribeToFreeBond = (rootChain, address, cb) => {
@@ -174,14 +174,14 @@ export const subscribeToWithdrewBond = (rootChain, address, cb) => {
 };
 
 export const subscribeToChallenged = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("ChallengedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues));
 	subscribeToEvent("ChallengedExit",false, {owner: address}, rootChain, (r) => cb(r.returnValues));
+	subscribeToEvent("ChallengedExit",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues));
 }
 
 export const subscribeToChallengeRespond = (rootChain, address, plasmaTokens, cb) => {
-	subscribeToEvent("RespondedExitChallenge",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues));
 	subscribeToEvent("RespondedExitChallenge",false, {owner: address}, rootChain, (r) => cb(r.returnValues));
 	subscribeToEvent("RespondedExitChallenge",false, {challenger: address}, rootChain, (r) => cb(r.returnValues));
+	subscribeToEvent("RespondedExitChallenge",true, {slot: plasmaTokens}, rootChain, (r) => cb(r.returnValues));
 }
 
 export const subscribeToCMBRequested = (plasmaTurnGame, address, cb) => {
@@ -533,10 +533,14 @@ const getGames = (games, address, plasmaTokens, plasmaCM, cb) => {
 			};
 			
 			results.forEach(c => {
+				if(c.channelId == "0") return;
 				switch (c.state) {
 					case ChannelState.INITIATED:
-						if(c.players[0].toLowerCase() === address.toLowerCase()) games.opened.push(c);
-						if(c.players[1].toLowerCase() === address.toLowerCase()) games.toFund.push(c);
+						if(c.players[1].toLowerCase() === address.toLowerCase()) {
+							games.toFund.push(c);
+						} else {
+							games.opened.push(c);
+						}
 						break;
 
 					case ChannelState.FUNDED:
@@ -734,7 +738,7 @@ export const battleForceMove = (plasmaCM, prevState, currentState) => {
 		gameAttributes: toCMBBytes(prevState.game)
 	};
 
-	const prevSig = prevState ? prevState.signature || '0x' : "0x";
+	const prevSig = prevState ? (prevState.signature != undefined?  prevState.signature : '0x') : "0x";
 
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
@@ -755,6 +759,7 @@ export const battleRespondWithMove = (plasmaCM, nextState) => {
 		gameAttributes: toCMBBytes(nextState.game)
 	}
 
+	console.log("REPONSE", nextState)
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
 			.respondWithMove(nextState.channelId, _nextState, nextState.signature)

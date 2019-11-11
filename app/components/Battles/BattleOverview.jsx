@@ -29,8 +29,8 @@ class BattleOverview extends React.Component {
   challengeAfter = (channel, index) => () => {
     const {plasmaCMContract, enqueueSnackbar} = this.props;
     fallibleSnackPromise(
-      enqueueSnackbar,
       battleChallengeAfter(channel, index ,plasmaCMContract),
+      enqueueSnackbar,
       `Channel challenged successfully`,
       "Challenge After failed"
     );
@@ -88,7 +88,7 @@ class BattleOverview extends React.Component {
     }
 
     return (
-      <Paper style={{ display: 'table-caption', padding: '1em', border: this.hasForceMove() ? 'coral 3px solid' : 'unset' }}>
+      <Paper style={{ padding: '1em', border: this.hasForceMove() ? 'coral 3px solid' : 'unset' }}>
         <DoubleCryptoMonCard
           token1={tokens[0]}
           owner1={participants[0]}

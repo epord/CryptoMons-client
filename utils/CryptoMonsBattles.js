@@ -213,4 +213,53 @@ export const getInitialCMBState = (
     status2OP: false,
     chargeOP: 1,
   }
-}
+};
+
+
+export const CMBfromBytesAndData = (
+  bytes,
+  cryptoMonPLInstance,
+  cryptoMonOPInstance,
+  cryptoMonPLData,
+  cryptoMonOPData
+) => {
+
+  const decoded = RLP.decode(bytes);
+
+  const tokenPL =  new BN(decoded[0].toString('hex'), 16).toString();
+  const tokenOP =  new BN(decoded[5].toString('hex'), 16).toString();
+
+  let game = {
+    cryptoMonPL: tokenPL,
+    cryptoMonPLInstance: cryptoMonPLInstance,
+    cryptoMonPLData: cryptoMonPLData,
+    HPPL: parseInt(decoded[1].toString('hex'), 16),
+    status1PL: Boolean(parseInt(decoded[2].toString('hex'), 16)),
+    status2PL: Boolean(parseInt(decoded[3].toString('hex'), 16)),
+    chargePL: parseInt(decoded[4].toString('hex'), 16),
+    cryptoMonOP: tokenOP,
+    cryptoMonOPInstance: cryptoMonOPInstance,
+    cryptoMonOPData: cryptoMonOPData,
+    HPOP: parseInt(decoded[6].toString('hex'), 16),
+    status1OP: Boolean(parseInt(decoded[7].toString('hex'), 16)),
+    status2OP: Boolean(parseInt(decoded[8].toString('hex'), 16)),
+    chargeOP: parseInt(decoded[9].toString('hex'), 16)
+  };
+
+  if (decoded.length > 10) {
+    game.hashDecision = '0x' + decoded[10].toString('hex');
+    if (decoded.length > 11) {
+      game.decisionPL = parseInt(decoded[11].toString('hex'), 16);
+      game.saltPL = '0x' + decoded[12].toString('hex');
+      if (decoded.length > 13) {
+        game.decisionPL = parseInt(decoded[13].toString('hex'), 16);
+        game.saltOP = '0x' + decoded[14].toString('hex');
+        if (decoded.length > 15) {
+          game.nextHashDecision = '0x' + decoded[15].toString('hex');
+        }
+      }
+    }
+  }
+
+  return game;
+};

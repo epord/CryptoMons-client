@@ -67,7 +67,7 @@ class App extends InitComponent {
 		if (loading) return (<div>Loading...</div>)
 
 		return (
-			<div style={{ padding: '1em' }}>
+			<div style={{ padding: '1em', marginBottom: '10em' }}>
 			<Typography variant="h5" gutterBottom>Hi {ethAccount}!</Typography>
 				<Grid container direction="column">
 					<Grid item style={{ alignSelf: 'center' }}>
@@ -83,7 +83,7 @@ class App extends InitComponent {
 					<Grid item>
 						{!withdrawableAmountBN.isZero() && (
 							<React.Fragment>
-								<Typography style={{ display: 'inline-block', marginRight: '0.5em' }}>You have {withdrawableAmountBN.div(new BN("1000000000000000000")).toString()} ETH to withdraw</Typography>
+								<Typography style={{ display: 'inline-block', marginRight: '0.5em' }}>You have {withdrawableAmount / 1000000000000000000} ETH to withdraw</Typography>
 								<Button color="primary" variant="contained" size="small" onClick={this.withdrawBonds}>Withdraw all bonds</Button>
 							</React.Fragment>
 						)}

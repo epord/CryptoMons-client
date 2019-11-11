@@ -30,7 +30,7 @@ import {
   transitionCMBState,
   transtionEvenToOdd,
   canIPlay,
-  isAlreadyTransitioned,
+  isAlreadyTransitioned, CMBfromBytesAndData,
 } from "../../../utils/CryptoMonsBattles"
 import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
 
@@ -199,20 +199,28 @@ class Battles extends InitComponent {
 
   play = async (move) => {
     const { ethAccount, enqueueSnackbar, plasmaCMContract } = this.props;
-    const { channelOpened } = this.state;
+    const { channelOpened, currentState } = this.state;
 
     if(channelOpened && this.hasForceMove(channelOpened)) {
-      let fmState = forceMoveChallenge.state;
+      let fmState = channelOpened.forceMoveChallenge.state;
+      fmState.game = CMBfromBytesAndData(
+        fmState.gameAttributes,
+        currentState.game.cryptoMonPLInstance,
+        currentState.game.cryptoMonOPInstance,
+        currentState.game.cryptoMonPLData,
+        currentState.game.cryptoMonOPData
+      );
+
       if(CMBmover(fmState).toLowerCase() !== ethAccount) throw "CANT PLAY!";
 
       fmState.game = transitionCMBState(fmState.game, fmState.channelId, fmState.turnNum, move);
-      fmState.turnNum = fmState.turnNum + 1;
+      fmState.turnNum = parseInt(fmState.turnNum) + 1;
 
       const hash = hashChannelState(fmState);
-      currentState.signature = await sign(hash);
+      fmState.signature = await sign(hash);
 
       fallibleSnackPromise(
-        battleRespondWithMove(plasmaCMContract, currentState),
+        battleRespondWithMove(plasmaCMContract, fmState),
         enqueueSnackbar,
         "Force Move answered",
         "Force Move answer failed"
@@ -426,9 +434,9 @@ class Battles extends InitComponent {
 						<Typography>Unfunded battles</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
-            <div>
+            <div  style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around", width: "100%"}}>
               {opened && opened.map(c =>
-                <React.Fragment key={c.channelId}>
+                <div key={c.channelId}>
                   <BattleOverview
                     key={c.channelId}
                     channel={c}
@@ -438,10 +446,10 @@ class Battles extends InitComponent {
                       func: () => 'TODO',
                     }]}
                   />
-                </React.Fragment>
+                </div>
               )}
               {toFund && toFund.map(c =>
-                <React.Fragment key={c.channelId}>
+                <div key={c.channelId}>
                   <BattleOverview
                     key={c.channelId}
                     channel={c}
@@ -450,7 +458,7 @@ class Battles extends InitComponent {
                       func: this.fundBattle(c.channelId, c.stake),
                     }]}
                   />
-                </React.Fragment>
+                </div>
               )}
             </div>
 
@@ -467,16 +475,16 @@ class Battles extends InitComponent {
 						<Typography>Challengeable battles</Typography>
 					</ExpansionPanelSummary>
 					<ExpansionPanelDetails style={{ minHeight: '21em' }}>
-            <div>
+            <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around", width: "100%"}}>
               {challengeables && challengeables.map(c =>
-                <React.Fragment key={c.channel.channelId}>
+                <div key={c.channel.channelId}>
                   <BattleOverview
                     key={c.channel.channelId}
                     channel={c.channel}
                     is1Challengeable={c.is1Challengeable}
                     is2Challengeable={c.is2Challengeable}
                   />
-                </React.Fragment>
+                </div>
               )}
               {respondable && respondable.map(c =>
                 <React.Fragment key={c.channelId}>
@@ -513,7 +521,7 @@ class Battles extends InitComponent {
                 </Grid>
               </React.Fragment>
             )}
-            <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around"}}>
+            <div style={{display: "flex", flexWrap: "wrap", justifyContent: "space-around", width: "100%"}}>
               {ongoing && ongoing.map(c =>
                 <React.Fragment key={c.channelId}>
                   <BattleOverview
