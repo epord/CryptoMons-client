@@ -30,7 +30,7 @@ import {
   transitionCMBState,
   transtionEvenToOdd,
   canIPlay,
-  isAlreadyTransitioned, CMBfromBytesAndData,
+  isAlreadyTransitioned, CMBfromBytesAndData, transitionOddToEven, initialTransition,
 } from "../../../utils/CryptoMonsBattles"
 import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
 
@@ -72,6 +72,21 @@ class Battles extends InitComponent {
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
   }
+
+  componentWillUpdate(nextProps, nextState, nextContext) {
+    const { loading, channelOpened } = this.state;
+    if(loading || !channelOpened) return;
+
+    const { ongoing } = nextProps.battles;
+
+    let index = ongoing.findIndex((c) => c.channelId == channelOpened.channelId);
+    if( index < 0) {
+      this.closeBattleDialog();
+    } else if(this.hasForceMove(channelOpened) !== this.hasForceMove(ongoing[index])) {
+      this.setState({ channelOpened: ongoing[index]});
+    }
+  }
+
 
   initSocket = () => {
 
@@ -211,11 +226,20 @@ class Battles extends InitComponent {
         currentState.game.cryptoMonOPData
       );
 
-      if(CMBmover(fmState).toLowerCase() !== ethAccount) throw "CANT PLAY!";
+      if (CMBmover(fmState).toLowerCase() !== ethAccount) throw "CANT PLAY!";
 
-      fmState.game = transitionCMBState(fmState.game, fmState.channelId, fmState.turnNum, move);
+      if(fmState.turnNum == 0) {
+        fmState.game = initialTransition(fmState.game, channelOpened.channelId, move);
+      } else if(fmState.turnNum%2 == 0) {
+        fmState.game = transtionEvenToOdd(fmState.game, channelOpened.channelId, fmState.turnNum);
+        if(!isCMBFinished(fmState.game)) {
+          fmState.game = addNextMove(fmState.game, move, fmState.channelId, fmState.turnNum);
+        }
+      } else {
+        fmState.game = transitionOddToEven(fmState.game, move, fmState.turnNum == 1);
+      }
+
       fmState.turnNum = parseInt(fmState.turnNum) + 1;
-
       const hash = hashChannelState(fmState);
       fmState.signature = await sign(hash);
 
@@ -231,14 +255,14 @@ class Battles extends InitComponent {
       if(!canIPlay(ethAccount, currentState)) throw "CANT PLAY!"
       if(isCMBFinished(currentState.game)) throw "CONCLUDE INSTEAD OF PLAYING"
 
-      const submittableState = await this.getSubmittableState(move);
+      const submittableState = await this.getSubmittableState(currentState, move);
       this.socket.emit("play", submittableState);
     }
   };
 
-  getSubmittableState = async (move) => {
+  getSubmittableState = async (state, move) => {
     const {ethAccount} = this.props;
-    const {currentState} = this.state;
+    let currentState = _.cloneDeep(state);
 
     if(isAlreadyTransitioned(ethAccount, currentState)) {
       if(!isCMBFinished(currentState.game)) {
