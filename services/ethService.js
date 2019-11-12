@@ -531,7 +531,7 @@ const getGames = (games, address, plasmaTokens, plasmaCM, cb) => {
 				challengeables: [],
 				respondable: [],
 			};
-			
+
 			results.forEach(c => {
 				if(c.channelId == "0") return;
 				switch (c.state) {
@@ -838,3 +838,15 @@ export const getBattleTokens = (gameId, plasmaTurnGame) => {
 		});
 	});
 };
+
+
+export const closeUnfundedBattle = (channelId, plasmaCM) => {
+  return new Promise((resolve, reject) => {
+    ethContract(plasmaCM)
+      .closeUnfundedChannel(channelId)
+      .send({from: web3.eth.defaultAccount}, (err, res) => {
+				if (err) return reject(err);
+        resolve(res);
+      })
+  });
+}

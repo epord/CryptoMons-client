@@ -42,7 +42,8 @@ import {
   getBattleTokens,
   getCryptomon,
   getPlasmaCoinId,
-  withdrawBattleFunds
+  withdrawBattleFunds,
+  closeUnfundedBattle
 } from '../../../services/ethService';
 import { getBattleChallenges, respondBattleChallenge } from "../../../services/battleChallenges";
 import {getBattlesFrom, getBattleFunds} from '../../redux/actions';
@@ -358,6 +359,13 @@ class Battles extends InitComponent {
       });
   };
 
+  closeUnfundedBattle = channelId => () => {
+    const { enqueueSnackbar, plasmaCMContract } = this.props;
+    closeUnfundedBattle(channelId, plasmaCMContract)
+      .then(() => enqueueSnackbar("Battle closed successfully", {variant: 'success'}))
+      .catch(() => enqueueSnackbar("Error closing battle", {variant: 'error'}))
+  }
+
   closeRespondChallengeModal = () => this.setState({ respondModalOpen: false });
 
   renderRespondChallengeDialog = () => {
@@ -467,7 +475,7 @@ class Battles extends InitComponent {
                     waiting
                     actions={[{
                       title: 'Close unfunded',
-                      func: () => 'TODO',
+                      func: this.closeUnfundedBattle(c.channelId),
                     }]}
                   />
                 </div>
