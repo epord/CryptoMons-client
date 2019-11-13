@@ -243,9 +243,7 @@ class Battles extends InitComponent {
   //Actions
 
   signAndSend = () => {
-    const { currentState } = this.state;
-    currentState.signature = this.signState(currentState);
-    this.socket.emit("play", currentState);
+    this.play(undefined)
   }
 
   openBattleDialog = channel => this.setState({ battleOpen: true});

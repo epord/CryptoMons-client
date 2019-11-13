@@ -56,12 +56,12 @@ export const transitionCMBState = (gameState, gameId, turnNum, move) => {
 
 export const initialTransition = (game, gameId, move) => {
   const salt = randomHex256();
-  localStorage.setItem(`salt-${gameId}-1`, salt)
-  localStorage.setItem(`move-${gameId}-1`, move)
   const hashDecision = keccak256(
     EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
     EthUtils.toBuffer(salt)
   );
+  localStorage.setItem(`salt-${hashDecision}`, salt);
+  localStorage.setItem(`move-${hashDecision}`, move);
 
   game.hashDecision = hashDecision
 
@@ -95,8 +95,8 @@ const gameToState = (game, gameId, turnNum, move, salt) => {
 }
 
 export const transtionEvenToOdd = (game, gameId, turnNum, move, salt) => {
-  const oldSalt = salt !== undefined ? salt : localStorage.getItem(`salt-${gameId}-${turnNum-1}`);
-  const oldMove = parseInt(move !== undefined ? move : localStorage.getItem(`move-${gameId}-${turnNum-1}`));
+  const oldSalt = salt !== undefined ? salt : localStorage.getItem(`salt-${game.hashDecision}`);
+  const oldMove = parseInt(move !== undefined ? move : localStorage.getItem(`move-${game.hashDecision}`));
 
   const state = gameToState(game, gameId, turnNum, oldMove, oldSalt);
   const [nextState, events] = calculateBattle(state);
@@ -129,19 +129,19 @@ export const transtionEvenToOdd = (game, gameId, turnNum, move, salt) => {
 
 export const addNextMove = (state, move, gameId, turnNum) => {
   const newSalt = randomHex256();
-  localStorage.setItem(`salt-${gameId}-${turnNum}`, newSalt)
-  localStorage.setItem(`move-${gameId}-${turnNum}`, move)
   const newHashDecision = keccak256(
     EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
     EthUtils.toBuffer(newSalt)
   );
+  localStorage.setItem(`salt-${newHashDecision}`, newSalt);
+  localStorage.setItem(`move-${newHashDecision}`, move);
   if(turnNum == 1) {
     state.hashDecision = newHashDecision;
   } else {
     state.nextHashDecision = newHashDecision;
   }
   return state;
-}
+};
 
 export const transitionOddToEven = (game, move, isFirst) => {
   game.decisionPL = move;
