@@ -121,7 +121,6 @@ export const hashChannelState = (state) => {
 				toCMBBytes(state.game)
 			])
 	);
-
 };
 
 export const getExitDataToBattleRLPData = (exitData) => {

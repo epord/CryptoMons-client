@@ -20,6 +20,7 @@ import BattleOverview from './BattleOverview.jsx';
 import CurrentBattle from './CurrentBattle.jsx';
 import _ from 'lodash';
 const BN = require('bn.js');
+const EthUtils	= require('ethereumjs-util');
 
 import {
   addNextMove,
@@ -32,7 +33,7 @@ import {
   canIPlay,
   isAlreadyTransitioned, CMBfromBytesAndData, transitionOddToEven, initialTransition,
 } from "../../../utils/CryptoMonsBattles"
-import {getExitDataToBattleRLPData, hashChannelState, sign} from "../../../utils/cryptoUtils";
+import {getExitDataToBattleRLPData, hashChannelState, recover, sign} from "../../../utils/cryptoUtils";
 
 import {
   battleForceMove,
@@ -72,16 +73,16 @@ class Battles extends InitComponent {
     const { ethAccount, plasmaTurnGameContract, plasmaCMContract, getBattlesFrom } = this.props;
     this.setState({ loading: false });
     getBattlesFrom(ethAccount, plasmaTurnGameContract, plasmaCMContract);
-  }
+  };
 
   componentWillUpdate(nextProps, nextState, nextContext) {
-    const { loading, channelOpened } = this.state;
+    const { loading, channelOpened, battleOpen } = this.state;
     if(loading || !channelOpened) return;
 
     const { ongoing } = nextProps.battles;
 
     let index = ongoing.findIndex((c) => c.channelId == channelOpened.channelId);
-    if( index < 0) {
+    if( index < 0 && battleOpen) {
       this.closeBattleDialog();
     } else if(this.hasForceMove(channelOpened) !== this.hasForceMove(ongoing[index])) {
       this.setState({ channelOpened: ongoing[index]});
@@ -118,16 +119,6 @@ class Battles extends InitComponent {
     this.socket.on('battleFinished', (data) => {
       console.log('Battle finished', data);
     });
-
-    this.socket.on('authenticationRequest', (data) => {
-      const { ethAccount } = this.props;
-      console.log('Authentication Request', data);
-      sign(data.nonce).then(message => {
-        this.socket.emit("authenticationResponse", {user: ethAccount, signature: message})
-      })
-    });
-
-    this.socket.on("authenticated", () => this.setState({ authenticated: true }));
   };
 
   stateUpdate = (newPrevState, newCurrentState) => {
@@ -146,26 +137,22 @@ class Battles extends InitComponent {
     }
 
     let calculatedState;
-    //TODO delete this
     if(newCurrentState.turnNum !== oldCurrentState.turnNum + 1) {
       console.error("RETRIEVING A TURN THAT IS MORE THAN 1 THE ONE I HAD, SOME CASES THIS MAY BE OK");
       oldCurrentState = newPrevState;
       calculatedState = newCurrentState;
     } else {
       calculatedState = this.generateCalculatedState(oldCurrentState, newCurrentState);
-      //ValidateEqual(calculatedState, newCurrentState)
-      //ValidateSigned(calculatedState)
-      //I can trust calculatedState now.
+      if(!this.validateEqual(calculatedState, newCurrentState)) {
+        console.error("STATE RECEIVED IS INVALID");
+      }
+      if(!this.verifySignature(calculatedState)) {
+        console.error("STATE NOT CORRECTLY SIGNED")
+      }
     }
 
-    //Si soy player, tengo impar
-    //Si soy opponet, tengo par, tengo que transicionarlo
     if(readyForBattleCalculation(ethAccount, calculatedState)) {
-      calculatedState.game = transtionEvenToOdd(calculatedState.game, calculatedState.channelId, calculatedState.turnNum);
-
-      calculatedState.turnNum = calculatedState.turnNum + 1;
-      calculatedState.signature = undefined;
-      calculatedState.game.nextHashDecision = undefined;
+      calculatedState = this.semiTransitionWithBattleCalculation(calculatedState);
       oldCurrentState = newCurrentState;
     }
 
@@ -175,17 +162,20 @@ class Battles extends InitComponent {
   generateCalculatedState =(prevState, currentState) => {
     if(!prevState) throw "Cant calculate from undefined";
     let nextState = _.cloneDeep(prevState);
-    nextState.turnNum = prevState.turnNum + 1;
+    nextState.turnNum = nextState.turnNum + 1;
     nextState.signature = currentState.signature;
 
     if(prevState.turnNum === 0) {
       nextState.game.hashDecision = currentState.game.hashDecision;
     } else if(prevState.turnNum % 2 !== 0) {
       if(prevState.turnNum > 1) {
-        nextState.game.hashDecision = nextState.game.nextHashDecision;
+        nextState.game.hashDecision = prevState.game.nextHashDecision;
       }
       nextState.game.decisionPL = currentState.game.decisionPL;
       nextState.game.saltPL = currentState.game.saltPL;
+      nextState.game.saltOP = undefined;
+      nextState.game.decisionOP = undefined;
+      nextState.game.nextHashDecision = undefined;
     } else if(prevState.turnNum % 2 === 0) {
       nextState.game = transtionEvenToOdd(nextState.game, undefined, undefined, currentState.game.decisionOP, currentState.game.saltOP);
       if(!isCMBFinished(nextState.game)) {
@@ -196,21 +186,85 @@ class Battles extends InitComponent {
     return nextState;
   };
 
-  signAndSend = async () => {
-    const { currentState } = this.state;
+  validateEqual = (oneState, otherState) => {
+      if(oneState.game.cryptoMonPL     != otherState.game.cryptoMonPL) return false;
+      if(oneState.game.HPPL     != otherState.game.HPPL) return false;
+      if(oneState.game.status1PL     != otherState.game.status1PL) return false;
+      if(oneState.game.status2PL     != otherState.game.status2PL) return false;
+      if(oneState.game.chargePL     != otherState.game.chargePL) return false;
+      if(oneState.game.cryptoMonOP     != otherState.game.cryptoMonOP) return false;
+      if(oneState.game.HPOP     != otherState.game.HPOP) return false;
+      if(oneState.game.status1OP     != otherState.game.status1OP) return false;
+      if(oneState.game.status2OP     != otherState.game.status2OP) return false;
+      if(oneState.game.chargeOP     != otherState.game.chargeOP) return false;
+      if(oneState.game.hashDecision     != otherState.game.hashDecision) return false;
+      if(oneState.game.decisionPL     != otherState.game.decisionPL) return false;
+      if(oneState.game.saltPL     != otherState.game.saltPL) return false;
+      if(oneState.game.decisionOP     != otherState.game.decisionOP) return false;
+      if(oneState.game.saltOP     != otherState.game.saltOP) return false;
+      if(oneState.game.nextHashDecision     != otherState.game.nextHashDecision) return false;
+      if(oneState.channelId       != otherState.channelId) return false;
+      if(oneState.channelType       != otherState.channelType) return false;
+      if(oneState.participants[0]        != otherState.participants[0]) return false;
+      if(oneState.participants[1]        != otherState.participants[1]) return false;
+      if(oneState.turnNum       != otherState.turnNum) return false;
+      return oneState.signature == otherState.signature;
+  };
 
-    const hash = hashChannelState(currentState);
-    currentState.signature = await sign(hash);
+  verifySignature = (state) => {
+    const { channelOpened } = this.state;
+    if(state.turnNum == 0) return true;
+    if(!channelOpened) throw "NO CHANNELED OPENED";
+    let index = state.turnNum%2;
+    return recover(hashChannelState(state), state.signature).toLowerCase() === channelOpened.publicKeys[index].toLowerCase();
+  };
+
+  semiTransitionWithBattleCalculation = (state) => {
+    state.game = transtionEvenToOdd(state.game, state.channelId, state.turnNum);
+    state.turnNum = state.turnNum + 1;
+    state.signature = undefined;
+    state.game.nextHashDecision = undefined;
+    return state
+  };
+
+  signState = (state) => {
+    const { channelOpened } = this.state;
+    const { ethAccount } = this.props;
+    if(!channelOpened) throw "No channelOpenned";
+
+    let keyIndex = state.participants[0].toLowerCase() == ethAccount ? 0 : 1;
+    const hash = hashChannelState(state);
+    const pk = localStorage.getItem(`battle_key_${channelOpened.publicKeys[keyIndex]}`);
+    if(!pk) throw "Private key lost";
+    let signature = EthUtils.ecsign(EthUtils.toBuffer(hash), EthUtils.toBuffer(pk));
+    return EthUtils.toRpcSig(signature.v, signature.r, signature.s);
+  };
+
+  //Actions
+
+  signAndSend = () => {
+    const { currentState } = this.state;
+    currentState.signature = this.signState(currentState);
     this.socket.emit("play", currentState);
   }
 
-  openBattleDialog = channel => this.setState({ battleOpen: true , channelOpened: channel})
+  openBattleDialog = channel => this.setState({ battleOpen: true});
 
-  closeBattleDialog = () => this.setState({ battleOpen: false })
+  closeBattleDialog = () => {
+    if(this.socket) this.socket.close();
+    this.socket = undefined;
+    this.setState({ battleOpen: false });
+  };
 
   battleRequest = channel => () => {
-    this.socket.emit("battleRequest", { channelId: channel.channelId });
-    this.openBattleDialog(channel);
+    const { ethAccount } = this.props;
+    this.setState({ channelOpened: channel}, () => {
+      if(!this.socket) {
+        this.initSocket();
+      }
+      this.socket.emit("battleRequest", { owner: ethAccount, channelId: channel.channelId });
+      this.openBattleDialog(channel);
+    });
   };
 
   play = async (move) => {
@@ -219,6 +273,8 @@ class Battles extends InitComponent {
 
     if(channelOpened && this.hasForceMove(channelOpened)) {
       let fmState = channelOpened.forceMoveChallenge.state;
+      fmState.turnNum = parseInt(fmState.turnNum);
+
       fmState.game = CMBfromBytesAndData(
         fmState.gameAttributes,
         currentState.game.cryptoMonPLInstance,
@@ -229,20 +285,13 @@ class Battles extends InitComponent {
 
       if (CMBmover(fmState).toLowerCase() !== ethAccount) throw "CANT PLAY!";
 
-      if(fmState.turnNum == 0) {
-        fmState.game = initialTransition(fmState.game, channelOpened.channelId, move);
-      } else if(fmState.turnNum%2 == 0) {
-        fmState.game = transtionEvenToOdd(fmState.game, channelOpened.channelId, fmState.turnNum);
-        if(!isCMBFinished(fmState.game)) {
-          fmState.game = addNextMove(fmState.game, move, fmState.channelId, fmState.turnNum);
-        }
-      } else {
-        fmState.game = transitionOddToEven(fmState.game, move, fmState.turnNum == 1);
+      if(readyForBattleCalculation(ethAccount, fmState)) {
+        fmState = this.semiTransitionWithBattleCalculation(fmState);
       }
 
-      fmState.turnNum = parseInt(fmState.turnNum) + 1;
-      const hash = hashChannelState(fmState);
-      fmState.signature = await sign(hash);
+      fmState = this.getSubmittableState(fmState, move);
+
+      //TODO check if forcemove just before winning
 
       fallibleSnackPromise(
         battleRespondWithMove(plasmaCMContract, fmState),
@@ -256,14 +305,14 @@ class Battles extends InitComponent {
       if(!canIPlay(ethAccount, currentState)) throw "CANT PLAY!"
       if(isCMBFinished(currentState.game)) throw "CONCLUDE INSTEAD OF PLAYING"
 
-      const submittableState = await this.getSubmittableState(currentState, move);
+      const submittableState = this.getSubmittableState(currentState, move);
       this.socket.emit("play", submittableState);
     }
   };
 
-  getSubmittableState = async (state, move) => {
+  getSubmittableState = (state, move) => {
     const {ethAccount} = this.props;
-    let currentState = _.cloneDeep(state);
+    let currentState = state;
 
     if(isAlreadyTransitioned(ethAccount, currentState)) {
       if(!isCMBFinished(currentState.game)) {
@@ -273,15 +322,12 @@ class Battles extends InitComponent {
       currentState.game = transitionCMBState(currentState.game, currentState.channelId, currentState.turnNum, move);
       currentState.turnNum = currentState.turnNum + 1;
     }
-
-    const hash = hashChannelState(currentState);
-    currentState.signature = await sign(hash);
-
+    currentState.signature = this.signState(currentState);
     return currentState
-  }
+  };
 
   fundBattle = (channelId, stake) => async () => {
-    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract, ethAccount } = this.props;
+    const { plasmaCMContract, plasmaTurnGameContract, cryptoMonsContract, rootChainContract } = this.props;
 
     const {player, opponent} = await getBattleTokens(channelId, plasmaTurnGameContract);
     const tokenOP = opponent.cryptoMon;
@@ -309,8 +355,7 @@ class Battles extends InitComponent {
     let { prevState, currentState } = this.state;
 
     if(isAlreadyTransitioned(ethAccount, currentState)) {
-      const hash = hashChannelState(currentState);
-      currentState.signature = await sign(hash);
+      currentState.signature = this.signState(currentState);
     }
 
     fallibleSnackPromise(
@@ -322,7 +367,7 @@ class Battles extends InitComponent {
   };
 
   hasForceMove = (channel) => {
-    return channel.forceMoveChallenge.state.channelId != '0';
+    return channel && channel.forceMoveChallenge.state.channelId != '0';
   }
 
   withdrawFunds = () => {
@@ -415,6 +460,8 @@ class Battles extends InitComponent {
   renderDialogBattle = () => {
     const { ethAccount, classes } = this.props;
     const { currentState, battleOpen, channelOpened } = this.state;
+    if(!channelOpened) return (<div/>);
+
     const dialogPaperStyle = this.hasForceMove(channelOpened) ? classes.dialogPaperWithForceMove : classes.dialogPaper;
 
     return (
@@ -436,7 +483,7 @@ class Battles extends InitComponent {
   }
 
   render = () => {
-    const { loading, currentState, authenticated, respondModalOpen } = this.state;
+    const { loading, currentState, respondModalOpen } = this.state;
     const { battles, battleFunds } = this.props;
     const { opened, toFund, ongoing, challengeables, respondable } = battles;
     const battleFundsBN = new BN(battleFunds);
@@ -537,7 +584,6 @@ class Battles extends InitComponent {
           </ExpansionPanelDetails>
         </ExpansionPanel>
 
-        <Button onClick={this.initSocket} style={{ marginTop: '1em' }} color="primary" variant="contained" size="small">Connect</Button>
 				<ExpansionPanel defaultExpanded style={{ marginTop: '1em' }}>
 					<ExpansionPanelSummary
 						expandIcon={<ExpandMoreIcon />}>
@@ -562,7 +608,6 @@ class Battles extends InitComponent {
                     actions={[{
                       title: 'Select',
                       func: this.battleRequest(c),
-                      disabled: !authenticated
                     }]}
                   />
                 </React.Fragment>

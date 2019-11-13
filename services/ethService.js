@@ -684,8 +684,10 @@ export const createBattle = (tokenPL, tokenOP, opponentAddress, exitData, rootCh
 
 const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGameAttributes, exitRLPData) => {
 	return new Promise((resolve, reject) => {
+		let key = web3.eth.accounts.create();
+		localStorage.setItem(`battle_key_${key.address}`, key.privateKey);
 		ethContract(plasmaCM)
-			.initiateChannel(channelType, opponent, web3Utils.toWei(stake.toString(), 'ether'), initialGameAttributes, exitRLPData)
+			.initiateChannel(channelType, opponent, key.address, web3Utils.toWei(stake.toString(), 'ether'), initialGameAttributes, exitRLPData)
       .send({from: web3.eth.defaultAccount}, {
 				from: web3.eth.defaultAccount,
 				value: web3Utils.toWei(stake.toString(), 'ether')
@@ -698,8 +700,10 @@ const initiateBattle = (plasmaCM, channelType, opponent, stake, initialGameAttri
 
 export const fundBattle = (plasmaCM, channelId, stake, initialGameAttributes, exitRLPData) => {
 	return new Promise((resolve, reject) => {
+		let key = web3.eth.accounts.create();
+		localStorage.setItem(`battle_key_${key.address}`, key.privateKey);
 		ethContract(plasmaCM)
-			.fundChannel(channelId, initialGameAttributes, exitRLPData).send({from: web3.eth.defaultAccount}, {
+			.fundChannel(channelId, key.address, initialGameAttributes, exitRLPData).send({from: web3.eth.defaultAccount}, {
 				from: web3.eth.defaultAccount,
 				value: stake
 			}, (err, res) => {
@@ -759,7 +763,6 @@ export const battleRespondWithMove = (plasmaCM, nextState) => {
 		gameAttributes: toCMBBytes(nextState.game)
 	}
 
-	console.log("REPONSE", nextState)
 	return new Promise((resolve, reject) => {
 		ethContract(plasmaCM)
 			.respondWithMove(nextState.channelId, _nextState, nextState.signature)

@@ -9,11 +9,11 @@ const abi = require('ethereumjs-abi');
 
 export const isAlreadyTransitioned = (me, state) => {
   return state.turnNum %2 == 1 && me.toLowerCase() == state.participants[1].toLowerCase()
-}
+};
 
 export const readyForBattleCalculation = (me, state) => {
   return state.turnNum % 2 == 0 && state.turnNum > 0 && me.toLowerCase() == state.participants[1].toLowerCase()
-}
+};
 
 //ONLY FOR USE WITH CURRENT STATE THAT SOME TIMES IS TRANSITIONED
 export const canIPlay = (me, state) => {
@@ -24,11 +24,11 @@ export const canIPlay = (me, state) => {
   } else {
      return state.game.nextHashDecision === undefined;
   }
-}
+};
 
 export const CMBmover = (state) => {
   return state.turnNum%2 === 1 ? state.participants[0]: state.participants[1];
-}
+};
 
 export const isCMBFinished = (game) => {
   return game.HPPL === 0 || game.HPOP === 0;
@@ -56,8 +56,8 @@ export const transitionCMBState = (gameState, gameId, turnNum, move) => {
 
 export const initialTransition = (game, gameId, move) => {
   const salt = randomHex256();
-  localStorage.setItem(`salt-${gameId}-0`, salt)
-  localStorage.setItem(`move-${gameId}-0`, move)
+  localStorage.setItem(`salt-${gameId}-1`, salt)
+  localStorage.setItem(`move-${gameId}-1`, move)
   const hashDecision = keccak256(
     EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
     EthUtils.toBuffer(salt)
@@ -69,11 +69,6 @@ export const initialTransition = (game, gameId, move) => {
 };
 
 const gameToState = (game, gameId, turnNum, move, salt) => {
-  const oldSalt = salt !== undefined ? salt : localStorage.getItem(`salt-${gameId}-${turnNum-2}`);
-  const oldMove = move !== undefined ? move : localStorage.getItem(`move-${gameId}-${turnNum-2}`);
-  game.saltOP = oldSalt;
-  game.decisionOP = parseInt(oldMove);
-
   const state = {
     player: {
       hp: game.HPPL,
@@ -91,38 +86,41 @@ const gameToState = (game, gameId, turnNum, move, salt) => {
       charges: game.chargeOP,
       cryptoMon: game.cryptoMonOPInstance,
       data: game.cryptoMonOPData,
-      move: game.decisionOP,
+      move: move,
     },
-    random: abi.soliditySHA3(['bytes32', 'bytes32'], [game.saltPL, game.saltOP]),
+    random: abi.soliditySHA3(['bytes32', 'bytes32'], [game.saltPL, salt]),
   };
 
   return state;
 }
 
 export const transtionEvenToOdd = (game, gameId, turnNum, move, salt) => {
-  const state = gameToState(game, gameId, turnNum, move, salt);
+  const oldSalt = salt !== undefined ? salt : localStorage.getItem(`salt-${gameId}-${turnNum-1}`);
+  const oldMove = parseInt(move !== undefined ? move : localStorage.getItem(`move-${gameId}-${turnNum-1}`));
+
+  const state = gameToState(game, gameId, turnNum, oldMove, oldSalt);
   const [nextState, events] = calculateBattle(state);
 
   const oddState = {
     cryptoMonPL: game.cryptoMonPL,
-    cryptoMonPLInstance: game.cryptoMonPLInstance,
-    cryptoMonPLData: game.cryptoMonPLData,
     HPPL: nextState.player.hp,
     status1PL: nextState.player.status1,
     status2PL: nextState.player.status2,
     chargePL: nextState.player.charges,
+    cryptoMonPLInstance: nextState.player.cryptoMon,
+    cryptoMonPLData: nextState.player.data,
+    decisionPL: nextState.player.move,
+    saltPL: game.saltPL,
     cryptoMonOP: game.cryptoMonOP,
-    cryptoMonOPInstance: game.cryptoMonOPInstance,
-    cryptoMonOPData: game.cryptoMonOPData,
     HPOP: nextState.opponent.hp,
     status1OP: nextState.opponent.status1,
     status2OP: nextState.opponent.status2,
     chargeOP: nextState.opponent.charges,
+    cryptoMonOPInstance: nextState.opponent.cryptoMon,
+    cryptoMonOPData: nextState.opponent.data,
+    decisionOP: nextState.opponent.move,
     hashDecision: game.hashDecision,
-    decisionPL: game.decisionPL,
-    saltPL: game.saltPL,
-    decisionOP: game.decisionOP,
-    saltOP: game.saltOP,
+    saltOP: oldSalt,
     events
   };
 
@@ -131,8 +129,8 @@ export const transtionEvenToOdd = (game, gameId, turnNum, move, salt) => {
 
 export const addNextMove = (state, move, gameId, turnNum) => {
   const newSalt = randomHex256();
-  localStorage.setItem(`salt-${gameId}-${turnNum-1}`, newSalt)
-  localStorage.setItem(`move-${gameId}-${turnNum-1}`, move)
+  localStorage.setItem(`salt-${gameId}-${turnNum}`, newSalt)
+  localStorage.setItem(`move-${gameId}-${turnNum}`, move)
   const newHashDecision = keccak256(
     EthUtils.setLengthLeft(new BN(move).toArrayLike(Buffer), 256/8),
     EthUtils.toBuffer(newSalt)
