@@ -38,7 +38,7 @@ class CurrentBattle extends React.Component {
       charge,
       type1: cryptoMonData.type1,
       type2: cryptoMonData.type2,
-      name: pokedex[cryptoMonInstance.id - 1].name.english.toLowerCase(),
+      name: pokedex[cryptoMonInstance.id - 1].name.english.toLowerCase().replace('. ', '-').replace('\'', ''),
       shiny: cryptoMonInstance.isShiny,
       gender: cryptoMonInstance.gender,
     }
