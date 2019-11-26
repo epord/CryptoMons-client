@@ -228,7 +228,7 @@ export const Status = {
       name: '-100% Speed',
       isBoost: false
     }],
-    icon: <StatusIcon label="PARAL" color="lightblue" />
+    icon: <StatusIcon label="FROZEN" color="lightblue" />
   },
   15: {
     name: 'dragon dance',

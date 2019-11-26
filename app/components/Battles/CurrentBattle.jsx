@@ -128,6 +128,10 @@ class CurrentBattle extends React.Component {
 
     const type1 = getTypeData(player.type1);
     const type2 = getTypeData(player.type2);
+    const opponentType1 = getTypeData(opponent.type1);
+    const opponentType2 = getTypeData(opponent.type2);
+
+    const isStatusBlocked = (opponentType1.name == 'Ice' && player.status1) || (opponentType2.name == 'Ice' && player.status2)
 
     return (
       <React.Fragment>
@@ -159,7 +163,7 @@ class CurrentBattle extends React.Component {
             <Button variant="outlined" onClick={() => play(Moves.SPATK1)} disabled={player.charge === 0}>Special Attack</Button>
           </Grid>
           <Grid item>
-            <Button variant="outlined" onClick={() => play(Moves.STATUS1)} disabled={player.charge === 0}>{Status[player.type1].name}</Button>
+            <Button variant="outlined" onClick={() => play(Moves.STATUS1)} disabled={player.charge === 0 || isStatusBlocked}>{Status[player.type1].name}</Button>
           </Grid>
         </Grid>
 
@@ -176,7 +180,7 @@ class CurrentBattle extends React.Component {
               <Button variant="outlined" onClick={() => play(Moves.SPATK2)} disabled={player.charge === 0}>Special Attack</Button>
             </Grid>
             <Grid item>
-              <Button variant="outlined" onClick={() => play(Moves.STATUS2)} disabled={player.charge === 0}>{Status[player.type2].name}</Button>
+              <Button variant="outlined" onClick={() => play(Moves.STATUS2)} disabled={player.charge === 0 || isStatusBlocked}>{Status[player.type2].name}</Button>
             </Grid>
           </Grid>
         )}

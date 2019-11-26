@@ -19,7 +19,7 @@ class Events extends React.Component {
     const typeName = pokemon.type[type - 1];
     const typeId = Type[typeName];
 
-    if (code == 'Attack' && hit) {
+    if (code == 'Attack') {
       return `${pokemon.name.english} used ${typeName.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
     }
     if (code == 'Status') {
@@ -28,7 +28,7 @@ class Events extends React.Component {
     if (code == 'Recharge') {
       return `${pokemon.name.english} recharged.`
     }
-    if (code == 'Protected') {
+    if (code == 'Protect') {
       return `${pokemon.name.english} used protect.`
     }
     if (code == 'Cleanse') {
@@ -37,7 +37,7 @@ class Events extends React.Component {
     if (code == 'ShieldBreak') {
       return `${pokemon.name.english} used shield break${hit ? `.` : ', but missed...'}`;
     }
-    if (code == 'SPAttack' && hit) {
+    if (code == 'SPAttack') {
       return `${pokemon.name.english} used ${typeName.toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
     }
     if (code == 'EndTurnDMG') {

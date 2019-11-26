@@ -301,7 +301,6 @@ class Battles extends InitComponent {
       const { currentState } = this.state;
 
       if(!canIPlay(ethAccount, currentState)) throw "CANT PLAY!"
-      if(isCMBFinished(currentState.game)) throw "CONCLUDE INSTEAD OF PLAYING"
 
       const submittableState = this.getSubmittableState(currentState, move);
       this.socket.emit("play", submittableState);
