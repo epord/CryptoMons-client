@@ -16,6 +16,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import InitComponent from '../common/InitComponent.jsx';
 import withInitComponent from '../common/withInitComponent.js';
 
+import Hack from "../Hacks/Hack.jsx";
 import BattleOverview from './BattleOverview.jsx';
 import CurrentBattle from './CurrentBattle.jsx';
 import _ from 'lodash';
@@ -122,6 +123,7 @@ class Battles extends InitComponent {
   };
 
   stateUpdate = (newPrevState, newCurrentState) => {
+    Hack.SaveForLater(newPrevState, newCurrentState);
     const { ethAccount } = this.props;
     let { currentState: oldCurrentState } = this.props;
 

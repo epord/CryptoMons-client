@@ -141,7 +141,7 @@ const swapValidation = (owner, prevBlock, blockNumber, validationData, cb) => {
 };
 
 const basicValidation = (owner, prevBlock, blockNumber, validationData, cb) => {
-  const {history, transactionsHistory} = validationData;
+  const {token, history, transactionsHistory} = validationData;
   const { transactionBytes, signature, hash } = history[blockNumber];
   let {slot, blockSpent, recipient} = decodeTransactionBytes(transactionBytes);
   recipient = recipient.toLowerCase();
@@ -149,14 +149,17 @@ const basicValidation = (owner, prevBlock, blockNumber, validationData, cb) => {
   const generatedHash = generateTransactionHash(slot, blockSpent, recipient);
 
   let error = undefined;
-  if (generatedHash.toLowerCase() !== hash.toLowerCase())  error = "Hash does not match";
-  if (prevBlock !== blockSpent)                            error = "BlockSpent is incorrect";
-  if (recover(hash, signature).toLowerCase() !== owner)    error = "Not signed correctly";
+  if (token !== slot)                                      error = "Invalid Slot";
+  if (!error && prevBlock !== blockSpent)                            error = "BlockSpent is incorrect";
+  if (!error && generatedHash.toLowerCase() !== hash.toLowerCase())  error = "Hash does not match";
+  if (!error && recover(hash, signature).toLowerCase() !== owner)    error = "Not signed correctly";
+
+  if(error) {
+    return cb({error: error, blockNumber, lastOwner: owner})
+  }
 
   transactionsHistory.push({
     isSwap: false,
-    successful: !error,
-    error: error,
     from: owner,
     to:  recipient,
     blockNumber
@@ -220,7 +223,7 @@ export const verifyTokenWithHistory = (token, history, rootChainContract) => {
     let transactions = Object.keys(history).filter(blockNumber => history[blockNumber].transactionBytes);
     let transactionsHistory = [];
 
-    const validationData = {history, failBlockNumber, transactionsHistory, rootChainContract, swapsValidated, swapInvalidBlocks, swapInvalidSecretBlocks};
+    const validationData = {token, history, failBlockNumber, transactionsHistory, rootChainContract, swapsValidated, swapInvalidBlocks, swapInvalidSecretBlocks};
 
     await async.waterfall([
       depositValidation(validationData),
@@ -236,11 +239,12 @@ export const verifyTokenWithHistory = (token, history, rootChainContract) => {
         swappingOwner: err.swappingOwner
       });
 
-      if (err) return reject(err);
-      if (failBlockNumber) return reject({
-        error: "Inclusion failed",
-        blockNumber: failBlockNumber,
-        lastOwner: res.owner
+      if (err) return reject({
+        validity: HISTORY_VALIDITY.INVALID,
+        error: err.error,
+        blockNumber: err.blockNumber,
+        lastOwner: err.lastOwner,
+        transactionsHistory: validationData.transactionsHistory
       });
 
       resolve({validity: HISTORY_VALIDITY.CORRECT, lastOwner: res.owner, transactionsHistory: validationData.transactionsHistory});

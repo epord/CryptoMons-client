@@ -2,6 +2,7 @@ import React from 'react';
 import {connect} from "react-redux";
 
 import {
+  battleForceMove,
   challengeBeforeWithExitData,
   createBattle,
   exitToken,
@@ -14,7 +15,7 @@ import {fastForwardBlockChain, getHistory} from "../../../services/plasmaService
 import Paper from "@material-ui/core/Paper";
 import Button from "@material-ui/core/Button";
 import {doubleSpendTransactions, nonExistentTransactions} from "./HackUtils";
-import {toAddressColor, toReadableAddress} from "../../../utils/utils";
+import {fallibleSnackPromise, toAddressColor, toReadableAddress} from "../../../utils/utils";
 import SelectPlayerTokenModal from "../common/SelectPlayerTokenModal.jsx"
 import {withSnackbar} from "notistack";
 import InitComponent from "../common/InitComponent.jsx";
@@ -24,6 +25,36 @@ class Hack extends InitComponent {
   constructor(props) {
     super(props);
     this.state = { history: [], loading: true, openBattleModal: false }
+  }
+
+  static SaveForLater(prevState, currentState) {
+    if(!currentState) return;
+    let index = parseInt(localStorage.getItem("battleStateBaseIndex"));
+    let channelId = localStorage.getItem("battleStateChannelId");
+    if(isNaN(index) || channelId !== currentState.channelId) {
+      index = prevState ? prevState.turnNum : currentState.turnNum;
+      localStorage.setItem("battleStateBaseIndex", index.toString());
+      localStorage.setItem("battleStateChannelId", currentState.channelId);
+      localStorage.removeItem("oldBattleState");
+      localStorage.removeItem("newBattleState");
+    }
+
+    if(currentState.turnNum === index || currentState.turnNum === index + 1){
+      return localStorage.setItem("oldBattleState", JSON.stringify({prevState, currentState}));
+    }
+
+    if(currentState.turnNum === index + 2 || currentState.turnNum === index + 3) {
+      return localStorage.setItem("newBattleState", JSON.stringify({prevState, currentState}));
+    }
+
+    let oldState = JSON.parse(localStorage.getItem("oldBattleState"));
+    let newState = JSON.parse(localStorage.getItem("newBattleState"));
+
+    if(currentState.turnNum === newState.currentState.turnNum + 1) {
+      localStorage.setItem("oldBattleState", JSON.stringify({prevState: oldState.currentState, currentState: newState.prevState}));
+      localStorage.setItem("newBattleState", JSON.stringify({prevState, currentState}));
+    }
+
   }
 
   init = () => {
@@ -130,9 +161,47 @@ class Hack extends InitComponent {
     )
   };
 
+  forceMoveOld = () => {
+    const { ethAccount, enqueueSnackbar, plasmaCMContract } = this.props;
+
+    let prevState;
+    let currentState;
+    let oldState = JSON.parse(localStorage.getItem("oldBattleState"));
+    let newState = JSON.parse(localStorage.getItem("newBattleState"));
+
+    if(oldState.currentState.participants[0].toLowerCase() == ethAccount) {
+      if(oldState.prevState.turnNum%2 === 1) {
+        prevState = oldState.prevState;
+        currentState = oldState.currentState;
+      } else {
+        prevState = oldState.currentState;
+        currentState = newState.prevState;
+      }
+    } else {
+      if(oldState.prevState.turnNum%2 === 0) {
+        prevState = oldState.prevState;
+        currentState = oldState.currentState;
+      } else {
+        prevState = oldState.currentState;
+        currentState = newState.prevState;
+      }
+    }
+
+    console.log(prevState, currentState)
+    fallibleSnackPromise(
+      battleForceMove(plasmaCMContract, prevState, currentState),
+      enqueueSnackbar,
+      "Move forced",
+      "There was an error forcing the move"
+    );
+  }
+
   render = () => {
     const { loading, hackSlot, history, isHackSlotExiting, openBattleModal, startingBattle } = this.state;
     if (loading) return (<div>Loading...</div>);
+    let newStateS = localStorage.getItem("newBattleState");
+    let newState = newStateS ? JSON.parse(newStateS) : undefined;
+    let baseStateIndex = parseInt(localStorage.getItem("battleStateBaseIndex"));
 
     return(
       <div style={{ padding: '1em' }}>
@@ -154,6 +223,11 @@ class Hack extends InitComponent {
         <Button variant="contained" onClick={this.fastForwardTime(604800)}>
           FastForward a week
         </Button>
+
+        {newState && newState.currentState.turnNum > baseStateIndex + 3 &&
+        <Button variant="contained" onClick={this.forceMoveOld}>
+          ForceMove Old BattleState
+        </Button>}
 
         <Paper style={{ margin: '1em', padding: '1em', display: 'inline-block' }}>
 

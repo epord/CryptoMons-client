@@ -37,6 +37,7 @@ class History extends React.Component {
         historyValid: HISTORY_VALIDITY.INVALID,
         lastValidOwner: err.lastOwner,
         lastValidBlock: err.blockNumber,
+        transactionsHistory: err.transactionsHistory || [],
         loading: false
       })
     });
@@ -100,7 +101,7 @@ class History extends React.Component {
                   <b>Swap</b> in block {t.blockNumber} between <span style={{ color: toAddressColor(t.from) }}>{toReadableAddress(t.from)}</span> and <span style={{ color: toAddressColor(t.to) }}>{toReadableAddress(t.to)}</span> successful? {t.successful.toString()}
                 </Typography>
               )
-              if(!t.isSwap) return <Typography key={t.from + t.blockNumber}><b>Transfer</b> in block {t.blockNumber} from <span style={{ color: toAddressColor(t.from) }}>{toReadableAddress(t.from)}</span> to <span style={{ color: toAddressColor(t.to) }}>{toReadableAddress(t.to)}</span> successful? {t.successful.toString()}</Typography>
+              if(!t.isSwap) return <Typography key={t.from + t.blockNumber}><b>Transfer</b> in block {t.blockNumber} from <span style={{ color: toAddressColor(t.from) }}>{toReadableAddress(t.from)}</span> to <span style={{ color: toAddressColor(t.to) }}>{toReadableAddress(t.to)}</span></Typography>
             })
           }
         </Paper>
