@@ -464,7 +464,7 @@ class Battles extends InitComponent {
 
   renderDialogBattle = () => {
     const { ethAccount, classes } = this.props;
-    const { currentState, battleOpen, channelOpened } = this.state;
+    const { currentState, prevState, battleOpen, channelOpened } = this.state;
     if(!channelOpened) return (<div/>);
 
     const dialogPaperStyle = this.hasForceMove(channelOpened) ? classes.dialogPaperWithForceMove : classes.dialogPaper;
@@ -477,6 +477,7 @@ class Battles extends InitComponent {
             forceMoveChallenge={channelOpened.forceMoveChallenge}
             isPlayer1={ethAccount.toLowerCase() == currentState.participants[0].toLowerCase()}
             currentState={currentState}
+            prevState={prevState}
             battleForceMove={this.forceMove}
             concludeBattle={this.concludeBattle}
             signAndSend={this.signAndSend}

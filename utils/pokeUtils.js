@@ -155,9 +155,9 @@ export const Status = {
     }],
   },
   5: {
-    name: 'solid defense',
+    name: 'rock throw',
     effects: [{
-      name: '+50% Defense',
+      name: '+50% Defense rock',
       isBoost: true
     }],
   },

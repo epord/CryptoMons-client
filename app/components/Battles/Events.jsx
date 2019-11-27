@@ -20,7 +20,7 @@ class Events extends React.Component {
     const typeId = Type[typeName];
 
     if (code == 'Attack') {
-      return `${pokemon.name.english} used ${typeName.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
+      return `${pokemon.name.english} used ${typeName.toLowerCase()} attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${hit && crit ? 'A critical hit!' : ''}`;
     }
     if (code == 'Status') {
       return `${pokemon.name.english} used ${Status[typeId].name.toUpperCase()}${hit ? `.` : ', but missed...'}`;
@@ -38,7 +38,7 @@ class Events extends React.Component {
       return `${pokemon.name.english} used shield break${hit ? `.` : ', but missed...'}`;
     }
     if (code == 'SPAttack') {
-      return `${pokemon.name.english} used ${typeName.toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${crit ? 'A critical hit!' : ''}`;
+      return `${pokemon.name.english} used ${typeName.toLowerCase()} special attack${hit ? `. ${effectiveMap[effective]}` : ', but missed...'} ${hit && crit ? 'A critical hit!' : ''}`;
     }
     if (code == 'EndTurnDMG') {
       return `${pokemon.name.english} received additional damage.`;

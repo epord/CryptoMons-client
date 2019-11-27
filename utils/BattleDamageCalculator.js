@@ -238,9 +238,15 @@ function moveTurn(state){
     let [ random3, hitR ]    = getNextR(random2);
     state.random = random3;
     let hit = willHit(state.player, state.opponent, hitR);
+    let attackingType = 0;
+    if(usesFirstType(state.player.move)) {
+      attackingType = state.player.data.type1;
+    } else {
+      attackingType = state.player.data.type2;
+    }
     event = {id: state.player.cryptoMon.id, hit: hit,
       crit: (criticalR < getCriticalHitThreshold(state.player, state.opponent)),
-      effective: getMultiplierID(state.player.data.type1, state.opponent.data.type1, state.opponent.data.type2)
+      effective: getMultiplierID(attackingType, state.opponent.data.type1, state.opponent.data.type2)
     };
     if(state.player.move === Moves.ATK1) {
       event.type = 1;
@@ -362,8 +368,8 @@ function moveTurn(state){
 }
 
 function canStatus(state, random) {
-  if(state.player.status1 && state.opponent.data.type1 !== Type.Ice) return false;
-  if(state.player.status2 && state.opponent.data.type2 !== Type.Ice) return false;
+  if(state.player.status1 && state.opponent.data.type1 == Type.Ice) return false;
+  if(state.player.status2 && state.opponent.data.type2 == Type.Ice) return false;
   return random < STATUS_HIT_CHANCE;
 }
 

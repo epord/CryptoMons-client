@@ -26,13 +26,13 @@ class PokemonStats extends React.Component {
     const pokemonName = name.charAt(0).toUpperCase() + name.slice(1);
 
     const effects = (() => {
-      const effects1 = status1 ? Status[status1].effects : [];
-      const effects2 = status2 ? Status[status2].effects : [];
+      const effects1 = status1 != null ? Status[status1].effects : [];
+      const effects2 = status2 != null ? Status[status2].effects : [];
       return [...effects1, ...effects2].filter(effect => !effect.isBoost);
     })();
     const boosts = (() => {
-      const boosts1 = boost1 ? Status[boost1].effects : [];
-      const boosts2 = boost2 ? Status[boost2].effects : [];
+      const boosts1 = boost1 != null ? Status[boost1].effects : [];
+      const boosts2 = boost2 != null ? Status[boost2].effects : [];
       return [...boosts1, ...boosts2].filter(effect => effect.isBoost);
     })();
 
