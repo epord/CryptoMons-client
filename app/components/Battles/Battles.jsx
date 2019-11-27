@@ -46,7 +46,7 @@ import {
   withdrawBattleFunds,
   closeUnfundedBattle
 } from '../../../services/ethService';
-import { getBattleChallenges, respondBattleChallenge } from "../../../services/battleChallenges";
+import { getBattleChallenges, respondBattleChallenge, closeChallengedChannel } from "../../../services/battleChallenges";
 import {getBattlesFrom, getBattleFunds} from '../../redux/actions';
 import {getExitData} from "../../../services/plasmaServices";
 import {Typography} from '@material-ui/core';
@@ -401,6 +401,12 @@ class Battles extends InitComponent {
       });
   };
 
+  closeChallengedChannel = channel => () => {
+    const { enqueueSnackbar, plasmaCMContract } = this.props;
+    closeChallengedChannel(channel, plasmaCMContract)
+    .catch(e => enqueueSnackbar("Error closing channel", {variant: 'error'}));
+  }
+
   closeUnfundedBattle = channelId => () => {
     const { enqueueSnackbar, plasmaCMContract } = this.props;
     closeUnfundedBattle(channelId, plasmaCMContract)
@@ -572,6 +578,10 @@ class Battles extends InitComponent {
                         title: "Respond challenge",
                         disabled: respondModalOpen,
                         func: this.openRespondChallengeModal(c)
+                      },
+                      {
+                        title: "Close challenged channel",
+                        func: this.closeChallengedChannel(c)
                       }
                     ]}
                   />

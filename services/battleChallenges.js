@@ -52,6 +52,17 @@ export const battleChallengeBetween = (channel, index, plasmaCM) => {
 	})
 };
 
+export const closeChallengedChannel = (channel,  plasmaCM) => {
+  return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+		.closeChallengedChannel(channel.channelId)
+		.send({from: web3.eth.defaultAccount},(err, res) => {
+			if (err) return reject(err)
+			resolve(res);
+		})
+	})
+}
+
 export const respondBattleChallenge = (channel, challengingBlock, challengingTxHash, plasmaCM) => {
   return new Promise((resolve, reject) => {
 		let index = 0;
