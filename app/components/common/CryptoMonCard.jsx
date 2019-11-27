@@ -40,24 +40,24 @@ class CryptoMonCard extends InitComponent {
 
 	closeDialog = () => this.setState({ dialogOpen: false });
 
-	renderStatsBar = (value, maxValue) => {
+	renderStatsBar = (value, maxValue, fillColor, emptyColor) => {
 		return (
 			<React.Fragment>
 				<div
 					style={{
 						display: 'inline-flex',
 						marginLeft: '1em',
-						backgroundColor: 'lightblue',
+						backgroundColor: fillColor,
 						height: '1em',
-						width: `${(value)/maxValue * 60}%` }}
+						width: `${(value)/maxValue * 50}%` }}
 					/>
 				<div
 					style={{
 						display: 'inline-flex',
-						backgroundColor: 'aliceblue',
+						backgroundColor: emptyColor,
 						marginRight: '1em',
 						height: '1em',
-						width: `${60 - (value)/maxValue * 60}%` }}
+						width: `${55 - (value)/maxValue * 50}%` }}
 					/>
 			</React.Fragment>
 		)
@@ -66,7 +66,7 @@ class CryptoMonCard extends InitComponent {
 	renderStatsDialog = () => {
 		const { cryptoMonData, cryptoMonInstance, dialogOpen } = this.state;
 		if (!cryptoMonData || !cryptoMonInstance) return;
-	
+
 		const { stats, IVs } = cryptoMonInstance;
 		const referenceValue = Math.max(400, stats.atk, stats.def, stats.hp, stats.spAtk, stats.spDef, stats.speed);
 		return (
@@ -75,34 +75,34 @@ class CryptoMonCard extends InitComponent {
 					<Typography variant="h6">Stats</Typography>
 					<Grid container>
 						<Grid item xs={12}>
-							<Typography style={{ display: 'inline-block', width: '25%' }} variant="body1"><b>Attack:</b>{stats.atk} </Typography>
-							{this.renderStatsBar(stats.atk, referenceValue)}
-							<Typography style={{ display: 'inline' }} variant="body1">{Math.round(IVs.atk/31 * 100)}%</Typography>
+							<Typography  style={{ display: 'inline-block', width: '18%' }} variant="body1"><b>HP:</b></Typography>
+							{this.renderStatsBar(stats.hp, referenceValue, '#FF0000', 'rgb(255, 65, 67, 0.2)')}
+							<Typography style={{ display: 'inline' }} variant="body1">{stats.hp} ({Math.round(IVs.hp/31 * 100)}%)</Typography>
 						</Grid>
 						<Grid item xs={12}>
-							<Typography  style={{ display: 'inline-block', width: '25%' }} variant="body1"><b>Defense:</b>{stats.def}</Typography>
-							{this.renderStatsBar(stats.def, referenceValue)}
-							<Typography style={{ display: 'inline' }} variant="body1">{Math.round(IVs.def/31 * 100)}%</Typography>
+							<Typography style={{ display: 'inline-block', width: '18%' }} variant="body1"><b>Attack:</b></Typography>
+							{this.renderStatsBar(stats.atk, referenceValue, 'rgb(232, 109, 8)', 'rgb(240, 157, 91, 0.2)')}
+							<Typography style={{ display: 'inline' }} variant="body1">{stats.atk} ({Math.round(IVs.atk/31 * 100)}%)</Typography>
 						</Grid>
 						<Grid item xs={12}>
-							<Typography  style={{ display: 'inline-block', width: '25%' }} variant="body1"><b>HP:</b>{stats.hp}</Typography>
-							{this.renderStatsBar(stats.hp, referenceValue)}
-							<Typography style={{ display: 'inline' }} variant="body1">{Math.round(IVs.hp/31 * 100)}%</Typography>
+							<Typography  style={{ display: 'inline-block', width: '18%' }} variant="body1"><b>Defense:</b></Typography>
+							{this.renderStatsBar(stats.def, referenceValue, 'rgb(245, 203, 0)', 'rgb(248, 221, 80, 0.2)')}
+							<Typography style={{ display: 'inline' }} variant="body1">{stats.def} ({Math.round(IVs.def/31 * 100)}%)</Typography>
 						</Grid>
 						<Grid item xs={12}>
-							<Typography  style={{ display: 'inline-block', width: '25%' }} variant="body1"><b>Sp. Attack:</b>{stats.spAtk}</Typography>
-							{this.renderStatsBar(stats.spAtk, referenceValue)}
-							<Typography style={{ display: 'inline' }} variant="body1">{Math.round(IVs.spAtk/31 * 100)}%</Typography>
+							<Typography  style={{ display: 'inline-block', width: '18%' }} variant="body1"><b>Sp. Attack:</b></Typography>
+							{this.renderStatsBar(stats.spAtk, referenceValue, 'rgb(86, 117, 246)', 'rgb(140, 164, 250, 0.2)')}
+							<Typography style={{ display: 'inline' }} variant="body1">{stats.spAtk} ({Math.round(IVs.spAtk/31 * 100)}%)</Typography>
 						</Grid>
 						<Grid item xs={12}>
-							<Typography  style={{ display: 'inline-block', width: '25%' }} variant="body1"><b>Sp. Defense:</b>{stats.spDef}</Typography>
-							{this.renderStatsBar(stats.spDef, referenceValue)}
-							<Typography style={{ display: 'inline' }} variant="body1">{Math.round(IVs.spDef/31 * 100)}%</Typography>
+							<Typography  style={{ display: 'inline-block', width: '18%' }} variant="body1"><b>Sp. Defense:</b></Typography>
+							{this.renderStatsBar(stats.spDef, referenceValue, 'rgb(106, 194, 36)', 'rgb(154, 216, 110, 0.2)')}
+							<Typography style={{ display: 'inline' }} variant="body1">{stats.spDef} ({Math.round(IVs.spDef/31 * 100)}%)</Typography>
 						</Grid>
 						<Grid item xs={12}>
-							<Typography  style={{ display: 'inline-block', width: '25%' }} variant="body1"><b>Speed:</b>{stats.speed}</Typography>
-							{this.renderStatsBar(stats.speed, referenceValue)}
-							<Typography style={{ display: 'inline' }} variant="body1">{Math.round(IVs.speed/31 * 100)}%</Typography>
+							<Typography  style={{ display: 'inline-block', width: '18%' }} variant="body1"><b>Speed:</b></Typography>
+							{this.renderStatsBar(stats.speed, referenceValue, 'rgb(241, 61, 119)', 'rgb(245, 123, 165, 0.2)')}
+							<Typography style={{ display: 'inline' }} variant="body1">{stats.speed} ({Math.round(IVs.speed/31 * 100)}%)</Typography>
 						</Grid>
 					</Grid>
 				</div>
