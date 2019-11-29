@@ -1,11 +1,16 @@
 import React from 'react';
 import {connect} from "react-redux";
+import {withSnackbar} from "notistack";
 import PokemonStats from './PokemonStats.jsx';
 import Events from './Events.jsx';
 import { pokedex } from '../../../utils/pokedex';
 import { getTypeData, Type, Status } from '../../../utils/pokeUtils';
+import { fallibleSnackPromise } from '../../../utils/utils';
 import { Moves } from "../../../utils/BattleDamageCalculator";
 import { CMBmover, canIPlay, toCMBBytes } from "../../../utils/CryptoMonsBattles";
+import { refuteBattle } from '../../../services/ethService';
+
+const EthUtils	= require('ethereumjs-util');
 
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
@@ -62,7 +67,7 @@ class CurrentBattle extends React.Component {
   amIWinner = () => {
     const { currentState, ethAccount, isPlayer1, forceMoveChallenge } = this.props;
 
-    if(!this.canConclude) {
+    if(!this.canConclude()) {
       return false;
     }
 
@@ -82,6 +87,19 @@ class CurrentBattle extends React.Component {
     const { isPlayer1, currentState, prevState, ethAccount } = this.props;
     if (isPlayer1) return canIPlay(ethAccount, currentState) ? currentState : prevState;
     return prevState;
+  }
+
+  battleRefute = () => {
+    const { plasmaCMContract, enqueueSnackbar, ethAccount } = this.props;
+
+    const refutingState = this.getLastOpponentState();
+
+    fallibleSnackPromise(
+      refuteBattle(plasmaCMContract, refutingState),
+      enqueueSnackbar,
+      "Battle refuted successfully",
+      "Error while refuting battle"
+    );
   }
 
   renderAttacks = () => {
@@ -216,13 +234,19 @@ class CurrentBattle extends React.Component {
 
     const hasForceMoveChallenge = forceMoveChallenge.state.channelId != '0';
 
-    const showRefuteButton = hasForceMoveChallenge && (
-      parseInt(FMTurnNum) < lastOpponentState.turnNum
-      || (parseInt(FMTurnNum) == lastOpponentState.turnNum && forceMoveChallenge.gameAttributes != toCMBBytes(lastOpponentState.game))
-    );
+    const showRefuteButton =
+      hasForceMoveChallenge
+      && lastOpponentState
+      && this.needsMyForceMoveResponse()
+      && (
+          parseInt(FMTurnNum) < lastOpponentState.turnNum
+          || (
+            parseInt(FMTurnNum) == lastOpponentState.turnNum
+            && forceMoveChallenge.state.gameAttributes != EthUtils.bufferToHex(toCMBBytes(lastOpponentState.game)).toLowerCase()
+          )
+        );
 
-      console.log({showRefuteButton, forceMoveChallenge})
-
+    console.log({hasForceMoveChallenge, lastOpponentState, forceMoveChallenge, showRefuteButton})
 
     let player = this.getCryptoMonData(
       cryptoMonPLInstance, cryptoMonPLData, cryptoMonOPData, HPPL, status1PL, status2PL, status1OP, status2OP, chargePL
@@ -266,7 +290,7 @@ class CurrentBattle extends React.Component {
           <PokemonStats cryptoMon={player}/>
         </div>
         <Events events={events} />
-        {!this.canConclude() && showRefuteButton && <Button variant="outlined" color="primary" onClick={concludeBattle}>Refute Force Move</Button>}
+        {!this.canConclude() && showRefuteButton && <Button variant="outlined" color="primary" onClick={this.battleRefute}>Refute Force Move</Button>}
         {!this.canConclude() && !showRefuteButton && this.renderAttacks()}
         {this.canConclude() && !this.amIWinner() && !isPlayer1 && <Button variant="outlined" color="primary" onClick={signAndSend}>Sign and notify</Button>}
         {this.canConclude() && !this.amIWinner() && isPlayer1 && <Typography style={{ color: 'coral', display: 'inline' }} variant="body1">Waiting for opponent to conclude battle</Typography>}
@@ -279,8 +303,9 @@ class CurrentBattle extends React.Component {
 
 const mapStateToProps = state => ({
 	ethAccount: state.ethAccount? state.ethAccount.toLowerCase() : undefined,
+	plasmaCMContract: state.plasmaCMContract,
  });
 
 const mapDispatchToProps = dispatch => ({});
 
-export default connect(mapStateToProps, mapDispatchToProps)(CurrentBattle);
+export default connect(mapStateToProps, mapDispatchToProps)(withSnackbar(CurrentBattle));

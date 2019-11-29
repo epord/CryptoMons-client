@@ -773,6 +773,25 @@ export const battleRespondWithMove = (plasmaCM, nextState) => {
 	})
 }
 
+export const refuteBattle = (plasmaCM, refutingState) => {
+	const _refutingState = {
+		channelId: refutingState.channelId,
+		channelType: refutingState.channelType,
+		participants: refutingState.participants,
+		turnNum: refutingState.turnNum,
+		gameAttributes: toCMBBytes(refutingState.game)
+	}
+
+	return new Promise((resolve, reject) => {
+		ethContract(plasmaCM)
+			.refute(refutingState.channelId, _refutingState, refutingState.signature)
+			.send({from: web3.eth.defaultAccount}, (err, res) => {
+				if (err) return reject(err);
+				resolve(res);
+		})
+	})
+}
+
 export const concludeBattle = (plasmaCM, prevState, finalState) => {
   const _finalState = {
     channelId: finalState.channelId,
