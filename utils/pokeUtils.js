@@ -164,7 +164,7 @@ export const Status = {
   6: {
     name: 'swarm',
     effects: [{
-      name: 'Swarm hit',
+      name: '-50% Accuracy',
       isBoost: false
     }],
   },
